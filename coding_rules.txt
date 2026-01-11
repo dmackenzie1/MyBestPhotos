@@ -1,0 +1,146 @@
+# Codex General Rules for This Repository
+
+These are the default rules that **any AI assistant (Codex, ChatGPT, etc.)** should follow when modifying or generating code for this repository.
+
+They apply to **all tasks**, unless a specific prompt explicitly overrides them.
+
+---
+
+## 1. Scope and Philosophy
+
+1. **Do not over-engineer.**
+   - Prefer simple, direct, readable solutions.
+   - Avoid unnecessary abstraction layers, factory patterns, “manager of managers,” etc.
+
+2. **Work *with* the existing codebase.**
+   - Match existing style, patterns, and naming.
+   - Extend what’s there instead of “starting over” or reorganizing everything.
+
+3. **Small, focused changes.**
+   - For most tasks, change only what you must to solve the problem.
+   - Avoid sweeping refactors unless explicitly requested.
+
+4. **Humans come first.**
+   - Code should be easy for a human engineer to read and modify.
+   - Fewer clever tricks; more straightforward logic.
+
+---
+
+## 2. Code Style and Structure
+
+1. **Language consistency.**
+   - If a service is in Python, keep it in Python.
+   - Do not introduce a new language for an existing service without explicit instructions.
+
+2. **Module and file layout.**
+   - Use the existing folder structure.
+   - New modules should live in the most obvious existing package (e.g. `services/<service_name>/`), not at the top level.
+
+3. **Naming.**
+   - Use descriptive function and class names.
+   - Match the repo’s conventions (snake_case for functions/variables, PascalCase for classes, etc).
+
+4. **Imports.**
+   - Keep imports explicit and straightforward.
+   - Do not wrap imports in `try/except` unless absolutely necessary and documented.
+
+---
+
+## 3. Dependencies
+
+1. **Be conservative.**
+   - Prefer standard library and existing dependencies.
+   - Only add a new third-party library if it clearly simplifies the solution and is widely used.
+
+2. **When adding a dependency:**
+   - Add it to the appropriate config (`pyproject.toml`, `requirements.txt`, etc.).
+   - Add a short comment or README note describing why it’s needed.
+
+3. **No hidden tools.**
+   - Don’t rely on services or binaries that are not obviously available in the environment (e.g., random system tools) without adding clear setup instructions.
+
+---
+
+## 4. Error Handling, Logging, and Observability
+
+1. **Use existing logging patterns.**
+   - Reuse the project’s logger utilities and log formats.
+   - Preserve existing log tags and styles when extending a module.
+
+2. **Error handling.**
+   - Handle expected errors (I/O, network, parsing) with clear messages.
+   - Avoid silent failures; log meaningful context.
+
+3. **Fail loud, not mysteriously.**
+   - If something cannot proceed, raise or return an error with enough detail for debugging.
+
+---
+
+## 5. Testing and Validation
+
+1. **Keep existing tests passing.**
+   - Do not break current tests unless the task explicitly involves changing them.
+
+2. **Add tests for new behavior when reasonable.**
+   - Unit tests or integration tests should focus on core logic.
+   - Prefer small, focused tests over huge, complex scenarios.
+
+3. **Respect existing test commands.**
+   - Integrate with the project’s existing `uv` / `pytest` / `unittest` workflow.
+
+---
+
+## 6. API and Backwards Compatibility
+
+1. **Do not break public contracts unintentionally.**
+   - Keep existing API shapes (HTTP routes, WebSocket message formats, CLI flags) compatible unless explicitly told to change them.
+
+2. **If you must change something breaking:**
+   - Call it out clearly in comments and/or the PR description.
+   - Update related docs and tests.
+
+3. **Prefer additive changes.**
+   - Add new endpoints, fields, or message types rather than repurposing or removing existing ones.
+
+---
+
+## 7. Documentation and Comments
+
+1. **Update docs when behavior changes.**
+   - If you add a new command, endpoint, or major behavior, update the relevant README or doc file.
+
+2. **Comment intent, not the obvious.**
+   - Use comments to explain *why* something is done, especially if it’s non-obvious or a tradeoff.
+
+3. **Keep docstrings simple and focused.**
+   - One-line summary; details only where helpful.
+
+---
+
+## 8. AI Task Responses (Codex / ChatGPT Behavior)
+
+When responding to a coding task for this repo, the AI assistant should:
+
+1. **Show full, runnable code where practical.**
+   - Prefer full files for new modules.
+   - For changes, either:
+     - Show the full updated file, or
+     - Clearly mark diffs/patches.
+
+2. **Avoid “hand-wavy” pseudo-code unless explicitly requested.**
+   - Default is real, syntactically correct code.
+
+3. **Be explicit about assumptions.**
+   - If something is ambiguous (e.g., a config detail), state your assumption in a short note.
+
+4. **Keep explanations concise.**
+   - Focus on the code; keep commentary short and relevant.
+
+---
+
+## 9. When in Doubt
+
+If the instructions in a specific task conflict with this file:
+
+- The **specific task instructions** win.
+- Otherwise, default to these rules.

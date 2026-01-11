@@ -1,0 +1,32 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+node_modules/
+services/web/ui/node_modules/
+services/web/ui/.vite/
+
+# Virtual environments
+.venv
+
+#recording files
+recordings/**/**/*.mp3
+recordings/**/**/activity/*.wav
+recordings/**/**/activity/*.aac
+recordings/**/**/activity/*.json
+
+services/web/data/**/**/activity/*.aac
+
+# TLS artifacts
+services/nginx/certs/
+
+# IDE files
+.idea/
+.vs/
+
+#tempdatabase
+postgres_data/
+/data/kaus/2025-11-02/*.mp3
