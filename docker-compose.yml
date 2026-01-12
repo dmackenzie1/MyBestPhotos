@@ -1,0 +1,15 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-photo_curator}
+      POSTGRES_USER: ${POSTGRES_USER:-photo_curator}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-photo_curator}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./migrations:/migrations:ro
+
+volumes:
+  pgdata:

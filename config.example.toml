@@ -1,0 +1,26 @@
+[paths]
+cache_dir = ".cache"
+thumbs_dir = ".cache/thumbs"
+log_dir = "logs"
+report_dir = "reports"
+
+[database]
+dsn = "postgresql://photo_curator:photo_curator@localhost:5432/photo_curator"
+
+[pipeline]
+default_roots = []
+extensions = ["jpg", "jpeg", "png", "webp"]
+thumbnail_size = 512
+batch_size = 32
+clip_model = "ViT-B-32"
+clip_weights_path = ""
+embedding_device = "auto"
+
+[aesthetics]
+method = "aesthetic_v0"
+
+[selection]
+weights_technical = 0.4
+weights_aesthetic = 0.6
+similarity_threshold = 0.88
+lambda_penalty = 0.15
