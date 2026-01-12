@@ -1,0 +1,31 @@
+[project]
+name = "photo-curator"
+version = "0.1.0"
+description = "Local-only photo curation pipeline with Postgres + pgvector."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "MyBestPhotos" }]
+dependencies = [
+  "opencv-python",
+  "exifread",
+  "imagehash",
+  "loguru",
+  "numpy",
+  "open-clip-torch",
+  "pillow",
+  "psycopg[binary]",
+  "psycopg-pool",
+  "pgvector",
+  "pydantic-settings",
+  "tqdm",
+  "typer",
+]
+
+[project.scripts]
+photo-curator = "photo_curator.cli:app"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.format]
+quote-style = "double"

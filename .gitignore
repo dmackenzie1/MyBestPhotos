@@ -11,6 +11,12 @@ services/web/ui/.vite/
 
 # Virtual environments
 .venv
+.env
+config.toml
+.cache/
+logs/
+reports/
+output/
 
 #recording files
 recordings/**/**/*.mp3
