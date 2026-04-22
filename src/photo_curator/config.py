@@ -40,9 +40,10 @@ class Settings(BaseSettings):
     extensions: list[str] = ["jpg", "jpeg", "png", "webp"]
     thumbnail_size: int = 512
     batch_size: int = 32
-    ingest_limit: int = 0
-    ingest_selection_strategy: str = "first"
+    ingest_limit: int = 200
+    ingest_selection_strategy: str = "random"
     ingest_selection_seed: int = 42
+    duplicate_cap_per_filename_or_sha: int = 2
     clip_model: str = "ViT-B-32"
     clip_weights_path: str = ""
     embedding_device: str = "auto"
@@ -70,6 +71,11 @@ class Settings(BaseSettings):
         if normalized not in {"first", "random", "newest"}:
             return "first"
         return normalized
+
+    @field_validator("duplicate_cap_per_filename_or_sha")
+    @classmethod
+    def _validate_duplicate_cap(cls, value: int) -> int:
+        return max(1, int(value))
 
     @field_validator("default_roots", mode="before")
     @classmethod

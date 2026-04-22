@@ -5,7 +5,10 @@ import os
 import tempfile
 import unittest
 
-from photo_curator.pipeline_v1 import _select_discovery_candidates
+from photo_curator.pipeline_v1 import (
+    _select_discovery_candidates,
+    _should_skip_due_to_duplicate_cap,
+)
 
 
 class IngestSelectionTests(unittest.TestCase):
@@ -96,6 +99,41 @@ class IngestSelectionTests(unittest.TestCase):
             self.assertEqual(eligible, 5)
             self.assertEqual(len(selected), 2)
             self.assertEqual([path.name for _, path in selected], ["img_4.jpg", "img_3.jpg"])
+    def test_duplicate_cap_does_not_block_updates_to_existing_path(self) -> None:
+        self.assertFalse(
+            _should_skip_due_to_duplicate_cap(
+                existing_path_record=True,
+                filename_count=999,
+                sha_count=999,
+                duplicate_cap=2,
+            )
+        )
+
+    def test_duplicate_cap_blocks_new_record_on_filename_or_sha_limit(self) -> None:
+        self.assertTrue(
+            _should_skip_due_to_duplicate_cap(
+                existing_path_record=False,
+                filename_count=2,
+                sha_count=1,
+                duplicate_cap=2,
+            )
+        )
+        self.assertTrue(
+            _should_skip_due_to_duplicate_cap(
+                existing_path_record=False,
+                filename_count=1,
+                sha_count=2,
+                duplicate_cap=2,
+            )
+        )
+        self.assertFalse(
+            _should_skip_due_to_duplicate_cap(
+                existing_path_record=False,
+                filename_count=1,
+                sha_count=1,
+                duplicate_cap=2,
+            )
+        )
 
 
 if __name__ == "__main__":
