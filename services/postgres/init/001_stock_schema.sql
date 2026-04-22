@@ -31,6 +31,9 @@ CREATE TABLE IF NOT EXISTS file_metrics (
   contrast_score DOUBLE PRECISION,
   entropy_score DOUBLE PRECISION,
   noise_score DOUBLE PRECISION,
+  technical_quality_score DOUBLE PRECISION,
+  semantic_relevance_score DOUBLE PRECISION,
+  curation_score DOUBLE PRECISION,
   print_score_6x8 DOUBLE PRECISION,
   print_score_8x10 DOUBLE PRECISION,
   print_score_12x18 DOUBLE PRECISION,
@@ -66,6 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_files_camera_model ON files(camera_model);
 CREATE INDEX IF NOT EXISTS idx_file_metrics_print_12x18 ON file_metrics(print_score_12x18);
 CREATE INDEX IF NOT EXISTS idx_file_metrics_print_8x10 ON file_metrics(print_score_8x10);
 CREATE INDEX IF NOT EXISTS idx_file_metrics_print_6x8 ON file_metrics(print_score_6x8);
+CREATE INDEX IF NOT EXISTS idx_file_metrics_curation_score ON file_metrics(curation_score);
 
 CREATE INDEX IF NOT EXISTS idx_file_descriptions_tsv
 ON file_descriptions

@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     extensions: list[str] = ["jpg", "jpeg", "png", "webp"]
     thumbnail_size: int = 512
     batch_size: int = 32
+    ingest_limit: int = 0
+    ingest_selection_strategy: str = "first"
+    ingest_selection_seed: int = 42
     clip_model: str = "ViT-B-32"
     clip_weights_path: str = ""
     embedding_device: str = "auto"
@@ -54,6 +57,19 @@ class Settings(BaseSettings):
     weights_aesthetic: float = 0.6
     similarity_threshold: float = 0.88
     lambda_penalty: float = 0.15
+
+    @field_validator("ingest_limit")
+    @classmethod
+    def _validate_ingest_limit(cls, value: int) -> int:
+        return max(0, int(value))
+
+    @field_validator("ingest_selection_strategy")
+    @classmethod
+    def _validate_ingest_selection_strategy(cls, value: str) -> str:
+        normalized = (value or "first").strip().lower()
+        if normalized not in {"first", "random"}:
+            return "first"
+        return normalized
 
     @field_validator("default_roots", mode="before")
     @classmethod

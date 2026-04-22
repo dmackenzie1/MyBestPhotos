@@ -53,6 +53,11 @@ Optional LM Studio settings (for vision-based descriptions):
 - `PHOTO_CURATOR_LMSTUDIO_MODEL=qwen3.6-35b-a3b`
 - `PHOTO_CURATOR_LMSTUDIO_TIMEOUT_SECONDS=60`
 
+Optional ingest throttles (useful for test runs on large libraries):
+- `PHOTO_CURATOR_INGEST_LIMIT=500` (0 means no limit)
+- `PHOTO_CURATOR_INGEST_SELECTION_STRATEGY=first|random`
+- `PHOTO_CURATOR_INGEST_SELECTION_SEED=42` (used when strategy is `random`)
+
 > Default uses a LAN host URL; if LM Studio runs on the same host as Docker Desktop, `host.docker.internal` is also a good option.
 
 ### 2) Start stack
@@ -206,6 +211,7 @@ If LM Studio is unavailable, the runner logs a warning and falls back per-image 
 
 - Current UI shows data refresh based on API fetches.
 - Current runner logs stage progress (`discover`, `score-metrics`, `describe`) to console and `logs/`.
+- Current ranking defaults to a transparent `curation_score` built from technical quality + lightweight semantic relevance.
 - WebSocket live progress is not yet implemented; recommended next step is an `/api/v1/jobs` + WS stream for in-flight pipeline status events.
 
 ## Required process rule

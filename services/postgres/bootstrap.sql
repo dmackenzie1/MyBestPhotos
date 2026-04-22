@@ -38,6 +38,9 @@ CREATE TABLE IF NOT EXISTS file_metrics (
   contrast_score DOUBLE PRECISION,
   entropy_score DOUBLE PRECISION,
   noise_score DOUBLE PRECISION,
+  technical_quality_score DOUBLE PRECISION,
+  semantic_relevance_score DOUBLE PRECISION,
+  curation_score DOUBLE PRECISION,
   print_score_6x8 DOUBLE PRECISION,
   print_score_8x10 DOUBLE PRECISION,
   print_score_12x18 DOUBLE PRECISION,
@@ -77,3 +80,9 @@ CREATE INDEX IF NOT EXISTS idx_file_metrics_print_6x8 ON file_metrics(print_scor
 CREATE INDEX IF NOT EXISTS idx_file_descriptions_tsv
 ON file_descriptions
 USING GIN (to_tsvector('english', COALESCE(description_text, '')));
+
+
+ALTER TABLE file_metrics ADD COLUMN IF NOT EXISTS technical_quality_score DOUBLE PRECISION;
+ALTER TABLE file_metrics ADD COLUMN IF NOT EXISTS semantic_relevance_score DOUBLE PRECISION;
+ALTER TABLE file_metrics ADD COLUMN IF NOT EXISTS curation_score DOUBLE PRECISION;
+CREATE INDEX IF NOT EXISTS idx_file_metrics_curation_score ON file_metrics(curation_score);
