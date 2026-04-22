@@ -26,11 +26,11 @@
 
 ## Architecture decisions
 - Decision:
-  - Parameterize Postgres host publish settings with `POSTGRES_BIND_ADDRESS` and `POSTGRES_PUBLIC_PORT` (defaulting to `0.0.0.0:5432`) in Compose.
+  - Keep fixed host port `5432`, and only parameterize bind address via `POSTGRES_BIND_ADDRESS` (defaulting to `127.0.0.1`) in Compose.
 - Why:
-  - Keeps debugging access explicit and configurable without editing compose files.
+  - Preserves straightforward local CLI access while avoiding unnecessary public-port env indirection.
 - Tradeoff:
-  - Easier local/agent inspection, but wider attack surface if left unchanged in production.
+  - Simpler config and safer default (loopback), but LAN-wide debugging now requires explicit bind-address override.
 
 ## Error log (mandatory)
 - Exact error message(s):
@@ -50,11 +50,18 @@
     - Postgres host mapping is now explicit/configurable by env vars.
 - Attempt 2:
   - Change made:
-    - Added DB inspection runbook snippets and protocol guidance in Postgres/root docs and noted production hardening requirement.
+    - Added DB inspection runbook snippets in Postgres/root docs and noted production hardening requirement.
   - Why this was tried:
     - User requested instructions for debugging agents and explicit note that current posture is temporary before production.
   - Result:
     - Operators/agents now have copy-paste commands and a clear production warning.
+- Attempt 3:
+  - Change made:
+    - Simplified prior patch based on review feedback: removed `POSTGRES_PUBLIC_PORT`, switched default bind to loopback, and trimmed extra protocol commentary from docs.
+  - Why this was tried:
+    - User requested leaner docs/config and confirmed fixed `5432` is enough.
+  - Result:
+    - Compose + docs now match the requested simpler posture.
 
 ## What went right (mandatory)
 - Kept changes minimal and centered on Compose/docs.
@@ -64,7 +71,7 @@
 
 ## Validation (mandatory)
 - Commands run:
-  - `git diff -- docker-compose.yml .env.example services/postgres/README.md README.md AGENTS.md CHANGELOG.md`
+  - `git diff -- docker-compose.yml .env.example services/postgres/README.md README.md AGENTS.md CHANGELOG.md docs/branch-intents/2026-04-22-postgres-debug-cli-access.md`
 - Observed results:
   - Confirmed compose/env/docs/changelog changes reflect requested debug-access behavior and production-risk notation.
 

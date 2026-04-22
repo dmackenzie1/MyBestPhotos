@@ -21,8 +21,8 @@ This repository has no nested AGENTS yet; this file applies to all paths unless 
 - Avoid long-lived background services in tests; prefer in-memory stubs (see `InMemoryJobQueue`) and short-lived fixtures.
 
 ## Current debug note (April 22, 2026)
-- Docker Compose currently publishes Postgres to the host (`${POSTGRES_BIND_ADDRESS:-0.0.0.0}:${POSTGRES_PUBLIC_PORT:-5432}`) so local/AI agents can inspect DB contents with `psql`/`docker compose exec`.
-- This is temporary debug posture; treat tightening/removing public DB port exposure as a required production hardening step.
+- Docker Compose currently publishes Postgres to the host (`${POSTGRES_BIND_ADDRESS:-127.0.0.1}:5432`) so local/AI agents can inspect DB contents with `psql`/`docker compose exec`.
+- This is temporary debug posture; keep loopback-only or remove host DB exposure before production.
 
 ## Versioning expectations
 - Keep version numbers in sync across artifacts when they exist, but only bump them for substantive work (major refactors or 100+ lines of change). Minor touch-ups can ship without version increments; document the rationale in the changelog when bumps are required.
