@@ -479,11 +479,12 @@ app.get("/api/v1/facets", async (_req, res) => {
       camera: [{ camera_make: "Canon", camera_model: "EOS R6", count: 2 }],
       categories: [{ category: "people", count: 2 }],
       statuses: { keep: 1, favorite: 1, reject: 0, unreviewed: 1 },
+      dateBounds: { min: "2024-06-10", max: "2024-06-11" },
     });
     return;
   }
 
-  const [camera, statuses, categories] = await Promise.all([
+  const [camera, statuses, categories, dateBounds] = await Promise.all([
     pool.query(
       "SELECT camera_make, camera_model, count(*)::int AS count FROM files GROUP BY camera_make, camera_model ORDER BY count DESC",
     ),
@@ -510,9 +511,27 @@ app.get("/api/v1/facets", async (_req, res) => {
       LIMIT 30
     `,
     ),
+    pool.query(
+      `
+      SELECT
+        min(photo_taken_at)::timestamptz AS min_taken_at,
+        max(photo_taken_at)::timestamptz AS max_taken_at
+      FROM files
+      WHERE photo_taken_at IS NOT NULL
+    `,
+    ),
   ]);
 
-  res.json({ camera: camera.rows, categories: categories.rows, statuses: statuses.rows[0] ?? {} });
+  const bounds = dateBounds.rows[0];
+  res.json({
+    camera: camera.rows,
+    categories: categories.rows,
+    statuses: statuses.rows[0] ?? {},
+    dateBounds: {
+      min: bounds?.min_taken_at ? new Date(bounds.min_taken_at).toISOString().slice(0, 10) : null,
+      max: bounds?.max_taken_at ? new Date(bounds.max_taken_at).toISOString().slice(0, 10) : null,
+    },
+  });
 });
 
 const port = Number(process.env.PORT || 3001);

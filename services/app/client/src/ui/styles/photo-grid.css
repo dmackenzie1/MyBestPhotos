@@ -1,11 +1,11 @@
-.grid-area { padding: 14px; min-height: calc(100vh - 110px); }
+.grid-area { padding: 7px; min-height: calc(100vh - 90px); }
 
 .status-tabs {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
+  gap: 5px;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
   border-bottom: 1px solid #1d2e4a;
 }
 
@@ -13,8 +13,8 @@
   border: 1px solid #233d66;
   background: #0a1629;
   color: var(--soft);
-  border-radius: 999px;
-  padding: 8px 12px;
+  border-radius: 6px;
+  padding: 6px 8px;
   cursor: pointer;
 }
 
@@ -30,13 +30,13 @@
 .status-tab.active { color: #e7f1ff; border-color: var(--accent); }
 
 .grid-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); gap: 12px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); gap: 6px; }
 .grid.compact { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
 
 .card {
   background: #0a1629;
   border: 1px solid #20395e;
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
   padding: 0;
   color: inherit;
@@ -56,12 +56,12 @@
   border: 1px solid rgba(56, 189, 113, 0.7);
   color: #5def9f;
   font-weight: 700;
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 13px;
   padding: 4px 8px;
 }
 
-.card-body { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+.card-body { padding: 6px; display: flex; flex-direction: column; gap: 3px; }
 .card-body small { color: var(--soft); }
 
 .infinite-sentinel { height: 1px; margin-top: 2px; }

@@ -7,10 +7,20 @@ type DetailPaneProps = {
   selectedTags: string[];
   apiBase: string;
   onPatchLabels: (payload: LabelPatch) => Promise<void>;
+  notesDraft: string;
   onNotesChange: (notes: string) => void;
+  onSaveNotes: () => Promise<void>;
 };
 
-export function DetailPane({ detail, selectedTags, apiBase, onPatchLabels, onNotesChange }: DetailPaneProps) {
+export function DetailPane({
+  detail,
+  selectedTags,
+  apiBase,
+  onPatchLabels,
+  notesDraft,
+  onNotesChange,
+  onSaveNotes,
+}: DetailPaneProps) {
   return (
     <section className="detail panel">
       {detail ? (
@@ -23,6 +33,8 @@ export function DetailPane({ detail, selectedTags, apiBase, onPatchLabels, onNot
             <div><span>Taken</span><strong>{detail.photoTakenAt ? new Date(detail.photoTakenAt).toLocaleString() : "Unknown"}</strong></div>
             <div><span>Camera</span><strong>{detail.cameraMake || "Unknown"} {detail.cameraModel || ""}</strong></div>
             <div><span>Resolution</span><strong>{detail.width ?? "--"} × {detail.height ?? "--"}</strong></div>
+            <div><span>Source file</span><strong>{detail.sourceRoot}/{detail.relativePath}</strong></div>
+            <div><span>Extension</span><strong>{detail.extension || "--"}</strong></div>
           </div>
 
           <div className="chip-row">
@@ -30,6 +42,8 @@ export function DetailPane({ detail, selectedTags, apiBase, onPatchLabels, onNot
             <span className="chip">Curation {formatMetric(detail.metrics.curationScore)}</span>
             <span className="chip">Sharpness {formatMetric(1 - (detail.metrics.blurScore ?? 0))}</span>
             <span className="chip">Exposure {formatMetric(detail.metrics.brightnessScore)}</span>
+            <span className="chip">Contrast {formatMetric(detail.metrics.contrastScore)}</span>
+            <span className="chip">Noise {formatMetric(detail.metrics.noiseScore)}</span>
           </div>
 
           {selectedTags.length > 0 && (
@@ -45,17 +59,19 @@ export function DetailPane({ detail, selectedTags, apiBase, onPatchLabels, onNot
           </div>
 
           <div className="actions">
-            <button onClick={() => void onPatchLabels({ printCandidate6x8: true })}>6x8</button>
-            <button onClick={() => void onPatchLabels({ printCandidate8x10: true })}>8x10</button>
-            <button onClick={() => void onPatchLabels({ printCandidate12x18: true })}>12x18</button>
+            <button onClick={() => void onPatchLabels({ printCandidate6x8: !(detail.labels.printCandidate6x8 ?? false) })}>6x8</button>
+            <button onClick={() => void onPatchLabels({ printCandidate8x10: !(detail.labels.printCandidate8x10 ?? false) })}>8x10</button>
+            <button onClick={() => void onPatchLabels({ printCandidate12x18: !(detail.labels.printCandidate12x18 ?? false) })}>12x18</button>
           </div>
 
-          <textarea
-            placeholder="Notes"
-            value={detail.labels.notes || ""}
-            onChange={(event) => onNotesChange(event.target.value)}
-            onBlur={() => void onPatchLabels({ notes: detail.labels.notes || "" })}
-          />
+          <div className="notes-block">
+            <textarea
+              placeholder="Notes"
+              value={notesDraft}
+              onChange={(event) => onNotesChange(event.target.value)}
+            />
+            <button onClick={() => void onSaveNotes()}>Save Notes</button>
+          </div>
         </>
       ) : (
         <p>No photos match these filters. Clear filters or search to see results.</p>

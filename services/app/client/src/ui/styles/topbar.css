@@ -1,21 +1,21 @@
 .topbar {
-  height: 74px;
+  height: 60px;
   display: grid;
   grid-template-columns: 220px 1fr auto;
   align-items: center;
-  gap: 18px;
-  padding: 0 18px;
+  gap: 10px;
+  padding: 0 10px;
   border-bottom: 1px solid var(--line);
   background: rgba(5, 12, 23, 0.95);
 }
 
-.brand { font-size: 30px; font-weight: 700; color: #60a5fa; letter-spacing: 0.4px; }
+.brand { font-size: 24px; font-weight: 700; color: #60a5fa; letter-spacing: 0.2px; }
 
 .search {
   background: #0a162b;
   border: 1px solid #1e335b;
-  border-radius: 12px;
-  padding: 12px 14px;
+  border-radius: 8px;
+  padding: 8px 10px;
   color: var(--text);
 }
 
@@ -23,9 +23,9 @@
   background: transparent;
   border: none;
   color: var(--soft);
-  margin-left: 8px;
+  margin-left: 4px;
   font-size: 15px;
-  padding: 10px 2px;
+  padding: 6px 2px;
   border-bottom: 2px solid transparent;
   cursor: pointer;
 }
