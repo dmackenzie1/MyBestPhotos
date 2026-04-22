@@ -64,6 +64,13 @@ docker compose up -d postgres app-server app-client nginx
 Open UI at:
 - http://localhost:8080
 
+Direct service ports (for troubleshooting):
+- API: http://localhost:3001/api/v1/health
+- Client preview: http://localhost:4173
+- Postgres: localhost:5432
+
+`docker compose` now waits for Postgres health checks before starting dependent services, and waits for app health checks before wiring NGINX.
+
 ### 3) Apply database migrations
 
 ```bash
