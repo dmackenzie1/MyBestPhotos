@@ -4,7 +4,7 @@ A practical personal photo curation stack with a clear service layout and Docker
 
 This branch is ready for local pipeline runs with:
 - repeatable Docker Compose startup,
-- idempotent migration execution,
+- stock-schema database bootstrap on fresh volumes,
 - configurable ingest roots,
 - optional LM Studio image descriptions for richer captions.
 
@@ -16,7 +16,7 @@ services/
     server/   # Node + Express API (TypeScript)
     client/   # React + Vite UI (TypeScript)
   nginx/      # Reverse proxy
-  postgres/   # SQL migrations
+  postgres/   # SQL schema/bootstrap assets
 packages/
   shared/     # Shared TypeScript API contracts
 src/photo_curator/  # Python runner (uv)
@@ -77,13 +77,18 @@ Direct service ports (for troubleshooting):
 
 GPU note: GPU runtime settings are isolated in `docker-compose.prod.yml` (adds `gpus: all` and NVIDIA env defaults for `python-runner`). Use that overlay on hosts with NVIDIA container runtime support.
 
-### 3) Apply database migrations
+### 3) Bootstrap the stock database schema
+
+No manual migration step is required. On a fresh `pgdata` volume, Postgres automatically loads:
+
+- `services/postgres/init/001_stock_schema.sql`
+
+If you need to force a clean re-bootstrap, recreate volumes:
 
 ```bash
-docker compose exec postgres sh -lc "/migrations/apply-migrations.sh"
+docker compose down -v
+docker compose up -d postgres
 ```
-
-This uses a `schema_migrations` table and applies each SQL file once in filename order.
 
 ### 4) Run ingest/scoring/description pipeline
 
@@ -107,13 +112,13 @@ curl -s http://localhost:8080/api/v1/photos | jq '.items | length'
 For long-running local processing, use this sequence:
 
 1. Start base stack: `docker compose up -d postgres app-server app-client python-runner nginx` (or add `-f docker-compose.prod.yml` for GPU hosts).
-2. `docker compose exec postgres sh -lc "/migrations/apply-migrations.sh"`
+2. (Optional reset) `docker compose down -v && docker compose up -d postgres` to rebuild from stock schema.
 3. Watch `docker compose logs -f python-runner` for pipeline completion.
 4. Re-run ingest whenever new files arrive: `docker compose run --rm python-runner` (pipeline is upsert-oriented).
 
 ### Recovery and reruns
 
-- If a migration fails, fix SQL and re-run `apply-migrations.sh`; successful versions are recorded and skipped.
+- If schema bootstrap needs to be rerun, recreate volumes with `docker compose down -v` and start Postgres again.
 - If descriptions need regeneration, run:
   ```bash
   docker compose run --rm python-runner \
@@ -125,12 +130,12 @@ For long-running local processing, use this sequence:
   ```
 - `pgdata` volume preserves DB state across container restarts.
 
-## Database migration strategy
+## Database schema strategy
 
-- **Baseline:** migration SQL files under `services/postgres/migrations`.
-- **Execution:** `services/postgres/apply-migrations.sh` runs in-order and records applied versions.
-- **For schema changes:** add a new file like `003_add_xyz.sql`, never edit already applied migration files in deployed environments.
-- **For large backfills:** keep schema migration and data backfill as separate steps; run backfill from runner or one-off SQL script.
+- **Baseline:** stock schema lives at `services/postgres/init/001_stock_schema.sql`.
+- **Execution:** Postgres loads this file automatically on first init of an empty data directory.
+- **For schema updates in this pre-production phase:** update the stock schema directly and re-bootstrap local volumes.
+- **For large backfills:** run backfill from runner or one-off SQL script after bootstrap.
 
 
 ## UI screenshot capture
