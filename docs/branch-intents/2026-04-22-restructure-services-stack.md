@@ -10,7 +10,7 @@ Restructure the project around `services/app`, `services/nginx`, and `services/p
 - Improve frontend styling toward inspiration image.
 
 ## Architecture decisions
-- Support both mounted host roots (`PHOTO_ROOT_1..3`) and runtime root list (`PHOTO_ROOTS_JSON`).
+- Support both mounted host roots (`PHOTO_ROOT_1..3`) and runtime root list (`PHOTO_INGEST_ROOTS` CSV).
 - Keep Python runner as profile-based utility service.
 - Add `STUB_MODE` to backend so frontend can run without live ingest data.
 

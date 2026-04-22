@@ -56,7 +56,7 @@ services:
     profiles: ["runner"]
     environment:
       PHOTO_CURATOR_DB_DSN: postgresql://${POSTGRES_USER:-photo_curator}:${POSTGRES_PASSWORD:-photo_curator}@postgres:5432/${POSTGRES_DB:-photo_curator}
-      PHOTO_CURATOR_DEFAULT_ROOTS: ${PHOTO_ROOTS_JSON:-["/photos/repo1","/photos/repo2","/photos/repo3"]}
+      PHOTO_CURATOR_DEFAULT_ROOTS: ${PHOTO_INGEST_ROOTS:-/photos/repo1,/photos/repo2,/photos/repo3}
       PHOTO_CURATOR_CACHE_DIR: /data/cache
       PHOTO_CURATOR_THUMBS_DIR: /data/cache/thumbs
       PHOTO_CURATOR_DESCRIPTION_PROVIDER: ${PHOTO_CURATOR_DESCRIPTION_PROVIDER:-basic}
