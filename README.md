@@ -81,7 +81,9 @@ Open UI at:
 Direct service ports (for troubleshooting):
 - API: http://localhost:3001/api/v1/health
 - Client preview: http://localhost:4173
-- Postgres: localhost:5432
+- Postgres: `${POSTGRES_BIND_ADDRESS:-0.0.0.0}:${POSTGRES_PUBLIC_PORT:-5432}` (default: `0.0.0.0:5432`)
+
+Postgres is intentionally published for local debugging/agent inspection in this phase. Treat this as an **outstanding production hardening item** and restrict/remove host exposure before production rollout.
 
 `docker compose` now waits for Postgres health checks before starting dependent services, waits for app health checks before wiring NGINX, and starts `python-runner` only after both Postgres and API are healthy.
 
@@ -147,6 +149,9 @@ For long-running local processing, use this sequence:
 - **Every startup:** `postgres-bootstrap` service runs `bootstrap.sql` (idempotent, all tables use `IF NOT EXISTS`).
 - **For schema updates in this pre-production phase:** update both `init/001_stock_schema.sql` and `bootstrap.sql`, then re-bootstrap local volumes with `docker compose down -v`.
 - **For large backfills:** run backfill from runner or one-off SQL script after bootstrap.
+
+For CLI/agent DB inspection examples (`psql`, `docker compose exec`, and why `curl` is not suitable for raw Postgres), see:
+- `services/postgres/README.md`
 
 ## UI screenshot capture
 

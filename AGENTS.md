@@ -20,6 +20,10 @@ This repository has no nested AGENTS yet; this file applies to all paths unless 
 - Default command: `uv run pre-commit run --all-files` plus targeted service checks as needed (pytest for web, npm/vite checks for UI when the change touches frontend files).
 - Avoid long-lived background services in tests; prefer in-memory stubs (see `InMemoryJobQueue`) and short-lived fixtures.
 
+## Current debug note (April 22, 2026)
+- Docker Compose currently publishes Postgres to the host (`${POSTGRES_BIND_ADDRESS:-0.0.0.0}:${POSTGRES_PUBLIC_PORT:-5432}`) so local/AI agents can inspect DB contents with `psql`/`docker compose exec`.
+- This is temporary debug posture; treat tightening/removing public DB port exposure as a required production hardening step.
+
 ## Versioning expectations
 - Keep version numbers in sync across artifacts when they exist, but only bump them for substantive work (major refactors or 100+ lines of change). Minor touch-ups can ship without version increments; document the rationale in the changelog when bumps are required.
 
