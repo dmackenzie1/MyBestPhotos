@@ -79,3 +79,8 @@ CREATE INDEX IF NOT EXISTS idx_file_metrics_curation_score ON file_metrics(curat
 CREATE INDEX IF NOT EXISTS idx_file_descriptions_tsv
 ON file_descriptions
 USING GIN (to_tsvector('english', COALESCE(description_text, '')));
+
+
+CREATE INDEX IF NOT EXISTS idx_file_labels_keep_flag ON file_labels (keep_flag);
+CREATE INDEX IF NOT EXISTS idx_file_labels_reject_flag ON file_labels (reject_flag);
+CREATE INDEX IF NOT EXISTS idx_file_labels_favorite_flag ON file_labels (favorite_flag);

@@ -97,3 +97,8 @@ ALTER TABLE file_metrics ADD COLUMN IF NOT EXISTS nima_model_version TEXT;
 ALTER TABLE file_metrics ADD COLUMN IF NOT EXISTS advanced_metadata_updated_at TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS idx_file_metrics_curation_score ON file_metrics(curation_score);
 CREATE INDEX IF NOT EXISTS idx_file_metrics_nima_score ON file_metrics(nima_score);
+
+
+CREATE INDEX IF NOT EXISTS idx_file_labels_keep_flag ON file_labels (keep_flag);
+CREATE INDEX IF NOT EXISTS idx_file_labels_reject_flag ON file_labels (reject_flag);
+CREATE INDEX IF NOT EXISTS idx_file_labels_favorite_flag ON file_labels (favorite_flag);
