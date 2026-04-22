@@ -12,7 +12,11 @@ from photo_curator.pipeline_v1.common import _load_image
 from photo_curator.pipeline_v1.description_stage import describe_images
 from photo_curator.pipeline_v1.metrics_stage import _compute_metrics
 from photo_curator.pipeline_v1.models import AdvancedRunnerStats, DescriptionOptions, StageStats
-from photo_curator.pipeline_v1.scoring_math import _compute_nima_style_score
+from photo_curator.pipeline_v1.nima_model import get_nima_assessor
+from photo_curator.pipeline_v1.scoring_math import (
+    _compute_nima_style_score,
+    _derive_aesthetic_and_keep_scores,
+)
 
 
 def _composition_balance_score(gray) -> float:
@@ -80,7 +84,7 @@ def score_nima(
     max_size: int = 1024,
     batch_size: int = 100,
     refresh_all: bool = False,
-    nima_model_version: str = "nima_style_v0",
+    nima_model_version: str = "pyiqa_nima_v1",
 ) -> StageStats:
     where_clause = "TRUE" if refresh_all else "fm.nima_score IS NULL"
     rows = db.fetchall(
@@ -98,6 +102,8 @@ def score_nima(
     )
 
     stats = StageStats()
+    assessor = get_nima_assessor()
+    fallback_model_version = f"{nima_model_version}_fallback_style_v0"
     for row in tqdm(rows, desc="NIMA"):
         (
             file_id,
@@ -125,16 +131,27 @@ def score_nima(
             (blur_score, brightness_score, contrast_score, entropy_score, technical_quality_score),
             image,
         )
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        composition_balance_score = _composition_balance_score(gray)
-        nima_score, aesthetic_score, keep_score = _compute_nima_style_score(
-            blur_score=blur_score,
-            brightness_score=brightness_score,
-            contrast_score=contrast_score,
-            entropy_score=entropy_score,
-            technical_quality_score=technical_quality_score,
-            composition_balance_score=composition_balance_score,
-        )
+        model_nima_score = assessor.score(image)
+        resolved_model_version = nima_model_version
+        if model_nima_score is None:
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            composition_balance_score = _composition_balance_score(gray)
+            nima_score, aesthetic_score, keep_score = _compute_nima_style_score(
+                blur_score=blur_score,
+                brightness_score=brightness_score,
+                contrast_score=contrast_score,
+                entropy_score=entropy_score,
+                technical_quality_score=technical_quality_score,
+                composition_balance_score=composition_balance_score,
+            )
+            resolved_model_version = fallback_model_version
+        else:
+            nima_score = model_nima_score
+            aesthetic_score, keep_score = _derive_aesthetic_and_keep_scores(
+                nima_score=nima_score,
+                technical_quality_score=technical_quality_score,
+                blur_score=blur_score,
+            )
 
         db.execute(
             """
@@ -150,7 +167,7 @@ def score_nima(
               advanced_metadata_updated_at = now(),
               updated_at = now()
             """,
-            (file_id, nima_score, aesthetic_score, keep_score, nima_model_version),
+            (file_id, nima_score, aesthetic_score, keep_score, resolved_model_version),
         )
         stats.processed += 1
 
@@ -167,7 +184,7 @@ def run_advanced_runners(
     *,
     nima_batch_size: int = 100,
     nima_refresh_all: bool = False,
-    nima_model_version: str = "nima_style_v0",
+    nima_model_version: str = "pyiqa_nima_v1",
     run_descriptions: bool = True,
     description_model_name: str = "basic-caption-v1",
     description_options: DescriptionOptions | None = None,

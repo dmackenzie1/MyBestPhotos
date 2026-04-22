@@ -15,12 +15,12 @@ Pipeline now has two practical passes:
    - compute deterministic quality metrics into `file_metrics`
 2. **Advanced runners**
    - run enrichment passes that may improve over time
-   - current runner includes NIMA-style aesthetic scoring and descriptions
+   - current runner includes true-NIMA aesthetic scoring (with fallback) and descriptions
    - designed to be rerunnable/backfillable
 
 Current CLI alignment:
 - `photo-curator base-ingest` for canonical file ingest.
-- `photo-curator score-nima` for standalone NIMA-style backfills.
+- `photo-curator score-nima` for standalone NIMA backfills.
 - `photo-curator advanced-runner` for NIMA + optional description enrichment.
 - `photo-curator pipeline` runs base ingest + advanced runners in one command.
 
@@ -48,11 +48,12 @@ When provider is `lmstudio`, the description stage sends each image to LM Studio
 OpenAI-compatible `chat/completions` endpoint and stores returned captions in
 `file_descriptions.description_text`.
 
-## NIMA-style scoring note
+## NIMA scoring note
 
 - `nima_score` is treated as advanced derived metadata, not raw file truth.
-- Initial implementation is intentionally lightweight (`nima_style_v0`) so we can
-  iterate without introducing a heavyweight model-serving dependency.
+- Primary implementation uses `pyiqa` NIMA metric inference in-process.
+- If runtime/model initialization fails, scoring falls back to `nima_style_v0`
+  and records fallback in `nima_model_version`.
 - The runner processes rows missing `nima_score` first (or all rows with `--refresh-all`)
   and records `nima_model_version` + `advanced_metadata_updated_at` for future backfills.
 

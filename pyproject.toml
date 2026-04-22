@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "photo-curator"
-version = "0.1.0"
+version = "0.1.1"
 description = "Local-only photo curation pipeline with Postgres + pgvector."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -17,6 +17,7 @@ dependencies = [
   "numpy",
   "open-clip-torch",
   "pillow",
+  "pyiqa",
   "psycopg[binary]",
   "psycopg-pool",
   "pgvector",

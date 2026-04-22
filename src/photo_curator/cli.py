@@ -112,7 +112,7 @@ def pipeline_cmd(
             db,
             nima_batch_size=200,
             nima_refresh_all=False,
-            nima_model_version="nima_style_v0",
+            nima_model_version="pyiqa_nima_v1",
             run_descriptions=True,
             description_model_name=model_name,
             description_options=DescriptionOptions(
@@ -179,7 +179,7 @@ def base_ingest_cmd(
 def score_nima_cmd(
     batch_size: int = typer.Option(100, "--batch-size", min=1),
     refresh_all: bool = typer.Option(False, "--refresh-all"),
-    model_version: str = typer.Option("nima_style_v0", "--model-version"),
+    model_version: str = typer.Option("pyiqa_nima_v1", "--model-version"),
     config: Optional[str] = typer.Option(None, "--config"),
 ) -> None:
     db, _settings = _init_db(config)
@@ -199,7 +199,7 @@ def score_nima_cmd(
 def advanced_runner_cmd(
     nima_batch_size: int = typer.Option(100, "--nima-batch-size", min=1),
     nima_refresh_all: bool = typer.Option(False, "--nima-refresh-all"),
-    nima_model_version: str = typer.Option("nima_style_v0", "--nima-model-version"),
+    nima_model_version: str = typer.Option("pyiqa_nima_v1", "--nima-model-version"),
     run_descriptions: bool = typer.Option(True, "--run-descriptions/--skip-descriptions"),
     model_name: str = typer.Option("basic-caption-v1", "--model-name"),
     description_provider: Optional[str] = typer.Option(None, "--description-provider"),

@@ -124,7 +124,7 @@ Inside the runner, the CLI now supports two explicit passes:
 # canonical file ingest (stable file truth + deterministic base metrics)
 uv run --project . photo-curator base-ingest
 
-# advanced enrichment (NIMA-style aesthetic scoring + descriptions)
+# advanced enrichment (true NIMA aesthetic scoring + descriptions)
 uv run --project . photo-curator advanced-runner
 
 # standalone NIMA backfill
@@ -240,8 +240,9 @@ If LM Studio is unavailable, the runner logs a warning and falls back per-image 
 - Current UI shows data refresh based on API fetches.
 - Current runner logs stage progress (`discover`, `score-metrics`, `describe`) to console and `logs/`.
 - Compose now separates base ingest and advanced enrichment into two runner containers so advanced passes can evolve independently.
-- Current ranking defaults to a transparent `curation_score` built from technical quality + lightweight semantic relevance.
-- NIMA-style scoring is now treated as advanced, rerunnable enrichment and stored in `file_metrics` (`nima_score`, `aesthetic_score`, `keep_score`, `nima_model_version`).
+- Current ranking defaults to a transparent `curation_score` built from quality (`keep_score` when present, otherwise technical quality) + lightweight semantic relevance.
+- NIMA scoring is treated as advanced, rerunnable enrichment and stored in `file_metrics` (`nima_score`, `aesthetic_score`, `keep_score`, `nima_model_version`).
+- Advanced scoring now uses a true NIMA library backend (`pyiqa`) when available, with automatic fallback to `nima_style_v0` heuristic if model runtime is unavailable.
 - WebSocket live progress is not yet implemented; recommended next step is an `/api/v1/jobs` + WS stream for in-flight pipeline status events.
 
 ## Required process rule

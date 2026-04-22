@@ -9,7 +9,10 @@ from photo_curator.pipeline_v1.selection import (
     _should_skip_due_to_duplicate_cap,
 )
 from photo_curator.pipeline_v1.models import DescriptionOptions
-from photo_curator.pipeline_v1.scoring_math import _compute_nima_style_score
+from photo_curator.pipeline_v1.scoring_math import (
+    _compute_nima_style_score,
+    _derive_aesthetic_and_keep_scores,
+)
 
 if TYPE_CHECKING:
     from photo_curator.config import Settings
@@ -42,7 +45,7 @@ def score_nima(
     max_size: int = 1024,
     batch_size: int = 100,
     refresh_all: bool = False,
-    nima_model_version: str = "nima_style_v0",
+    nima_model_version: str = "pyiqa_nima_v1",
 ):
     from photo_curator.pipeline_v1.advanced_stage import score_nima as _score_nima
 
@@ -60,7 +63,7 @@ def run_advanced_runners(
     *,
     nima_batch_size: int = 100,
     nima_refresh_all: bool = False,
-    nima_model_version: str = "nima_style_v0",
+    nima_model_version: str = "pyiqa_nima_v1",
     run_descriptions: bool = True,
     description_model_name: str = "basic-caption-v1",
     description_options: DescriptionOptions | None = None,
@@ -88,6 +91,7 @@ __all__ = [
     "score_metrics",
     "score_nima",
     "_compute_nima_style_score",
+    "_derive_aesthetic_and_keep_scores",
     "_iter_files",
     "_select_discovery_candidates",
     "_should_skip_due_to_duplicate_cap",

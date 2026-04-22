@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from photo_curator.pipeline_v1 import _compute_nima_style_score
+from photo_curator.pipeline_v1 import _compute_nima_style_score, _derive_aesthetic_and_keep_scores
 
 
 class NimaScoringTests(unittest.TestCase):
@@ -40,6 +40,20 @@ class NimaScoringTests(unittest.TestCase):
             composition_balance_score=0.8,
         )
         self.assertGreater(high, low)
+
+    def test_derived_scores_increase_with_nima_signal(self) -> None:
+        aesthetic_low, keep_low = _derive_aesthetic_and_keep_scores(
+            nima_score=0.25,
+            technical_quality_score=0.7,
+            blur_score=0.3,
+        )
+        aesthetic_high, keep_high = _derive_aesthetic_and_keep_scores(
+            nima_score=0.8,
+            technical_quality_score=0.7,
+            blur_score=0.3,
+        )
+        self.assertGreater(aesthetic_high, aesthetic_low)
+        self.assertGreater(keep_high, keep_low)
 
 
 if __name__ == "__main__":

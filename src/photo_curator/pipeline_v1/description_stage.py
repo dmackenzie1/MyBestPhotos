@@ -119,7 +119,7 @@ def describe_images(
         """
         SELECT f.id, f.filename, f.source_root, f.relative_path, f.camera_make, f.camera_model, f.photo_taken_at,
                m.print_score_12x18, m.blur_score, m.brightness_score, m.contrast_score,
-               m.technical_quality_score
+               m.technical_quality_score, m.keep_score
         FROM files f
         LEFT JOIN file_metrics m ON m.file_id = f.id
         ORDER BY f.id
@@ -141,6 +141,7 @@ def describe_images(
             brightness_score,
             contrast_score,
             technical_quality_score,
+            keep_score,
         ) = row
 
         quality_hint = "good"
@@ -185,12 +186,16 @@ def describe_images(
         semantic_relevance_score += min(0.25, 0.08 * len(categories))
         semantic_relevance_score = max(0.0, min(1.0, semantic_relevance_score))
 
+        ranking_quality_score = (
+            keep_score
+            if keep_score is not None
+            else (technical_quality_score or print_12x18 or 0.0)
+        )
         curation_score = max(
             0.0,
             min(
                 1.0,
-                (0.7 * (technical_quality_score or print_12x18 or 0.0))
-                + (0.3 * semantic_relevance_score),
+                (0.7 * ranking_quality_score) + (0.3 * semantic_relevance_score),
             ),
         )
 
@@ -220,6 +225,7 @@ def describe_images(
             "scores": {
                 "print_12x18": print_12x18,
                 "technical_quality": technical_quality_score,
+                "keep_score": keep_score,
                 "semantic_relevance": semantic_relevance_score,
                 "curation": curation_score,
                 "blur": blur_score,

@@ -16,14 +16,15 @@ This project now tracks three interpretable score layers in `file_metrics`:
 
 4. **nima_score / aesthetic_score / keep_score**
    - Advanced-runner outputs intended to represent aesthetics/photogenic quality.
-   - `nima_score` is currently a NIMA-style proxy (`nima_style_v0`) using deterministic image signals.
+   - `nima_score` is produced by a true NIMA metric backend (`pyiqa`) when available.
+   - If runtime/model loading fails, the runner falls back to deterministic proxy scoring (`nima_style_v0`) and marks fallback in `nima_model_version`.
    - `aesthetic_score` and `keep_score` are derived from `nima_score` + technical quality for ranking workflows.
 
 ## Base vs advanced ownership
 
 - `files` stores canonical file truth and stable extraction facts.
 - Base deterministic metrics land in `file_metrics` during base ingest.
-- Model-like or evolving enrichment (NIMA-style scoring, descriptions, future tags/captions) is treated as advanced runner output and expected to be rerun over time.
+- Model-like or evolving enrichment (NIMA scoring, descriptions, future tags/captions) is treated as advanced runner output and expected to be rerun over time.
 
 ## Why not ML/ORM refactors yet?
 
