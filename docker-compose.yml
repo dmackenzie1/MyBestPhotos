@@ -23,6 +23,7 @@ services:
       context: .
       dockerfile: services/app/server/Dockerfile
     container_name: mybestphotos-app-server
+    command: ["node", "dist/services/app/server/src/index.js"]
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-photo_curator}:${POSTGRES_PASSWORD:-photo_curator}@postgres:5432/${POSTGRES_DB:-photo_curator}
       THUMBS_DIR: /data/cache/thumbs
