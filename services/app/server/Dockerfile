@@ -21,4 +21,4 @@ COPY --from=deps /workspace/node_modules ./node_modules
 COPY services/app/server/package.json ./package.json
 COPY reference ./reference
 EXPOSE 3001
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/services/app/server/src/index.js"]
