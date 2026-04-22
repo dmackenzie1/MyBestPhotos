@@ -58,7 +58,11 @@ Optional LM Studio settings (for vision-based descriptions):
 ### 2) Start stack
 
 ```bash
-docker compose up -d postgres app-server app-client nginx
+# base/default stack
+docker compose up -d postgres app-server app-client python-runner nginx
+
+# prod/gpu overlay
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d postgres app-server app-client python-runner nginx
 ```
 
 Open UI at:
@@ -69,7 +73,9 @@ Direct service ports (for troubleshooting):
 - Client preview: http://localhost:4173
 - Postgres: localhost:5432
 
-`docker compose` now waits for Postgres health checks before starting dependent services, and waits for app health checks before wiring NGINX.
+`docker compose` now waits for Postgres health checks before starting dependent services, waits for app health checks before wiring NGINX, and starts `python-runner` only after both Postgres and API are healthy.
+
+GPU note: GPU runtime settings are isolated in `docker-compose.prod.yml` (adds `gpus: all` and NVIDIA env defaults for `python-runner`). Use that overlay on hosts with NVIDIA container runtime support.
 
 ### 3) Apply database migrations
 
@@ -81,8 +87,12 @@ This uses a `schema_migrations` table and applies each SQL file once in filename
 
 ### 4) Run ingest/scoring/description pipeline
 
+The default stack startup already runs `python-runner` once in parallel after API/database health checks pass.
+
+For manual reruns (for example after adding new files):
+
 ```bash
-docker compose --profile runner run --rm python-runner
+docker compose run --rm python-runner
 ```
 
 ### 5) Verify ingest and API health
@@ -96,17 +106,21 @@ curl -s http://localhost:8080/api/v1/photos | jq '.items | length'
 
 For long-running local processing, use this sequence:
 
-1. `docker compose up -d postgres app-server app-client nginx`
+1. Start base stack: `docker compose up -d postgres app-server app-client python-runner nginx` (or add `-f docker-compose.prod.yml` for GPU hosts).
 2. `docker compose exec postgres sh -lc "/migrations/apply-migrations.sh"`
-3. `docker compose --profile runner run --rm python-runner`
-4. Re-run step 3 whenever new files arrive (pipeline is upsert-oriented).
+3. Watch `docker compose logs -f python-runner` for pipeline completion.
+4. Re-run ingest whenever new files arrive: `docker compose run --rm python-runner` (pipeline is upsert-oriented).
 
 ### Recovery and reruns
 
 - If a migration fails, fix SQL and re-run `apply-migrations.sh`; successful versions are recorded and skipped.
 - If descriptions need regeneration, run:
   ```bash
-  docker compose --profile runner run --rm python-runner \
+  docker compose run --rm python-runner \
+    sh -lc "uv run --project . photo-curator describe --description-provider lmstudio --model-name qwen2.5-vl-7b-instruct"
+
+  # GPU/prod overlay variant
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm python-runner \
     sh -lc "uv run --project . photo-curator describe --description-provider lmstudio --model-name qwen2.5-vl-7b-instruct"
   ```
 - `pgdata` volume preserves DB state across container restarts.
@@ -129,7 +143,7 @@ npx playwright install --with-deps chromium
 npm run screenshot:ui
 ```
 
-This captures `http://localhost:8080` to `artifacts/ui-home.png` (start the stack first with `docker compose up -d postgres app-server app-client nginx`).
+This captures `http://localhost:8080` to `artifacts/ui-home.png` (start the stack first with `docker compose up -d postgres app-server app-client python-runner nginx`, or add `-f docker-compose.prod.yml` on GPU hosts).
 
 ## NPM wiring
 
@@ -157,7 +171,7 @@ This lets frontend iteration continue even before real ingest data is available.
 
 ## Python runner and uv
 
-Python execution uses `uv` in the runner container. Keep Python commands in this style:
+Python execution uses `uv` in the runner container. A named Docker volume (`uv-cache`) is mounted to preserve uv download/build cache between runs for faster startup. Keep Python commands in this style:
 
 ```bash
 uv sync --project .

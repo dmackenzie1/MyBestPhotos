@@ -1,9 +1,9 @@
 # Python Runner Notes
 
-Runner is executed with:
+Runner participates in default stack startup (`docker compose up`) and is also runnable manually with:
 
 ```bash
-docker compose --profile runner run --rm python-runner
+docker compose run --rm python-runner
 ```
 
 Stages:
@@ -28,3 +28,16 @@ OpenAI-compatible `chat/completions` endpoint and stores returned captions in
 
 ## GPU note
 If adding PyTorch model inference later, pin CUDA/ROCm builds explicitly in docs and image tags.
+
+
+## Startup/ordering
+
+- Runner waits for both Postgres and app-server health checks in Compose.
+- Runner keeps mounted photo roots and cache paths from the host.
+
+## Runtime/GPU
+
+- Base compose keeps runner portable without hard GPU requirements.
+- GPU/prod overlay (`docker-compose.prod.yml`) sets `gpus: all` plus `NVIDIA_VISIBLE_DEVICES` and `NVIDIA_DRIVER_CAPABILITIES`.
+- Ensure Docker host has NVIDIA container runtime support when using the prod GPU overlay.
+- `uv` cache persists via named volume `uv-cache` to reduce repeated cold-start setup time.
