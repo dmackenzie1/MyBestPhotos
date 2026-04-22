@@ -28,5 +28,12 @@ This repository has no nested AGENTS yet; this file applies to all paths unless 
 - Summaries should call out API/CLI deltas and any deploy-impacting changes (migrations, new env vars, or new compose services).
 - When adding new configs (VS Code, pre-commit, scripts), explain how they interplay with `uv` and Docker.
 
+
+## Branch-intent workflow (mandatory for every Codex task)
+- At the start of each Codex task, review `docs/branch-intents/*.md` for relevant previous errors, failed attempts, and dead ends before proposing a new fix.
+- For every Codex task, create or update a branch-intent file that records: exact error text, what was tried, why it was tried, what failed, and what to try next.
+- This requirement applies even if the branch does not merge yet, and even if the attempted fix fails.
+- Use `docs/branch-intents/TEMPLATE.md` as the baseline structure.
+
 ## File-scope note
 Files under `services/web/` have additional guidance in `services/web/AGENTS.md`.

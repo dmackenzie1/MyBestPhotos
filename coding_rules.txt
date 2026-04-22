@@ -144,3 +144,20 @@ If the instructions in a specific task conflict with this file:
 
 - The **specific task instructions** win.
 - Otherwise, default to these rules.
+
+---
+
+## 10. Branch Intent Discipline (Mandatory)
+
+1. **Always read prior branch intents first.**
+   - Before attempting a fix, review relevant files under `docs/branch-intents/` for prior error patterns and failed approaches.
+
+2. **Always write/update a branch intent for the current task.**
+   - Every Codex task must record what was attempted, exact error message text, outcomes (including failures), and next-step ideas.
+
+3. **Do not hide failed attempts.**
+   - Failed experiments are required documentation so future branches avoid repeating the same rabbit holes.
+
+4. **Use the repo template.**
+   - Follow `docs/branch-intents/TEMPLATE.md` to keep records consistent and searchable.
+
