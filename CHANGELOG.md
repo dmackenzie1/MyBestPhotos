@@ -8,6 +8,7 @@ All notable changes to this repository will be documented here.
 - Added API stub mode (`STUB_MODE`) for frontend-first development.
 - Improved UI styling to better match the dark, card-based reference layout.
 - Added `reference/` and expanded `docs/` architecture/process documentation with mandatory branch-intent policy.
+- Added explicit Postgres bind-address control (`POSTGRES_BIND_ADDRESS`, default loopback) and documented CLI/agent DB-inspection commands plus a production hardening reminder to lock down DB exposure.
 
 ## [2024-12-04] Capture HAM
 - Added an EchoLink-backed HAM capture service and N5OAK profile that lean on the core capture agent.
