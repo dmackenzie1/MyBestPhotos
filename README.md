@@ -113,6 +113,19 @@ For long-running local processing, use this sequence:
 - **For schema changes:** add a new file like `003_add_xyz.sql`, never edit already applied migration files in deployed environments.
 - **For large backfills:** keep schema migration and data backfill as separate steps; run backfill from runner or one-off SQL script.
 
+
+## UI screenshot capture
+
+When you need a quick UI screenshot artifact locally:
+
+```bash
+npm install
+npx playwright install --with-deps chromium
+npm run screenshot:ui
+```
+
+This captures `http://localhost:8080` to `artifacts/ui-home.png` (start the stack first with `docker compose up -d postgres app-server app-client nginx`).
+
 ## NPM wiring
 
 Workspace scripts:
