@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "photo-curator"
 version = "0.1.0"
@@ -23,6 +27,9 @@ dependencies = [
 
 [project.scripts]
 photo-curator = "photo_curator.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/photo_curator"]
 
 [tool.ruff]
 line-length = 100
