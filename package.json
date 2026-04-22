@@ -13,6 +13,10 @@
     "build:client": "npm run -w services/app/client build",
     "dev:server": "npm run -w services/app/server dev",
     "dev:client": "npm run -w services/app/client dev",
-    "lint": "npm run -ws lint"
+    "lint": "npm run -ws lint",
+    "screenshot:ui": "mkdir -p artifacts && playwright screenshot --device=\"Desktop Chrome\" http://localhost:8080 artifacts/ui-home.png"
+  },
+  "devDependencies": {
+    "playwright": "^1.54.0"
   }
 }
