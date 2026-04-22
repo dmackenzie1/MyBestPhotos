@@ -1,0 +1,54 @@
+.filters { padding: 14px; }
+.filters label { display: block; margin-top: 14px; color: var(--soft); font-size: 12px; }
+.filters select,
+.filters textarea,
+.filters input[type="date"],
+textarea {
+  width: 100%;
+  margin-top: 6px;
+  background: #081328;
+  border: 1px solid #2a456f;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.inline-btn {
+  border: 1px solid #2e4f86;
+  background: #0b1a32;
+  color: var(--soft);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.inline-btn:hover { color: var(--text); }
+
+.topics {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 190px;
+  overflow: auto;
+}
+
+.topic-chip {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #0a1629;
+  border: 1px solid #20395e;
+  border-radius: 8px;
+  color: var(--soft);
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.topic-chip.active {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.score-val { margin-top: 8px; color: var(--good); font-weight: 600; }
