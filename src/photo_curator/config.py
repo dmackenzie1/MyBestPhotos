@@ -5,10 +5,10 @@ import json
 import os
 from pathlib import Path
 import tomllib
-from typing import Any
+from typing import Annotated, Any
 
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     report_dir: str = "reports"
     config_path: str = "config.toml"
 
-    default_roots: list[str] = []
+    default_roots: Annotated[list[str], NoDecode] = []
     extensions: list[str] = ["jpg", "jpeg", "png", "webp"]
     thumbnail_size: int = 512
     batch_size: int = 32
