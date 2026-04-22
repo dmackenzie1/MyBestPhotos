@@ -99,6 +99,7 @@ class IngestSelectionTests(unittest.TestCase):
             self.assertEqual(eligible, 5)
             self.assertEqual(len(selected), 2)
             self.assertEqual([path.name for _, path in selected], ["img_4.jpg", "img_3.jpg"])
+
     def test_duplicate_cap_does_not_block_updates_to_existing_path(self) -> None:
         self.assertFalse(
             _should_skip_due_to_duplicate_cap(
