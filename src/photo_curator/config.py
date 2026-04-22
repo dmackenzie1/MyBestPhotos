@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     report_dir: str = "reports"
     config_path: str = "config.toml"
 
+    # Keep env parsing for default_roots in our validator/source so plain paths and CSV values
+    # work without requiring JSON list syntax in PHOTO_CURATOR_DEFAULT_ROOTS.
     default_roots: Annotated[list[str], NoDecode] = []
     extensions: list[str] = ["jpg", "jpeg", "png", "webp"]
     thumbnail_size: int = 512
