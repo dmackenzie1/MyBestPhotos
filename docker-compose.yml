@@ -29,9 +29,11 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-photo_curator}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-photo_curator}
       PGPASSWORD: ${POSTGRES_PASSWORD:-photo_curator}
+      PGHOST: postgres
+      PGPORT: 5432
     volumes:
       - ./services/postgres:/migrations:ro
-    command: ["sh", "/migrations/apply-migrations.sh"]
+    command: ["bash", "/migrations/apply-migrations.sh"]
 
   app-server:
     build:
