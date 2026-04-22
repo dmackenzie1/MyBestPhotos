@@ -113,6 +113,18 @@ def _select_discovery_candidates(
     return eligible, selected
 
 
+def _should_skip_due_to_duplicate_cap(
+    *,
+    existing_path_record: bool,
+    filename_count: int,
+    sha_count: int,
+    duplicate_cap: int,
+) -> bool:
+    if existing_path_record:
+        return False
+    return filename_count >= duplicate_cap or sha_count >= duplicate_cap
+
+
 def _parse_datetime_from_candidate(value: str) -> datetime | None:
     match = DATE_RE.search(value)
     if not match:
@@ -282,6 +294,39 @@ def discover_files(
             exif_json_str = json.dumps(sanitized_exif, default=str)
 
             try:
+                file_hash = sha256_file(path)
+                existing_rows = db.fetchall(
+                    "SELECT id FROM files WHERE source_root = %s AND relative_path = %s",
+                    (str(root), relative_path),
+                )
+
+                filename_count_row = db.fetchall(
+                    "SELECT COUNT(*) FROM files WHERE filename = %s",
+                    (path.name,),
+                )
+                filename_count = int(filename_count_row[0][0]) if filename_count_row else 0
+
+                sha_count_row = db.fetchall(
+                    "SELECT COUNT(*) FROM files WHERE sha256 = %s", (file_hash,)
+                )
+                sha_count = int(sha_count_row[0][0]) if sha_count_row else 0
+
+                if _should_skip_due_to_duplicate_cap(
+                    existing_path_record=bool(existing_rows),
+                    filename_count=filename_count,
+                    sha_count=sha_count,
+                    duplicate_cap=settings.duplicate_cap_per_filename_or_sha,
+                ):
+                    logger.info(
+                        "Skipping insert for {filename}: duplicate cap reached (filename_count={filename_count}, sha_count={sha_count}, cap={cap})",
+                        filename=path.name,
+                        filename_count=filename_count,
+                        sha_count=sha_count,
+                        cap=settings.duplicate_cap_per_filename_or_sha,
+                    )
+                    stats.skipped += 1
+                    continue
+
                 db.execute(
                     """
                     INSERT INTO files (
@@ -314,7 +359,7 @@ def discover_files(
                         path.suffix.lower().lstrip("."),
                         mimetypes.guess_type(path.name)[0],
                         stat.st_size,
-                        sha256_file(path),
+                        file_hash,
                         width,
                         height,
                         exif.get("Orientation"),

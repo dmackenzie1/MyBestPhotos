@@ -54,9 +54,10 @@ Optional LM Studio settings (for vision-based descriptions):
 - `PHOTO_CURATOR_LMSTUDIO_TIMEOUT_SECONDS=60`
 
 Optional ingest throttles (useful for test runs on large libraries):
-- `PHOTO_CURATOR_INGEST_LIMIT=500` (0 means no limit)
+- `PHOTO_CURATOR_INGEST_LIMIT=200` (default; 0 means no limit)
 - `PHOTO_CURATOR_INGEST_SELECTION_STRATEGY=first|random`
 - `PHOTO_CURATOR_INGEST_SELECTION_SEED=42` (used when strategy is `random`)
+- `PHOTO_CURATOR_DUPLICATE_CAP_PER_FILENAME_OR_SHA=2` (skip new inserts once either filename or sha256 already appears twice; existing path rows are still updated)
 
 > Default uses a LAN host URL; if LM Studio runs on the same host as Docker Desktop, `host.docker.internal` is also a good option.
 
