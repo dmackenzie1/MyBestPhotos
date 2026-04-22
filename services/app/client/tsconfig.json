@@ -9,6 +9,7 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "types": ["vite/client"],
     "baseUrl": ".",
     "paths": {
       "@mybestphotos/shared": ["../../../packages/shared/src/index.ts"]
