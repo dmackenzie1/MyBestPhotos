@@ -49,11 +49,11 @@ The Python runner scans that mounted path at:
 
 Optional LM Studio settings (for vision-based descriptions):
 - `PHOTO_CURATOR_DESCRIPTION_PROVIDER=lmstudio`
-- `PHOTO_CURATOR_LMSTUDIO_BASE_URL=http://host.docker.internal:1234/v1` (or your LAN host URL)
-- `PHOTO_CURATOR_LMSTUDIO_MODEL=qwen2.5-vl-7b-instruct`
+- `PHOTO_CURATOR_LMSTUDIO_BASE_URL=http://192.168.10.64:1234/v1` (or your LAN host URL)
+- `PHOTO_CURATOR_LMSTUDIO_MODEL=qwen3.6-35b-a3b`
 - `PHOTO_CURATOR_LMSTUDIO_TIMEOUT_SECONDS=60`
 
-> If LM Studio runs on the same host as Docker Desktop, `host.docker.internal` is the easiest path.
+> Default uses a LAN host URL; if LM Studio runs on the same host as Docker Desktop, `host.docker.internal` is also a good option.
 
 ### 2) Start stack
 
@@ -122,11 +122,11 @@ For long-running local processing, use this sequence:
 - If descriptions need regeneration, run:
   ```bash
   docker compose run --rm python-runner \
-    sh -lc "uv run --project . photo-curator describe --description-provider lmstudio --model-name qwen2.5-vl-7b-instruct"
+    sh -lc "uv run --project . photo-curator describe --description-provider lmstudio --model-name qwen3.6-35b-a3b"
 
   # GPU/prod overlay variant
   docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm python-runner \
-    sh -lc "uv run --project . photo-curator describe --description-provider lmstudio --model-name qwen2.5-vl-7b-instruct"
+    sh -lc "uv run --project . photo-curator describe --description-provider lmstudio --model-name qwen3.6-35b-a3b"
   ```
 - `pgdata` volume preserves DB state across container restarts.
 
