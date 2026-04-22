@@ -42,12 +42,10 @@ cp .env.example .env
 ```
 
 Set your photo roots:
-- `PHOTO_ROOT_1=/path/to/photosA`
-- `PHOTO_ROOT_2=/path/to/photosB`
-- `PHOTO_ROOT_3=/path/to/photosC` (optional)
+- `PHOTO_ROOT=/path/to/photos`
 
 Set runner roots list (container paths, CSV):
-- `PHOTO_INGEST_ROOTS=/photos/repo1,/photos/repo2,/photos/repo3`
+- `PHOTO_INGEST_ROOTS=/photos/library`
 
 Optional LM Studio settings (for vision-based descriptions):
 - `PHOTO_CURATOR_DESCRIPTION_PROVIDER=lmstudio`
