@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from photo_curator.config import Settings
 from photo_curator.db import Database
+from photo_curator.pipeline_v1 import _iter_files as _discover_iter_files
 from photo_curator.utils.hashing import sha256_file
 from photo_curator.utils.image import SUPPORTED_EXTENSIONS, get_exif, open_image
 
@@ -22,13 +23,8 @@ class IngestStats:
 
 
 def _iter_files(roots: Iterable[Path], extensions: set[str]) -> Iterable[Path]:
-    for root in roots:
-        for path in root.rglob("*"):
-            if not path.is_file():
-                continue
-            if path.suffix.lower().lstrip(".") not in extensions:
-                continue
-            yield path
+    for _, path in _discover_iter_files(roots, extensions):
+        yield path
 
 
 def _thumbnail_path(settings: Settings, file_hash: str) -> Path:

@@ -12,7 +12,9 @@ from pydantic_settings import BaseSettings, EnvSettingsSource, NoDecode, Setting
 
 
 class CompatEnvSettingsSource(EnvSettingsSource):
-    def prepare_field_value(self, field_name: str, field: Any, value: Any, value_is_complex: bool) -> Any:
+    def prepare_field_value(
+        self, field_name: str, field: Any, value: Any, value_is_complex: bool
+    ) -> Any:
         if field_name == "default_roots" and isinstance(value, str):
             return value
         return super().prepare_field_value(field_name, field, value, value_is_complex)
@@ -25,7 +27,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    db_dsn: str = "postgresql://photo_curator:photo_curator@localhost:5432/photo_curator"
+    db_dsn: str = "postgresql://localhost:5432/photo_curator"
     cache_dir: str = ".cache"
     thumbs_dir: str = ".cache/thumbs"
     log_dir: str = "logs"

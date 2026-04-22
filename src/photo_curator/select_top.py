@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Iterable
-
 import numpy as np
 from loguru import logger
 
@@ -49,7 +47,7 @@ def select_top(
         (settings.clip_model,),
     )
 
-    candidates = []
+    candidates: list[tuple[int, float, np.ndarray]] = []
     for photo_id, sharpness, contrast, clip_hi, aesthetic, embedding in rows:
         score = _combined_score(sharpness, contrast, clip_hi, aesthetic, settings)
         candidates.append((photo_id, score, np.array(embedding, dtype=np.float32)))
@@ -67,14 +65,17 @@ def select_top(
         if len(selected) < top_n:
             selected.append((photo_id, final, vec))
         else:
-            lowest_idx = min(range(len(selected)), key=lambda i: selected[i][1])
+            lowest_idx, _lowest = min(enumerate(selected), key=lambda row: row[1][1])
             if final > selected[lowest_idx][1]:
                 selected[lowest_idx] = (photo_id, final, vec)
 
     selected.sort(key=lambda row: row[1], reverse=True)
     with db.connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("INSERT INTO runs (started_at) VALUES (%s) RETURNING id", (datetime.now(timezone.utc),))
+            cur.execute(
+                "INSERT INTO runs (started_at) VALUES (%s) RETURNING id",
+                (datetime.now(timezone.utc),),
+            )
             run_id = cur.fetchone()[0]
             for rank, (photo_id, final_score, _) in enumerate(selected, start=1):
                 cur.execute(
@@ -84,8 +85,13 @@ def select_top(
                     """,
                     (run_id, photo_id, rank, final_score),
                 )
-            cur.execute("UPDATE runs SET finished_at = %s WHERE id = %s", (datetime.now(timezone.utc), run_id))
+            cur.execute(
+                "UPDATE runs SET finished_at = %s WHERE id = %s",
+                (datetime.now(timezone.utc), run_id),
+            )
             conn.commit()
 
-    logger.info("Selection complete: run_id={run_id}, total={count}", run_id=run_id, count=len(selected))
+    logger.info(
+        "Selection complete: run_id={run_id}, total={count}", run_id=run_id, count=len(selected)
+    )
     return SelectionResult(run_id=run_id, selected=[(pid, score) for pid, score, _ in selected])

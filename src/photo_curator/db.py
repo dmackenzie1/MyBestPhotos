@@ -20,6 +20,12 @@ class Database:
     def close(self) -> None:
         self._pool.close()
 
+    def __enter__(self) -> "Database":
+        return self
+
+    def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
+        self.close()
+
     def check(self) -> None:
         try:
             with self.connection() as conn:
