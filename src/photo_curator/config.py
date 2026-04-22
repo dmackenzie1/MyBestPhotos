@@ -68,7 +68,7 @@ class Settings(BaseSettings):
     @classmethod
     def _validate_ingest_selection_strategy(cls, value: str) -> str:
         normalized = (value or "first").strip().lower()
-        if normalized not in {"first", "random"}:
+        if normalized not in {"first", "random", "newest"}:
             return "first"
         return normalized
 
@@ -135,6 +135,14 @@ def load_settings(config_path: str | None = None) -> LoadedConfig:
         ingest_roots_csv = os.getenv("PHOTO_INGEST_ROOTS")
         if ingest_roots_csv is not None:
             flat["default_roots"] = ingest_roots_csv
+    if "PHOTO_CURATOR_INGEST_LIMIT" not in os.environ:
+        ingest_limit = os.getenv("INGEST_FILE_LIMIT")
+        if ingest_limit is not None:
+            flat["ingest_limit"] = ingest_limit
+    if "PHOTO_CURATOR_INGEST_SELECTION_STRATEGY" not in os.environ:
+        ingest_selection_strategy = os.getenv("INGEST_SELECTION_STRATEGY")
+        if ingest_selection_strategy is not None:
+            flat["ingest_selection_strategy"] = ingest_selection_strategy
 
     settings = Settings(**flat)
     return LoadedConfig(settings=settings, raw=data)

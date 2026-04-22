@@ -59,6 +59,10 @@ Optional ingest throttles (useful for test runs on large libraries):
 - `PHOTO_CURATOR_INGEST_SELECTION_SEED=42` (used when strategy is `random`)
 - `PHOTO_CURATOR_DUPLICATE_CAP_PER_FILENAME_OR_SHA=2` (skip new inserts once either filename or sha256 already appears twice; existing path rows are still updated)
 
+Compatibility aliases (also supported):
+- `INGEST_FILE_LIMIT=500`
+- `INGEST_SELECTION_STRATEGY=first|random|newest`
+
 > Default uses a LAN host URL; if LM Studio runs on the same host as Docker Desktop, `host.docker.internal` is also a good option.
 
 ### 2) Start stack

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import base64
+import heapq
 import random
 import json
 import mimetypes
@@ -94,6 +95,20 @@ def _select_discovery_candidates(
             selected.append(candidate)
         return eligible, selected
 
+    if strategy == "newest":
+        newest_heap: list[tuple[float, str, Path, Path]] = []
+        for root, path in _iter_files(roots, ext_set):
+            eligible += 1
+            mtime = path.stat().st_mtime
+            comparable = (mtime, str(path), root, path)
+            if len(newest_heap) < ingest_limit:
+                heapq.heappush(newest_heap, comparable)
+            else:
+                heapq.heappushpop(newest_heap, comparable)
+
+        newest_heap.sort(reverse=True)
+        return eligible, [(root, path) for _, _, root, path in newest_heap]
+
     rng = random.Random(seed)
     for candidate in _iter_files(roots, ext_set):
         eligible += 1
@@ -113,6 +128,21 @@ def _select_discovery_candidates(
     return eligible, selected
 
 
+def _extract_categories(description_text: str) -> list[str]:
+    lowered = description_text.lower()
+    keyword_map = {
+        "people": ("person", "people", "family", "portrait", "child", "children", "woman", "man"),
+        "pets": ("dog", "cat", "pet", "puppy", "kitten"),
+        "nature": ("tree", "mountain", "beach", "lake", "forest", "sunset", "river"),
+        "indoor": ("indoor", "inside", "room", "kitchen", "living room"),
+        "outdoor": ("outdoor", "outside", "park", "yard", "street"),
+        "event": ("wedding", "birthday", "party", "graduation", "ceremony"),
+    }
+    detected: list[str] = []
+    for category, keywords in keyword_map.items():
+        if any(keyword in lowered for keyword in keywords):
+            detected.append(category)
+    return sorted(detected)
 def _should_skip_due_to_duplicate_cap(
     *,
     existing_path_record: bool,
@@ -627,12 +657,13 @@ def describe_images(
                     path=photo_path,
                 )
 
-        semantic_relevance_score = 0.2
-        categories: list[str] = []
+        semantic_relevance_score = 0.15
+        categories = _extract_categories(description_text)
         if description_text:
-            semantic_relevance_score += min(0.5, len(description_text.split()) / 40.0)
+            semantic_relevance_score += min(0.45, len(description_text.split()) / 40.0)
         if camera_make or camera_model:
             semantic_relevance_score += 0.1
+        semantic_relevance_score += min(0.25, 0.08 * len(categories))
         semantic_relevance_score = max(0.0, min(1.0, semantic_relevance_score))
 
         curation_score = max(
