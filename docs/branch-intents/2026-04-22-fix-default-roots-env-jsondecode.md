@@ -55,6 +55,13 @@
     - Confirm the startup path no longer throws `SettingsError`.
   - Result:
     - Validation blocked in this environment due to network tunnel failures while fetching dependencies from PyPI.
+- Attempt 3:
+  - Change made:
+    - Added `CompatEnvSettingsSource` in `src/photo_curator/config.py` and wired it through `settings_customise_sources` to bypass env-source JSON decoding for `default_roots`.
+  - Why this was tried:
+    - Add a compatibility guard in case `NoDecode` behavior differs across `pydantic-settings` versions/environments and still attempts early JSON decoding.
+  - Result:
+    - Local direct validation with `python` succeeds for plain path, JSON list, CSV string, and empty string values.
 
 ## What went right (mandatory)
 - Parsing fix is localized to one field and preserves existing accepted formats.
@@ -64,9 +71,11 @@
 
 ## Validation (mandatory)
 - Commands run:
-  - `uv run --project . python - <<'PY' ... PY`
+  - `python - <<'PY' ... PY`
+  - `uv run --project . ruff check src/photo_curator/config.py`
 - Observed results:
-  - Command could not complete due to `Failed to fetch: https://pypi.org/simple/tqdm/` (network/tunnel error), so runtime verification remains pending in this environment.
+  - Direct `python` validation completed and showed correct coercion outcomes for supported env formats.
+  - `uv run` command could not complete due to `Failed to fetch: https://pypi.org/simple/pgvector/` (network/tunnel error), so linting via project env remains blocked here.
 
 ## Follow-up
 - Next branch goals:

@@ -8,7 +8,14 @@ import tomllib
 from typing import Annotated, Any
 
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+from pydantic_settings import BaseSettings, EnvSettingsSource, NoDecode, SettingsConfigDict
+
+
+class CompatEnvSettingsSource(EnvSettingsSource):
+    def prepare_field_value(self, field_name: str, field: Any, value: Any, value_is_complex: bool) -> Any:
+        if field_name == "default_roots" and isinstance(value, str):
+            return value
+        return super().prepare_field_value(field_name, field, value, value_is_complex)
 
 
 class Settings(BaseSettings):
@@ -75,7 +82,8 @@ class Settings(BaseSettings):
         dotenv_settings,
         file_secret_settings,
     ):
-        return (env_settings, dotenv_settings, init_settings, file_secret_settings)
+        compat_env_settings = CompatEnvSettingsSource(settings_cls)
+        return (compat_env_settings, dotenv_settings, init_settings, file_secret_settings)
 
 
 @dataclass(frozen=True)
