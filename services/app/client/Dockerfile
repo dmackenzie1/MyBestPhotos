@@ -16,7 +16,6 @@ RUN npm run -w packages/shared build && npm run -w services/app/client build
 FROM node:22-alpine
 WORKDIR /app
 COPY --from=build /workspace/services/app/client/dist ./dist
-COPY --from=build /workspace/services/app/client/package.json ./package.json
-RUN npm install --omit=dev vite
+RUN npm init -y && npm install --omit=dev vite
 EXPOSE 4173
-CMD ["npx", "vite", "preview", "--host", "0.0.0.0", "--port", "4173"]
+CMD ["./node_modules/.bin/vite", "preview", "--host", "0.0.0.0", "--port", "4173"]
