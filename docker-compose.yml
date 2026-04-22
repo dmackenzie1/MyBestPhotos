@@ -32,6 +32,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      postgres-migrations:
+        condition: service_completed_successfully
     volumes:
       - ${PHOTO_INGEST_ROOT:-./sample-photos}:/photos/library:ro
       - ./data/cache/thumbs:/data/cache/thumbs:ro
@@ -90,6 +92,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      postgres-migrations:
+        condition: service_completed_successfully
       app-server:
         condition: service_healthy
     extra_hosts:
@@ -102,6 +106,23 @@ services:
     command: >
       sh -lc "uv sync --project . &&
               uv run --project . photo-curator pipeline"
+
+  postgres-migrations:
+    image: pgvector/pgvector:pg16
+    container_name: mybestphotos-postgres-migrations
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-photo_curator}
+      POSTGRES_USER: ${POSTGRES_USER:-photo_curator}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-photo_curator}
+      PGHOST: postgres
+      PGPORT: 5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./services/postgres:/migrations:ro
+    command: ["bash", "/migrations/apply-migrations.sh"]
+    restart: "no"
 
 volumes:
   pgdata:
