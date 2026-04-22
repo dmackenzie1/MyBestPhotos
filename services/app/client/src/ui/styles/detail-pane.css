@@ -1,0 +1,35 @@
+.detail { padding: 14px; }
+.preview { width: 100%; border-radius: 10px; border: 1px solid #2f4b79; }
+
+.meta-list {
+  margin: 10px 0;
+  display: grid;
+  gap: 8px;
+}
+
+.meta-list div { display: flex; justify-content: space-between; gap: 8px; }
+.meta-list span { color: var(--soft); font-size: 12px; }
+.meta-list strong { font-size: 13px; text-align: right; }
+
+.chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.chip {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid #2d4f80;
+  background: #0d1f39;
+}
+
+.actions { display: flex; gap: 8px; margin: 8px 0; }
+.actions button {
+  flex: 1;
+  background: linear-gradient(180deg, #153567, #0f2851);
+  border: 1px solid #2f5a97;
+  color: #dbeafe;
+  border-radius: 8px;
+  padding: 9px 10px;
+  cursor: pointer;
+}
+
+.actions button:hover { filter: brightness(1.08); }
+textarea { min-height: 110px; margin-top: 10px; }

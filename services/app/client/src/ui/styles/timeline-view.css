@@ -1,0 +1,18 @@
+.timeline { margin: 12px; padding: 16px; }
+.timeline-group { margin-top: 16px; }
+.timeline-group h3 { margin: 0 0 10px; }
+.timeline-group h3 small { color: var(--soft); margin-left: 8px; font-weight: 500; }
+.timeline-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+
+.timeline-item {
+  border: 1px solid #20395e;
+  background: #0a1629;
+  border-radius: 10px;
+  color: var(--soft);
+  overflow: hidden;
+  text-align: left;
+  cursor: pointer;
+}
+
+.timeline-item img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.timeline-item span { display: block; padding: 8px; font-size: 12px; }

@@ -1,0 +1,37 @@
+.topbar {
+  height: 74px;
+  display: grid;
+  grid-template-columns: 220px 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(5, 12, 23, 0.95);
+}
+
+.brand { font-size: 30px; font-weight: 700; color: #60a5fa; letter-spacing: 0.4px; }
+
+.search {
+  background: #0a162b;
+  border: 1px solid #1e335b;
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--text);
+}
+
+.nav-btn {
+  background: transparent;
+  border: none;
+  color: var(--soft);
+  margin-left: 8px;
+  font-size: 15px;
+  padding: 10px 2px;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.nav-btn.active,
+.nav-btn:hover {
+  color: #e5f0ff;
+  border-bottom-color: var(--accent);
+}

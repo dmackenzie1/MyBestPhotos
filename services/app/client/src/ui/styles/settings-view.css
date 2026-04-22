@@ -1,0 +1,26 @@
+.settings { margin: 12px; padding: 16px; }
+
+.settings label {
+  display: block;
+  margin-top: 14px;
+  color: var(--soft);
+  font-size: 12px;
+}
+
+.settings select {
+  width: 100%;
+  margin-top: 6px;
+  background: #081328;
+  border: 1px solid #2a456f;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  color: var(--text);
+}
