@@ -110,6 +110,25 @@ const labelPatchSchema = z.object({
   notes: z.string().nullable().optional(),
 });
 
+type PhotoListRow = {
+  id: number;
+  source_root: string;
+  relative_path: string;
+  filename: string;
+  photo_taken_at: string | Date | null;
+  camera_make: string | null;
+  camera_model: string | null;
+  print_score_12x18: number | null;
+  print_score_8x10: number | null;
+  print_score_6x8: number | null;
+  description_text: string | null;
+  keep_flag: boolean | null;
+  reject_flag: boolean | null;
+  favorite_flag: boolean | null;
+};
+// Intent note: explicit row typing here fixes TS7006
+// ("Parameter 'row' implicitly has an 'any' type") during app-server builds.
+
 function resolveFilePath(sourceRoot: string, relativePath: string): string {
   const root = path.resolve(sourceRoot);
   const full = path.resolve(root, relativePath);
@@ -208,7 +227,7 @@ app.get("/api/v1/photos", async (req, res) => {
   `;
 
   const rows = await pool.query(sql, params);
-  const items: PhotoListItem[] = rows.rows.map((row) => ({
+  const items: PhotoListItem[] = (rows.rows as PhotoListRow[]).map((row) => ({
     id: row.id,
     sourceRoot: row.source_root,
     relativePath: row.relative_path,
