@@ -19,6 +19,7 @@ export type PhotoListItem = {
   printScore12x18: number | null;
   printScore8x10: number | null;
   printScore6x8: number | null;
+  curationScore: number | null;
   descriptionText: string | null;
   keepFlag: boolean | null;
   rejectFlag: boolean | null;
@@ -45,6 +46,9 @@ export type PhotoDetail = {
     contrastScore: number | null;
     entropyScore: number | null;
     noiseScore: number | null;
+    technicalQualityScore: number | null;
+    semanticRelevanceScore: number | null;
+    curationScore: number | null;
     printScore6x8: number | null;
     printScore8x10: number | null;
     printScore12x18: number | null;

@@ -24,6 +24,7 @@ const mockList: PhotoListItem[] = [
     printScore12x18: 0.92,
     printScore8x10: 0.94,
     printScore6x8: 0.96,
+    curationScore: 0.93,
     descriptionText: "Young girl smiling and hugging a golden retriever outdoors.",
     keepFlag: true,
     rejectFlag: false,
@@ -40,6 +41,7 @@ const mockList: PhotoListItem[] = [
     printScore12x18: 0.86,
     printScore8x10: 0.88,
     printScore6x8: 0.9,
+    curationScore: 0.87,
     descriptionText: "Family portrait in warm evening light in a backyard.",
     keepFlag: null,
     rejectFlag: null,
@@ -72,6 +74,9 @@ const mockDetail = (id: number): PhotoDetail => {
       contrastScore: 0.84,
       entropyScore: 0.82,
       noiseScore: 0.89,
+      technicalQualityScore: 0.92,
+      semanticRelevanceScore: 0.85,
+      curationScore: selected.curationScore,
       printScore6x8: selected.printScore6x8,
       printScore8x10: selected.printScore8x10,
       printScore12x18: selected.printScore12x18,
@@ -93,12 +98,23 @@ const listQuerySchema = z.object({
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
   cameraMake: z.string().optional(),
+  cameraModel: z.string().optional(),
+  category: z.string().optional(),
   minPrintScore12x18: z.coerce.number().optional(),
   status: z.enum(["all", "keep", "favorite", "reject", "unreviewed"]).default("all"),
   page: z.coerce.number().min(1).default(1),
   pageSize: z.coerce.number().min(1).max(200).default(40),
-  sort: z.enum(["date_desc", "date_asc", "print_12x18_desc", "filename_asc"]).default("date_desc"),
+  sort: z
+    .enum(["date_desc", "date_asc", "print_12x18_desc", "curation_desc", "filename_asc"])
+    .default("date_desc"),
 });
+
+type ListQuery = z.infer<typeof listQuerySchema>;
+
+type SqlFilters = {
+  whereSql: string;
+  params: Array<string | number>;
+};
 
 const labelPatchSchema = z.object({
   keepFlag: z.boolean().nullable().optional(),
@@ -121,13 +137,12 @@ type PhotoListRow = {
   print_score_12x18: number | null;
   print_score_8x10: number | null;
   print_score_6x8: number | null;
+  curation_score: number | null;
   description_text: string | null;
   keep_flag: boolean | null;
   reject_flag: boolean | null;
   favorite_flag: boolean | null;
 };
-// Intent note: explicit row typing here fixes TS7006
-// ("Parameter 'row' implicitly has an 'any' type") during app-server builds.
 
 function resolveFilePath(sourceRoot: string, relativePath: string): string {
   const root = path.resolve(sourceRoot);
@@ -138,29 +153,15 @@ function resolveFilePath(sourceRoot: string, relativePath: string): string {
   return full;
 }
 
-app.get("/api/v1/health", (_req, res) => {
-  res.json({ ok: true, stubMode: STUB_MODE });
-});
-
-app.get("/api/v1/photos", async (req, res) => {
-  if (STUB_MODE) {
-    res.json({ items: mockList, page: 1, pageSize: mockList.length });
-    return;
-  }
-
-  const parsed = listQuerySchema.safeParse(req.query);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.flatten() });
-    return;
-  }
-  const query = parsed.data;
-
+function buildPhotoFilters(query: ListQuery): SqlFilters {
   const where: string[] = [];
   const params: Array<string | number> = [];
 
   if (query.q) {
     params.push(query.q);
-    where.push(`to_tsvector('english', coalesce(fd.description_text, '')) @@ plainto_tsquery('english', $${params.length})`);
+    where.push(
+      `to_tsvector('english', coalesce(fd.description_text, '')) @@ plainto_tsquery('english', $${params.length})`,
+    );
   }
   if (query.dateFrom) {
     params.push(query.dateFrom);
@@ -174,6 +175,20 @@ app.get("/api/v1/photos", async (req, res) => {
     params.push(query.cameraMake);
     where.push(`f.camera_make = $${params.length}`);
   }
+  if (query.cameraModel) {
+    params.push(query.cameraModel);
+    where.push(`f.camera_model = $${params.length}`);
+  }
+  if (query.category) {
+    params.push(query.category);
+    where.push(
+      `EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(coalesce(fd.description_json->'categories', '[]'::jsonb)) AS c(category)
+        WHERE c.category = $${params.length}
+      )`,
+    );
+  }
   if (typeof query.minPrintScore12x18 === "number") {
     params.push(query.minPrintScore12x18);
     where.push(`coalesce(fm.print_score_12x18, 0) >= $${params.length}`);
@@ -184,21 +199,49 @@ app.get("/api/v1/photos", async (req, res) => {
   if (query.status === "reject") where.push("fl.reject_flag = true");
   if (query.status === "unreviewed") where.push("fl.file_id is null");
 
-  const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  return {
+    whereSql: where.length ? `WHERE ${where.join(" AND ")}` : "",
+    params,
+  };
+}
+
+app.get("/api/v1/health", (_req, res) => {
+  res.json({ ok: true, stubMode: STUB_MODE });
+});
+
+app.get("/api/v1/photos", async (req, res) => {
+  if (STUB_MODE) {
+    res.json({
+      items: mockList,
+      page: 1,
+      pageSize: mockList.length,
+      total: mockList.length,
+      hasMore: false,
+    });
+    return;
+  }
+
+  const parsed = listQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const query = parsed.data;
+
+  const { whereSql, params } = buildPhotoFilters(query);
 
   const orderBy =
     query.sort === "date_asc"
       ? "f.photo_taken_at ASC NULLS LAST"
       : query.sort === "print_12x18_desc"
         ? "fm.print_score_12x18 DESC NULLS LAST"
+        : query.sort === "curation_desc"
+          ? "fm.curation_score DESC NULLS LAST"
         : query.sort === "filename_asc"
           ? "f.filename ASC"
           : "f.photo_taken_at DESC NULLS LAST";
 
-  params.push(query.pageSize);
-  const limitIdx = params.length;
-  params.push((query.page - 1) * query.pageSize);
-  const offsetIdx = params.length;
+  const listParams = [...params, query.pageSize, (query.page - 1) * query.pageSize];
 
   const sql = `
     SELECT
@@ -212,6 +255,7 @@ app.get("/api/v1/photos", async (req, res) => {
       fm.print_score_12x18,
       fm.print_score_8x10,
       fm.print_score_6x8,
+      fm.curation_score,
       fd.description_text,
       fl.keep_flag,
       fl.reject_flag,
@@ -222,11 +266,22 @@ app.get("/api/v1/photos", async (req, res) => {
     LEFT JOIN file_labels fl ON fl.file_id = f.id
     ${whereSql}
     ORDER BY ${orderBy}
-    LIMIT $${limitIdx}
-    OFFSET $${offsetIdx}
+    LIMIT $${params.length + 1}
+    OFFSET $${params.length + 2}
   `;
 
-  const rows = await pool.query(sql, params);
+  const countSql = `
+    SELECT count(*)::int AS total
+    FROM files f
+    LEFT JOIN file_metrics fm ON fm.file_id = f.id
+    LEFT JOIN file_descriptions fd ON fd.file_id = f.id
+    LEFT JOIN file_labels fl ON fl.file_id = f.id
+    ${whereSql}
+  `;
+
+  const [rows, countRows] = await Promise.all([pool.query(sql, listParams), pool.query(countSql, params)]);
+  const total = Number(countRows.rows[0]?.total || 0);
+
   const items: PhotoListItem[] = (rows.rows as PhotoListRow[]).map((row) => ({
     id: row.id,
     sourceRoot: row.source_root,
@@ -238,13 +293,20 @@ app.get("/api/v1/photos", async (req, res) => {
     printScore12x18: row.print_score_12x18,
     printScore8x10: row.print_score_8x10,
     printScore6x8: row.print_score_6x8,
+    curationScore: row.curation_score,
     descriptionText: row.description_text,
     keepFlag: row.keep_flag,
     rejectFlag: row.reject_flag,
     favoriteFlag: row.favorite_flag,
   }));
 
-  res.json({ items, page: query.page, pageSize: query.pageSize });
+  res.json({
+    items,
+    page: query.page,
+    pageSize: query.pageSize,
+    total,
+    hasMore: query.page * query.pageSize < total,
+  });
 });
 
 app.get("/api/v1/photos/:id", async (req, res) => {
@@ -266,6 +328,7 @@ app.get("/api/v1/photos/:id", async (req, res) => {
         f.photo_taken_at, f.photo_taken_at_source, f.camera_make, f.camera_model,
         fd.description_text, fd.description_json,
         fm.blur_score, fm.brightness_score, fm.contrast_score, fm.entropy_score, fm.noise_score,
+        fm.technical_quality_score, fm.semantic_relevance_score, fm.curation_score,
         fm.print_score_6x8, fm.print_score_8x10, fm.print_score_12x18,
         fl.keep_flag, fl.reject_flag, fl.favorite_flag,
         fl.print_candidate_6x8, fl.print_candidate_8x10, fl.print_candidate_12x18,
@@ -305,6 +368,9 @@ app.get("/api/v1/photos/:id", async (req, res) => {
       contrastScore: row.contrast_score,
       entropyScore: row.entropy_score,
       noiseScore: row.noise_score,
+      technicalQualityScore: row.technical_quality_score,
+      semanticRelevanceScore: row.semantic_relevance_score,
+      curationScore: row.curation_score,
       printScore6x8: row.print_score_6x8,
       printScore8x10: row.print_score_8x10,
       printScore12x18: row.print_score_12x18,
@@ -410,17 +476,19 @@ app.get("/api/v1/photos/:id/image", async (req, res) => {
 app.get("/api/v1/facets", async (_req, res) => {
   if (STUB_MODE) {
     res.json({
-      camera: [{ camera_make: "Canon", count: 2 }],
+      camera: [{ camera_make: "Canon", camera_model: "EOS R6", count: 2 }],
+      categories: [{ category: "people", count: 2 }],
       statuses: { keep: 1, favorite: 1, reject: 0, unreviewed: 1 },
     });
     return;
   }
 
-  const camera = await pool.query(
-    "SELECT camera_make, count(*)::int AS count FROM files GROUP BY camera_make ORDER BY count DESC",
-  );
-  const statuses = await pool.query(
-    `
+  const [camera, statuses, categories] = await Promise.all([
+    pool.query(
+      "SELECT camera_make, camera_model, count(*)::int AS count FROM files GROUP BY camera_make, camera_model ORDER BY count DESC",
+    ),
+    pool.query(
+      `
       SELECT
         count(*) FILTER (WHERE fl.keep_flag = true)::int AS keep,
         count(*) FILTER (WHERE fl.favorite_flag = true)::int AS favorite,
@@ -429,8 +497,22 @@ app.get("/api/v1/facets", async (_req, res) => {
       FROM files f
       LEFT JOIN file_labels fl ON fl.file_id = f.id
     `,
-  );
-  res.json({ camera: camera.rows, statuses: statuses.rows[0] ?? {} });
+    ),
+    pool.query(
+      `
+      SELECT category, count(*)::int AS count
+      FROM (
+        SELECT jsonb_array_elements_text(coalesce(fd.description_json->'categories', '[]'::jsonb)) AS category
+        FROM file_descriptions fd
+      ) categories
+      GROUP BY category
+      ORDER BY count DESC, category ASC
+      LIMIT 30
+    `,
+    ),
+  ]);
+
+  res.json({ camera: camera.rows, categories: categories.rows, statuses: statuses.rows[0] ?? {} });
 });
 
 const port = Number(process.env.PORT || 3001);

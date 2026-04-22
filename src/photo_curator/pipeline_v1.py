@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import base64
+import random
 import json
 import mimetypes
 from pathlib import Path
@@ -43,6 +44,8 @@ def _sanitize_exif(obj: object) -> object:
 
 @dataclass
 class DiscoverStats:
+    eligible: int = 0
+    selected: int = 0
     scanned: int = 0
     upserted: int = 0
     skipped: int = 0
@@ -72,6 +75,42 @@ def _iter_files(roots: Iterable[Path], extensions: set[str]) -> Iterable[tuple[P
             if path.suffix.lower().lstrip(".") not in extensions:
                 continue
             yield root, path
+
+
+def _select_discovery_candidates(
+    roots: list[Path],
+    ext_set: set[str],
+    *,
+    ingest_limit: int,
+    strategy: str,
+    seed: int,
+) -> tuple[int, list[tuple[Path, Path]]]:
+    selected: list[tuple[Path, Path]] = []
+    eligible = 0
+
+    if ingest_limit <= 0:
+        for candidate in _iter_files(roots, ext_set):
+            eligible += 1
+            selected.append(candidate)
+        return eligible, selected
+
+    rng = random.Random(seed)
+    for candidate in _iter_files(roots, ext_set):
+        eligible += 1
+        if strategy == "random":
+            if len(selected) < ingest_limit:
+                selected.append(candidate)
+                continue
+
+            replacement_idx = rng.randint(0, eligible - 1)
+            if replacement_idx < ingest_limit:
+                selected[replacement_idx] = candidate
+            continue
+
+        if len(selected) < ingest_limit:
+            selected.append(candidate)
+
+    return eligible, selected
 
 
 def _parse_datetime_from_candidate(value: str) -> datetime | None:
@@ -198,7 +237,24 @@ def discover_files(
     ext_set = {ext.lower().lstrip(".") for ext in extensions} or SUPPORTED_EXTENSIONS
     stats = DiscoverStats()
 
-    for root, path in tqdm(_iter_files(roots, ext_set), desc="Discovering"):
+    stats.eligible, selected_candidates = _select_discovery_candidates(
+        roots,
+        ext_set,
+        ingest_limit=settings.ingest_limit,
+        strategy=settings.ingest_selection_strategy,
+        seed=settings.ingest_selection_seed,
+    )
+    stats.selected = len(selected_candidates)
+
+    logger.info(
+        "Discover candidate selection: eligible={eligible} selected={selected} limit={limit} strategy={strategy}",
+        eligible=stats.eligible,
+        selected=stats.selected,
+        limit=settings.ingest_limit,
+        strategy=settings.ingest_selection_strategy,
+    )
+
+    for root, path in tqdm(selected_candidates, desc="Discovering"):
         stats.scanned += 1
         relative_path = path.relative_to(root).as_posix()
 
@@ -261,11 +317,11 @@ def discover_files(
                         sha256_file(path),
                         width,
                         height,
-                exif.get("Orientation"),
-                taken_at,
-                taken_source,
-                _sanitize_str(exif.get("Make")),
-                _sanitize_str(exif.get("Model")),
+                        exif.get("Orientation"),
+                        taken_at,
+                        taken_source,
+                        _sanitize_str(exif.get("Make")),
+                        _sanitize_str(exif.get("Model")),
                         gps_lat,
                         gps_lon,
                         exif_json_str,
@@ -316,7 +372,7 @@ def _safe_norm(value: float, low: float, high: float) -> float:
 
 def _compute_metrics(
     image: np.ndarray,
-) -> tuple[float, float, float, float, float, float, float, float]:
+) -> tuple[float, float, float, float, float, float, float, float, float]:
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     lap_var = float(cv2.Laplacian(gray, cv2.CV_64F).var())
@@ -335,15 +391,20 @@ def _compute_metrics(
     noise = float(np.std(gray - cv2.GaussianBlur(gray, (3, 3), 0)) / 255.0)
     noise_score = 1.0 - _safe_norm(noise, 0.02, 0.22)
 
-    base_quality = (
-        (0.35 * (1.0 - blur_score))
-        + (0.25 * contrast_score)
-        + (0.2 * brightness_score)
-        + (0.2 * noise_score)
+    technical_quality_score = max(
+        0.0,
+        min(
+            1.0,
+            (0.30 * (1.0 - blur_score))
+            + (0.20 * contrast_score)
+            + (0.20 * brightness_score)
+            + (0.15 * entropy)
+            + (0.15 * noise_score),
+        ),
     )
-    print_6x8 = max(0.0, min(1.0, base_quality))
-    print_8x10 = max(0.0, min(1.0, base_quality * 0.95))
-    print_12x18 = max(0.0, min(1.0, base_quality * 0.9))
+    print_6x8 = max(0.0, min(1.0, technical_quality_score))
+    print_8x10 = max(0.0, min(1.0, technical_quality_score * 0.95))
+    print_12x18 = max(0.0, min(1.0, technical_quality_score * 0.9))
 
     return (
         blur_score,
@@ -351,6 +412,7 @@ def _compute_metrics(
         contrast_score,
         entropy,
         noise_score,
+        technical_quality_score,
         print_6x8,
         print_8x10,
         print_12x18,
@@ -376,6 +438,7 @@ def score_metrics(db: Database, max_size: int = 1024) -> StageStats:
             contrast_score,
             entropy_score,
             noise_score,
+            technical_quality_score,
             print_6x8,
             print_8x10,
             print_12x18,
@@ -386,14 +449,15 @@ def score_metrics(db: Database, max_size: int = 1024) -> StageStats:
                 """
                 INSERT INTO file_metrics (
                   file_id, blur_score, brightness_score, contrast_score, entropy_score, noise_score,
-                  print_score_6x8, print_score_8x10, print_score_12x18
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                  technical_quality_score, print_score_6x8, print_score_8x10, print_score_12x18
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (file_id) DO UPDATE SET
                   blur_score = EXCLUDED.blur_score,
                   brightness_score = EXCLUDED.brightness_score,
                   contrast_score = EXCLUDED.contrast_score,
                   entropy_score = EXCLUDED.entropy_score,
                   noise_score = EXCLUDED.noise_score,
+                  technical_quality_score = EXCLUDED.technical_quality_score,
                   print_score_6x8 = EXCLUDED.print_score_6x8,
                   print_score_8x10 = EXCLUDED.print_score_8x10,
                   print_score_12x18 = EXCLUDED.print_score_12x18,
@@ -406,6 +470,7 @@ def score_metrics(db: Database, max_size: int = 1024) -> StageStats:
                     contrast_score,
                     entropy_score,
                     noise_score,
+                    technical_quality_score,
                     print_6x8,
                     print_8x10,
                     print_12x18,
@@ -420,7 +485,9 @@ def score_metrics(db: Database, max_size: int = 1024) -> StageStats:
             )
             stats.processed += 1
         except Exception as exc:
-            logger.error("Metrics DB insert failed for file_id={id}: {error}", id=file_id, error=str(exc))
+            logger.error(
+                "Metrics DB insert failed for file_id={id}: {error}", id=file_id, error=str(exc)
+            )
 
     logger.info("Metric scoring complete: processed={count}", count=stats.processed)
     return stats
@@ -446,7 +513,8 @@ def describe_images(
     rows = db.fetchall(
         """
         SELECT f.id, f.filename, f.source_root, f.relative_path, f.camera_make, f.camera_model, f.photo_taken_at,
-               m.print_score_12x18, m.blur_score, m.brightness_score, m.contrast_score
+               m.print_score_12x18, m.blur_score, m.brightness_score, m.contrast_score,
+               m.technical_quality_score
         FROM files f
         LEFT JOIN file_metrics m ON m.file_id = f.id
         ORDER BY f.id
@@ -467,6 +535,7 @@ def describe_images(
             blur_score,
             brightness_score,
             contrast_score,
+            technical_quality_score,
         ) = row
 
         logger.info("Describing file: file_id={id} filename={name}", id=file_id, name=filename)
@@ -513,6 +582,41 @@ def describe_images(
                     path=photo_path,
                 )
 
+        semantic_relevance_score = 0.2
+        categories: list[str] = []
+        if description_text:
+            semantic_relevance_score += min(0.5, len(description_text.split()) / 40.0)
+        if camera_make or camera_model:
+            semantic_relevance_score += 0.1
+        semantic_relevance_score = max(0.0, min(1.0, semantic_relevance_score))
+
+        curation_score = max(
+            0.0,
+            min(
+                1.0,
+                (0.7 * (technical_quality_score or print_12x18 or 0.0))
+                + (0.3 * semantic_relevance_score),
+            ),
+        )
+
+        try:
+            db.execute(
+                """
+                UPDATE file_metrics
+                SET semantic_relevance_score = %s,
+                    curation_score = %s,
+                    updated_at = now()
+                WHERE file_id = %s
+                """,
+                (semantic_relevance_score, curation_score, file_id),
+            )
+        except Exception as exc:
+            logger.warning(
+                "Could not update semantic/curation score for file_id={id}: {error}",
+                id=file_id,
+                error=str(exc),
+            )
+
         if lmstudio_used:
             logger.info("Description generated via LM Studio: file_id={id}", id=file_id)
         else:
@@ -529,11 +633,14 @@ def describe_images(
             "camera_model": camera_model,
             "scores": {
                 "print_12x18": print_12x18,
+                "technical_quality": technical_quality_score,
+                "semantic_relevance": semantic_relevance_score,
+                "curation": curation_score,
                 "blur": blur_score,
                 "brightness": brightness_score,
                 "contrast": contrast_score,
             },
-            "categories": [],
+            "categories": categories,
         }
 
         try:
@@ -556,7 +663,9 @@ def describe_images(
             )
             stats.processed += 1
         except Exception as exc:
-            logger.error("Description DB insert failed for file_id={id}: {error}", id=file_id, error=str(exc))
+            logger.error(
+                "Description DB insert failed for file_id={id}: {error}", id=file_id, error=str(exc)
+            )
 
     logger.info(
         "Description stage complete: processed={count}, provider={provider}",
