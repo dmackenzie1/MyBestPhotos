@@ -5,7 +5,12 @@ Top-level Docker Compose orchestrates:
 - `services/app/server` (Node API)
 - `services/app/client` (React UI)
 - `services/nginx` (reverse proxy)
-- `python-runner` utility container (ingestion pipeline)
+- `python-runner` utility container (base ingest pass)
+- `python-advanced-runner` utility container (advanced enrichment pass)
+
+Runner flow is intentionally split into:
+- **Base ingest pass** for canonical file facts.
+- **Advanced enrichment pass** for rerunnable/model-based metadata (starting with NIMA-style scoring).
 
 ## Why this structure
 - Keeps API/client together under `services/app`.

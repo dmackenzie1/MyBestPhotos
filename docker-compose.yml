@@ -105,7 +105,40 @@ services:
       - uv-cache:/root/.cache/uv
     command: >
       sh -lc "uv sync --project . &&
-              uv run --project . photo-curator pipeline"
+              uv run --project . photo-curator base-ingest"
+
+  python-advanced-runner:
+    image: ghcr.io/astral-sh/uv:python3.12-bookworm
+    container_name: mybestphotos-python-advanced-runner
+    working_dir: /workspace
+    environment:
+      PHOTO_CURATOR_DB_DSN: postgresql://${POSTGRES_USER:-photo_curator}:${POSTGRES_PASSWORD:-photo_curator}@postgres:5432/${POSTGRES_DB:-photo_curator}
+      PHOTO_CURATOR_DEFAULT_ROOTS: /photos/library
+      PHOTO_CURATOR_CACHE_DIR: /data/cache
+      PHOTO_CURATOR_THUMBS_DIR: /data/cache/thumbs
+      PHOTO_CURATOR_DESCRIPTION_PROVIDER: ${PHOTO_CURATOR_DESCRIPTION_PROVIDER:-basic}
+      PHOTO_CURATOR_LMSTUDIO_BASE_URL: ${PHOTO_CURATOR_LMSTUDIO_BASE_URL:-http://host.docker.internal:1234/v1}
+      PHOTO_CURATOR_LMSTUDIO_MODEL: ${PHOTO_CURATOR_LMSTUDIO_MODEL:-qwen3.6-35b-a3b}
+      PHOTO_CURATOR_LMSTUDIO_TIMEOUT_SECONDS: ${PHOTO_CURATOR_LMSTUDIO_TIMEOUT_SECONDS:-60}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      postgres-bootstrap:
+        condition: service_completed_successfully
+      app-server:
+        condition: service_healthy
+      python-runner:
+        condition: service_completed_successfully
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./:/workspace
+      - ${PHOTO_INGEST_ROOT:-./sample-photos}:/photos/library:ro
+      - ./data/cache:/data/cache
+      - uv-cache:/root/.cache/uv
+    command: >
+      sh -lc "uv sync --project . &&
+              uv run --project . photo-curator advanced-runner"
 
   postgres-bootstrap:
     image: pgvector/pgvector:pg16

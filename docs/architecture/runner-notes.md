@@ -4,12 +4,34 @@ Runner participates in default stack startup (`docker compose up`) and is also r
 
 ```bash
 docker compose run --rm python-runner
+docker compose run --rm python-advanced-runner
 ```
 
-Stages:
-1. discover files
-2. score deterministic metrics
-3. generate descriptions
+Pipeline now has two practical passes:
+
+1. **Base ingest**
+   - discover files
+   - upsert stable file truth into `files`
+   - compute deterministic quality metrics into `file_metrics`
+2. **Advanced runners**
+   - run enrichment passes that may improve over time
+   - current runner includes NIMA-style aesthetic scoring and descriptions
+   - designed to be rerunnable/backfillable
+
+Current CLI alignment:
+- `photo-curator base-ingest` for canonical file ingest.
+- `photo-curator score-nima` for standalone NIMA-style backfills.
+- `photo-curator advanced-runner` for NIMA + optional description enrichment.
+- `photo-curator pipeline` runs base ingest + advanced runners in one command.
+
+## Compose runtime split
+
+- `python-runner` container executes `photo-curator base-ingest`.
+- `python-advanced-runner` container executes `photo-curator advanced-runner`.
+- Advanced runner container mounts the same source photo root (`/photos/library`) and waits for
+  successful completion of base ingest before running.
+- GPU requirements are isolated to the production overlay (`docker-compose.prod.yml`) for
+  `python-advanced-runner`.
 
 ## Environment
 - Uses `uv` inside container.
@@ -25,6 +47,14 @@ Stages:
 When provider is `lmstudio`, the description stage sends each image to LM Studio's
 OpenAI-compatible `chat/completions` endpoint and stores returned captions in
 `file_descriptions.description_text`.
+
+## NIMA-style scoring note
+
+- `nima_score` is treated as advanced derived metadata, not raw file truth.
+- Initial implementation is intentionally lightweight (`nima_style_v0`) so we can
+  iterate without introducing a heavyweight model-serving dependency.
+- The runner processes rows missing `nima_score` first (or all rows with `--refresh-all`)
+  and records `nima_model_version` + `advanced_metadata_updated_at` for future backfills.
 
 ## GPU note
 If adding PyTorch model inference later, pin CUDA/ROCm builds explicitly in docs and image tags.

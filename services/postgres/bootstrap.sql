@@ -41,6 +41,11 @@ CREATE TABLE IF NOT EXISTS file_metrics (
   technical_quality_score DOUBLE PRECISION,
   semantic_relevance_score DOUBLE PRECISION,
   curation_score DOUBLE PRECISION,
+  nima_score DOUBLE PRECISION,
+  aesthetic_score DOUBLE PRECISION,
+  keep_score DOUBLE PRECISION,
+  nima_model_version TEXT,
+  advanced_metadata_updated_at TIMESTAMPTZ,
   print_score_6x8 DOUBLE PRECISION,
   print_score_8x10 DOUBLE PRECISION,
   print_score_12x18 DOUBLE PRECISION,
@@ -85,4 +90,10 @@ USING GIN (to_tsvector('english', COALESCE(description_text, '')));
 ALTER TABLE file_metrics ADD COLUMN IF NOT EXISTS technical_quality_score DOUBLE PRECISION;
 ALTER TABLE file_metrics ADD COLUMN IF NOT EXISTS semantic_relevance_score DOUBLE PRECISION;
 ALTER TABLE file_metrics ADD COLUMN IF NOT EXISTS curation_score DOUBLE PRECISION;
+ALTER TABLE file_metrics ADD COLUMN IF NOT EXISTS nima_score DOUBLE PRECISION;
+ALTER TABLE file_metrics ADD COLUMN IF NOT EXISTS aesthetic_score DOUBLE PRECISION;
+ALTER TABLE file_metrics ADD COLUMN IF NOT EXISTS keep_score DOUBLE PRECISION;
+ALTER TABLE file_metrics ADD COLUMN IF NOT EXISTS nima_model_version TEXT;
+ALTER TABLE file_metrics ADD COLUMN IF NOT EXISTS advanced_metadata_updated_at TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS idx_file_metrics_curation_score ON file_metrics(curation_score);
+CREATE INDEX IF NOT EXISTS idx_file_metrics_nima_score ON file_metrics(nima_score);

@@ -69,10 +69,10 @@ Compatibility aliases (also supported):
 
 ```bash
 # base/default stack
-docker compose up -d postgres app-server app-client python-runner nginx
+docker compose up -d postgres app-server app-client python-runner python-advanced-runner nginx
 
 # prod/gpu overlay
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d postgres app-server app-client python-runner nginx
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d postgres app-server app-client python-runner python-advanced-runner nginx
 ```
 
 Open UI at:
@@ -87,7 +87,7 @@ Postgres is intentionally published for local debugging/agent inspection in this
 
 `docker compose` now waits for Postgres health checks before starting dependent services, waits for app health checks before wiring NGINX, and starts `python-runner` only after both Postgres and API are healthy.
 
-GPU note: GPU runtime settings are isolated in `docker-compose.prod.yml` (adds `gpus: all` and NVIDIA env defaults for `python-runner`). Use that overlay on hosts with NVIDIA container runtime support.
+GPU note: GPU runtime settings are isolated in `docker-compose.prod.yml` (adds `gpus: all` and NVIDIA env defaults for `python-advanced-runner`). Use that overlay on hosts with NVIDIA container runtime support.
 
 ### 3) Bootstrap the stock database schema
 
@@ -103,14 +103,32 @@ docker compose down -v
 docker compose up -d postgres
 ```
 
-### 4) Run ingest/scoring/description pipeline
+### 4) Run base ingest and advanced runners
 
-The default stack startup already runs `python-runner` once in parallel after API/database health checks pass.
+The default stack startup runs two one-shot runner containers:
+- `python-runner` for **base ingest**
+- `python-advanced-runner` for **advanced enrichment**
+
+`python-advanced-runner` waits for `python-runner` to complete successfully.
 
 For manual reruns (for example after adding new files):
 
 ```bash
 docker compose run --rm python-runner
+docker compose run --rm python-advanced-runner
+```
+
+Inside the runner, the CLI now supports two explicit passes:
+
+```bash
+# canonical file ingest (stable file truth + deterministic base metrics)
+uv run --project . photo-curator base-ingest
+
+# advanced enrichment (NIMA-style aesthetic scoring + descriptions)
+uv run --project . photo-curator advanced-runner
+
+# standalone NIMA backfill
+uv run --project . photo-curator score-nima --batch-size 200
 ```
 
 ### 5) Verify ingest and API health
@@ -124,9 +142,9 @@ curl -s http://localhost:8080/api/v1/photos | jq '.items | length'
 
 For long-running local processing, use this sequence:
 
-1. Start base stack: `docker compose up -d postgres app-server app-client python-runner nginx` (or add `-f docker-compose.prod.yml` for GPU hosts).
+1. Start base stack: `docker compose up -d postgres app-server app-client python-runner python-advanced-runner nginx` (or add `-f docker-compose.prod.yml` for GPU hosts).
 2. (Optional reset) `docker compose down -v && docker compose up -d postgres` to rebuild from stock schema.
-3. Watch `docker compose logs -f python-runner` for pipeline completion.
+3. Watch `docker compose logs -f python-runner python-advanced-runner` for runner completion.
 4. Re-run ingest whenever new files arrive: `docker compose run --rm python-runner` (pipeline is upsert-oriented).
 
 ### Recovery and reruns
@@ -221,7 +239,9 @@ If LM Studio is unavailable, the runner logs a warning and falls back per-image 
 
 - Current UI shows data refresh based on API fetches.
 - Current runner logs stage progress (`discover`, `score-metrics`, `describe`) to console and `logs/`.
+- Compose now separates base ingest and advanced enrichment into two runner containers so advanced passes can evolve independently.
 - Current ranking defaults to a transparent `curation_score` built from technical quality + lightweight semantic relevance.
+- NIMA-style scoring is now treated as advanced, rerunnable enrichment and stored in `file_metrics` (`nima_score`, `aesthetic_score`, `keep_score`, `nima_model_version`).
 - WebSocket live progress is not yet implemented; recommended next step is an `/api/v1/jobs` + WS stream for in-flight pipeline status events.
 
 ## Required process rule
