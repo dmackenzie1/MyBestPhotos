@@ -178,6 +178,14 @@ uv sync --project .
 uv run --project . photo-curator pipeline
 ```
 
+For preflight diagnostics (pathing/env/network reachability) before a run:
+
+```bash
+python scripts/python_runner_doctor.py
+# offline-only validation (skip TCP probes)
+python scripts/python_runner_doctor.py --skip-network
+```
+
 ### Description providers
 
 - `basic` (default): deterministic metadata-based captions.
