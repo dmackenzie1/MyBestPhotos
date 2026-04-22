@@ -118,9 +118,7 @@ def _describe_with_lmstudio(
         "Avoid guessing names or sensitive details."
     )
     if camera_make or camera_model:
-        prompt += (
-            f" Camera metadata: {camera_make or 'unknown'} {camera_model or 'unknown'}."
-        )
+        prompt += f" Camera metadata: {camera_make or 'unknown'} {camera_model or 'unknown'}."
 
     payload = {
         "model": options.lmstudio_model,
@@ -169,7 +167,9 @@ def _describe_with_lmstudio(
     return cleaned or None
 
 
-def discover_files(db: Database, settings: Settings, roots: list[Path], extensions: list[str]) -> DiscoverStats:
+def discover_files(
+    db: Database, settings: Settings, roots: list[Path], extensions: list[str]
+) -> DiscoverStats:
     if not roots:
         raise ValueError(
             "No roots provided. Set PHOTO_CURATOR_DEFAULT_ROOTS (or PHOTO_INGEST_ROOTS) or pass --roots."
@@ -178,7 +178,7 @@ def discover_files(db: Database, settings: Settings, roots: list[Path], extensio
     ext_set = {ext.lower().lstrip(".") for ext in extensions} or SUPPORTED_EXTENSIONS
     stats = DiscoverStats()
 
-    for root, path in tqdm(list(_iter_files(roots, ext_set)), desc="Discovering"):
+    for root, path in tqdm(_iter_files(roots, ext_set), desc="Discovering"):
         stats.scanned += 1
 
         image = open_image(path)
@@ -266,7 +266,9 @@ def _safe_norm(value: float, low: float, high: float) -> float:
     return max(0.0, min(1.0, (value - low) / (high - low)))
 
 
-def _compute_metrics(image: np.ndarray) -> tuple[float, float, float, float, float, float, float, float]:
+def _compute_metrics(
+    image: np.ndarray,
+) -> tuple[float, float, float, float, float, float, float, float]:
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     lap_var = float(cv2.Laplacian(gray, cv2.CV_64F).var())
@@ -285,12 +287,26 @@ def _compute_metrics(image: np.ndarray) -> tuple[float, float, float, float, flo
     noise = float(np.std(gray - cv2.GaussianBlur(gray, (3, 3), 0)) / 255.0)
     noise_score = 1.0 - _safe_norm(noise, 0.02, 0.22)
 
-    base_quality = (0.35 * (1.0 - blur_score)) + (0.25 * contrast_score) + (0.2 * brightness_score) + (0.2 * noise_score)
+    base_quality = (
+        (0.35 * (1.0 - blur_score))
+        + (0.25 * contrast_score)
+        + (0.2 * brightness_score)
+        + (0.2 * noise_score)
+    )
     print_6x8 = max(0.0, min(1.0, base_quality))
     print_8x10 = max(0.0, min(1.0, base_quality * 0.95))
     print_12x18 = max(0.0, min(1.0, base_quality * 0.9))
 
-    return blur_score, brightness_score, contrast_score, entropy, noise_score, print_6x8, print_8x10, print_12x18
+    return (
+        blur_score,
+        brightness_score,
+        contrast_score,
+        entropy,
+        noise_score,
+        print_6x8,
+        print_8x10,
+        print_12x18,
+    )
 
 
 def score_metrics(db: Database, max_size: int = 1024) -> StageStats:
@@ -419,7 +435,9 @@ def describe_images(
                 if lmstudio_description:
                     description_text = lmstudio_description
             else:
-                logger.warning("LM Studio skipped: source file not found at {path}", path=photo_path)
+                logger.warning(
+                    "LM Studio skipped: source file not found at {path}", path=photo_path
+                )
 
         description_json = {
             "provider": resolved_options.provider,

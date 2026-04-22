@@ -3,14 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable
-
 from loguru import logger
 from tqdm import tqdm
 
 from photo_curator.config import Settings
 from photo_curator.db import Database
-from photo_curator.pipeline_v1 import _iter_files as _discover_iter_files
+from photo_curator.pipeline_v1 import _iter_files
 from photo_curator.utils.hashing import sha256_file
 from photo_curator.utils.image import SUPPORTED_EXTENSIONS, get_exif, open_image
 
@@ -20,11 +18,6 @@ class IngestStats:
     scanned: int = 0
     inserted: int = 0
     skipped: int = 0
-
-
-def _iter_files(roots: Iterable[Path], extensions: set[str]) -> Iterable[Path]:
-    for _, path in _discover_iter_files(roots, extensions):
-        yield path
 
 
 def _thumbnail_path(settings: Settings, file_hash: str) -> Path:
@@ -45,15 +38,8 @@ def ingest(
     ext_set = {ext.lower().lstrip(".") for ext in extensions} or SUPPORTED_EXTENSIONS
     stats = IngestStats()
 
-    files = list(_iter_files(roots, ext_set))
-    for path in tqdm(files, desc="Ingesting"):
+    for _, path in tqdm(_iter_files(roots, ext_set), desc="Ingesting"):
         stats.scanned += 1
-        suffix = path.suffix.lower().lstrip(".")
-        if suffix in {"heic", "heif"} and suffix not in SUPPORTED_EXTENSIONS:
-            logger.warning("HEIC/HEIF not supported in this build. Skipping {path}.", path=path)
-            stats.skipped += 1
-            continue
-
         file_stat = path.stat()
         mtime = datetime.fromtimestamp(file_stat.st_mtime, tz=timezone.utc)
         size_bytes = file_stat.st_size

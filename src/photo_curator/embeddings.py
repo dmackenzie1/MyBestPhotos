@@ -30,7 +30,7 @@ def _device_from_setting(setting: str) -> str:
     return setting
 
 
-def _fallback_embedding(path: Path, dim: int = 512) -> list[float]:
+def _deterministic_hash_embedding(path: Path, dim: int = 512) -> list[float]:
     digest = sha256_file(path)
     bits = [int(bit, 16) for bit in digest]
     vector = np.array(bits * (dim // len(bits) + 1))[:dim].astype(np.float32)
@@ -89,9 +89,14 @@ def embed(
     with db.connection() as conn:
         register_vector(conn)
 
-    for batch in tqdm(_iter_batches(photos, batch_size), desc="Embedding", total=len(photos) // batch_size + 1):
+    for batch in tqdm(
+        _iter_batches(photos, batch_size), desc="Embedding", total=len(photos) // batch_size + 1
+    ):
         if use_fallback:
-            embeddings = [(_fallback_embedding(Path(path), dim=dim), photo_id) for photo_id, path in batch]
+            embeddings = [
+                (_deterministic_hash_embedding(Path(path), dim=dim), photo_id)
+                for photo_id, path in batch
+            ]
         else:
             images = []
             ids = []
