@@ -13,6 +13,10 @@ The Compose `postgres` service mounts `init/001_stock_schema.sql` into
 
 This initialization runs only when the Postgres data directory is empty.
 
+Compose also runs a one-shot `postgres-migrations` service (`apply-migrations.sh`)
+before `app-server` and `python-runner` start. This backfills schema tables on
+existing volumes that were created before the stock init file was introduced.
+
 ## Resetting to stock schema
 
 If you need a clean baseline DB again, remove the DB volume and restart:
