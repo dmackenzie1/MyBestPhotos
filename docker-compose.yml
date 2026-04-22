@@ -10,13 +10,28 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-photo_curator}
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./services/postgres/migrations:/migrations:ro
+      - ./services/postgres:/migrations:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-photo_curator} -d ${POSTGRES_DB:-photo_curator}"]
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 5s
+
+  postgres-migrations:
+    image: pgvector/pgvector:pg16
+    container_name: mybestphotos-postgres-migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-photo_curator}
+      POSTGRES_USER: ${POSTGRES_USER:-photo_curator}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-photo_curator}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-photo_curator}
+    volumes:
+      - ./services/postgres:/migrations:ro
+    command: ["sh", "/migrations/apply-migrations.sh"]
 
   app-server:
     build:
@@ -32,6 +47,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      postgres-migrations:
+        condition: service_completed_successfully
     volumes:
       - ${PHOTO_INGEST_ROOT:-./sample-photos}:/photos/library:ro
       - ./data/cache/thumbs:/data/cache/thumbs:ro
@@ -90,6 +107,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      postgres-migrations:
+        condition: service_completed_successfully
       app-server:
         condition: service_healthy
     extra_hosts:

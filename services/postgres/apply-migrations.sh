@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 );
 SQL
 
-for migration in /migrations/*.sql; do
+for migration in /migrations/migrations/*.sql; do
   version="$(basename "$migration")"
   already_applied="$(psql -tA -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1 FROM schema_migrations WHERE version = '$version' LIMIT 1;")"
   if [[ "$already_applied" == "1" ]]; then
