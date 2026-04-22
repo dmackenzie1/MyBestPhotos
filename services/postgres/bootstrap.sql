@@ -1,3 +1,12 @@
+-- Idempotent schema bootstrap: safe to run on every startup.
+-- All statements use IF NOT EXISTS / ON CONFLICT so repeated runs are no-ops.
+-- This file is mounted into the postgres-bootstrap container and executed
+-- via psql before app-server and python-runner start, ensuring tables exist
+-- on both fresh volumes (where init/001_stock_schema.sql also applies) and
+-- existing volumes (where init scripts are skipped).
+
+CREATE EXTENSION IF NOT EXISTS vector;
+
 CREATE TABLE IF NOT EXISTS files (
   id BIGSERIAL PRIMARY KEY,
   source_root TEXT NOT NULL,

@@ -23,11 +23,31 @@ from photo_curator.utils.image import SUPPORTED_EXTENSIONS, get_exif, open_image
 DATE_RE = re.compile(r"(20\d{2})[-_]?([01]\d)[-_]?([0-3]\d)")
 
 
+def _sanitize_str(value: object) -> object:
+    """Strip NUL bytes from strings so PostgreSQL can store them."""
+    if isinstance(value, str):
+        return value.replace("\u0000", "")
+    return value
+
+
+def _sanitize_exif(obj: object) -> object:
+    """Strip null characters from strings so PostgreSQL JSONB can store them."""
+    if isinstance(obj, str):
+        return obj.replace("\u0000", "")
+    if isinstance(obj, (list, tuple)):
+        return type(obj)(_sanitize_exif(item) for item in obj)
+    if isinstance(obj, dict):
+        return {k: _sanitize_exif(v) for k, v in obj.items()}
+    return obj
+
+
 @dataclass
 class DiscoverStats:
     scanned: int = 0
     upserted: int = 0
     skipped: int = 0
+    failed_db: int = 0
+    failed_processing: int = 0
 
 
 @dataclass
@@ -180,72 +200,100 @@ def discover_files(
 
     for root, path in tqdm(_iter_files(roots, ext_set), desc="Discovering"):
         stats.scanned += 1
-
-        image = open_image(path)
-        if image is None:
-            stats.skipped += 1
-            continue
-
-        stat = path.stat()
-        width, height = image.size
-        exif = get_exif(image)
-
-        exif_datetime = exif.get("DateTimeOriginal") or exif.get("DateTime")
-        taken_at, taken_source = _resolve_taken_at(exif_datetime, path)
         relative_path = path.relative_to(root).as_posix()
 
-        gps_info = exif.get("GPSInfo") if isinstance(exif.get("GPSInfo"), dict) else {}
-        gps_lat = _to_float(gps_info.get("GPSLatitude")) if gps_info else None
-        gps_lon = _to_float(gps_info.get("GPSLongitude")) if gps_info else None
+        try:
+            logger.info("Processing file: {path}", path=path.name)
 
-        db.execute(
-            """
-            INSERT INTO files (
-              source_root, relative_path, filename, extension, mime_type, file_size_bytes,
-              sha256, width, height, orientation, photo_taken_at, photo_taken_at_source,
-              camera_make, camera_model, gps_lat, gps_lon, exif_json
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
-            ON CONFLICT (source_root, relative_path) DO UPDATE SET
-              filename = EXCLUDED.filename,
-              extension = EXCLUDED.extension,
-              mime_type = EXCLUDED.mime_type,
-              file_size_bytes = EXCLUDED.file_size_bytes,
-              sha256 = EXCLUDED.sha256,
-              width = EXCLUDED.width,
-              height = EXCLUDED.height,
-              orientation = EXCLUDED.orientation,
-              photo_taken_at = EXCLUDED.photo_taken_at,
-              photo_taken_at_source = EXCLUDED.photo_taken_at_source,
-              camera_make = EXCLUDED.camera_make,
-              camera_model = EXCLUDED.camera_model,
-              gps_lat = EXCLUDED.gps_lat,
-              gps_lon = EXCLUDED.gps_lon,
-              exif_json = EXCLUDED.exif_json,
-              updated_at = now()
-            """,
-            (
-                str(root),
-                relative_path,
-                path.name,
-                path.suffix.lower().lstrip("."),
-                mimetypes.guess_type(path.name)[0],
-                stat.st_size,
-                sha256_file(path),
-                width,
-                height,
+            image = open_image(path)
+            if image is None:
+                logger.warning("Could not open image, skipping: {path}", path=path.name)
+                stats.skipped += 1
+                continue
+
+            stat = path.stat()
+            width, height = image.size
+            exif = get_exif(image)
+
+            exif_datetime = exif.get("DateTimeOriginal") or exif.get("DateTime")
+            taken_at, taken_source = _resolve_taken_at(exif_datetime, path)
+
+            gps_info = exif.get("GPSInfo") if isinstance(exif.get("GPSInfo"), dict) else {}
+            gps_lat = _to_float(gps_info.get("GPSLatitude")) if gps_info else None
+            gps_lon = _to_float(gps_info.get("GPSLongitude")) if gps_info else None
+
+            sanitized_exif = _sanitize_exif(exif)
+            exif_json_str = json.dumps(sanitized_exif, default=str)
+
+            try:
+                db.execute(
+                    """
+                    INSERT INTO files (
+                      source_root, relative_path, filename, extension, mime_type, file_size_bytes,
+                      sha256, width, height, orientation, photo_taken_at, photo_taken_at_source,
+                      camera_make, camera_model, gps_lat, gps_lon, exif_json
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
+                    ON CONFLICT (source_root, relative_path) DO UPDATE SET
+                      filename = EXCLUDED.filename,
+                      extension = EXCLUDED.extension,
+                      mime_type = EXCLUDED.mime_type,
+                      file_size_bytes = EXCLUDED.file_size_bytes,
+                      sha256 = EXCLUDED.sha256,
+                      width = EXCLUDED.width,
+                      height = EXCLUDED.height,
+                      orientation = EXCLUDED.orientation,
+                      photo_taken_at = EXCLUDED.photo_taken_at,
+                      photo_taken_at_source = EXCLUDED.photo_taken_at_source,
+                      camera_make = EXCLUDED.camera_make,
+                      camera_model = EXCLUDED.camera_model,
+                      gps_lat = EXCLUDED.gps_lat,
+                      gps_lon = EXCLUDED.gps_lon,
+                      exif_json = EXCLUDED.exif_json,
+                      updated_at = now()
+                    """,
+                    (
+                        str(root),
+                        relative_path,
+                        path.name,
+                        path.suffix.lower().lstrip("."),
+                        mimetypes.guess_type(path.name)[0],
+                        stat.st_size,
+                        sha256_file(path),
+                        width,
+                        height,
                 exif.get("Orientation"),
                 taken_at,
                 taken_source,
-                exif.get("Make"),
-                exif.get("Model"),
-                gps_lat,
-                gps_lon,
-                json.dumps(exif, default=str),
-            ),
-        )
-        stats.upserted += 1
+                _sanitize_str(exif.get("Make")),
+                _sanitize_str(exif.get("Model")),
+                        gps_lat,
+                        gps_lon,
+                        exif_json_str,
+                    ),
+                )
+                logger.info(
+                    "File inserted/updated: {filename} size={size}B dims={w}x{h}",
+                    filename=path.name,
+                    size=stat.st_size,
+                    w=width,
+                    h=height,
+                )
+                stats.upserted += 1
+            except Exception as db_exc:
+                logger.error(
+                    "DB insert failed for {filename}: {error}",
+                    filename=path.name,
+                    error=str(db_exc),
+                )
+                stats.failed_db += 1
 
-    logger.info("File discovery complete: {stats}", stats=stats)
+        except Exception as file_exc:
+            logger.error(
+                "File processing failed for {path}: {error}",
+                path=path.name,
+                error=str(file_exc),
+            )
+            stats.failed_processing += 1
     return stats
 
 
@@ -315,8 +363,11 @@ def score_metrics(db: Database, max_size: int = 1024) -> StageStats:
 
     for file_id, source_root, relative_path in tqdm(rows, desc="Metrics"):
         path = Path(source_root) / Path(relative_path)
+        logger.info("Scoring metrics: file_id={id} path={path}", id=file_id, path=path)
+
         image = _load_image(path, max_size=max_size)
         if image is None:
+            logger.warning("Could not load image for metrics, skipping: {path}", path=path)
             continue
 
         (
@@ -330,36 +381,46 @@ def score_metrics(db: Database, max_size: int = 1024) -> StageStats:
             print_12x18,
         ) = _compute_metrics(image)
 
-        db.execute(
-            """
-            INSERT INTO file_metrics (
-              file_id, blur_score, brightness_score, contrast_score, entropy_score, noise_score,
-              print_score_6x8, print_score_8x10, print_score_12x18
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (file_id) DO UPDATE SET
-              blur_score = EXCLUDED.blur_score,
-              brightness_score = EXCLUDED.brightness_score,
-              contrast_score = EXCLUDED.contrast_score,
-              entropy_score = EXCLUDED.entropy_score,
-              noise_score = EXCLUDED.noise_score,
-              print_score_6x8 = EXCLUDED.print_score_6x8,
-              print_score_8x10 = EXCLUDED.print_score_8x10,
-              print_score_12x18 = EXCLUDED.print_score_12x18,
-              updated_at = now()
-            """,
-            (
-                file_id,
-                blur_score,
-                brightness_score,
-                contrast_score,
-                entropy_score,
-                noise_score,
-                print_6x8,
-                print_8x10,
-                print_12x18,
-            ),
-        )
-        stats.processed += 1
+        try:
+            db.execute(
+                """
+                INSERT INTO file_metrics (
+                  file_id, blur_score, brightness_score, contrast_score, entropy_score, noise_score,
+                  print_score_6x8, print_score_8x10, print_score_12x18
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (file_id) DO UPDATE SET
+                  blur_score = EXCLUDED.blur_score,
+                  brightness_score = EXCLUDED.brightness_score,
+                  contrast_score = EXCLUDED.contrast_score,
+                  entropy_score = EXCLUDED.entropy_score,
+                  noise_score = EXCLUDED.noise_score,
+                  print_score_6x8 = EXCLUDED.print_score_6x8,
+                  print_score_8x10 = EXCLUDED.print_score_8x10,
+                  print_score_12x18 = EXCLUDED.print_score_12x18,
+                  updated_at = now()
+                """,
+                (
+                    file_id,
+                    blur_score,
+                    brightness_score,
+                    contrast_score,
+                    entropy_score,
+                    noise_score,
+                    print_6x8,
+                    print_8x10,
+                    print_12x18,
+                ),
+            )
+            logger.info(
+                "Metrics scored: file_id={id} blur={blur:.3f} brightness={bright:.3f} contrast={contrast:.3f}",
+                id=file_id,
+                blur=blur_score,
+                bright=brightness_score,
+                contrast=contrast_score,
+            )
+            stats.processed += 1
+        except Exception as exc:
+            logger.error("Metrics DB insert failed for file_id={id}: {error}", id=file_id, error=str(exc))
 
     logger.info("Metric scoring complete: processed={count}", count=stats.processed)
     return stats
@@ -408,6 +469,8 @@ def describe_images(
             contrast_score,
         ) = row
 
+        logger.info("Describing file: file_id={id} filename={name}", id=file_id, name=filename)
+
         quality_hint = "good"
         if print_12x18 is not None:
             if print_12x18 >= 0.85:
@@ -422,22 +485,42 @@ def describe_images(
             + f". Overall technical quality looks {quality_hint}."
         )
         description_text = basic_description_text
+        lmstudio_used = False
         if resolved_options.provider == "lmstudio":
             photo_path = Path(source_root) / relative_path
             if photo_path.exists():
-                lmstudio_description = _describe_with_lmstudio(
-                    photo_path,
-                    filename=filename,
-                    camera_make=camera_make,
-                    camera_model=camera_model,
-                    options=resolved_options,
-                )
-                if lmstudio_description:
-                    description_text = lmstudio_description
+                try:
+                    lmstudio_description = _describe_with_lmstudio(
+                        photo_path,
+                        filename=filename,
+                        camera_make=camera_make,
+                        camera_model=camera_model,
+                        options=resolved_options,
+                    )
+                    if lmstudio_description:
+                        description_text = lmstudio_description
+                        lmstudio_used = True
+                except Exception as lm_exc:
+                    logger.warning(
+                        "LM Studio describe failed for file_id={id}: {error}",
+                        id=file_id,
+                        error=str(lm_exc),
+                    )
             else:
                 logger.warning(
-                    "LM Studio skipped: source file not found at {path}", path=photo_path
+                    "Source file not found for description, skipping LM Studio: file_id={id} path={path}",
+                    id=file_id,
+                    path=photo_path,
                 )
+
+        if lmstudio_used:
+            logger.info("Description generated via LM Studio: file_id={id}", id=file_id)
+        else:
+            logger.debug(
+                "Using basic description for file_id={id}: {text}",
+                id=file_id,
+                text=description_text[:80],
+            )
 
         description_json = {
             "provider": resolved_options.provider,
@@ -453,19 +536,27 @@ def describe_images(
             "categories": [],
         }
 
-        db.execute(
-            """
-            INSERT INTO file_descriptions (file_id, model_name, description_text, description_json)
-            VALUES (%s, %s, %s, %s::jsonb)
-            ON CONFLICT (file_id) DO UPDATE SET
-              model_name = EXCLUDED.model_name,
-              description_text = EXCLUDED.description_text,
-              description_json = EXCLUDED.description_json,
-              updated_at = now()
-            """,
-            (file_id, model_name, description_text, json.dumps(description_json)),
-        )
-        stats.processed += 1
+        try:
+            db.execute(
+                """
+                INSERT INTO file_descriptions (file_id, model_name, description_text, description_json)
+                VALUES (%s, %s, %s, %s::jsonb)
+                ON CONFLICT (file_id) DO UPDATE SET
+                  model_name = EXCLUDED.model_name,
+                  description_text = EXCLUDED.description_text,
+                  description_json = EXCLUDED.description_json,
+                  updated_at = now()
+                """,
+                (file_id, model_name, description_text, json.dumps(description_json)),
+            )
+            logger.info(
+                "Description saved: file_id={id} provider={provider}",
+                id=file_id,
+                provider="lmstudio" if lmstudio_used else "basic",
+            )
+            stats.processed += 1
+        except Exception as exc:
+            logger.error("Description DB insert failed for file_id={id}: {error}", id=file_id, error=str(exc))
 
     logger.info(
         "Description stage complete: processed={count}, provider={provider}",

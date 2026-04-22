@@ -102,9 +102,9 @@ def pipeline_cmd(
         target_roots = roots or [Path(root) for root in settings.default_roots]
         target_extensions = extensions or settings.extensions
 
-        discover_files(db, settings, roots=target_roots, extensions=target_extensions)
-        score_metrics(db, max_size=max_size)
-        describe_images(
+        discover_stats = discover_files(db, settings, roots=target_roots, extensions=target_extensions)
+        metrics_stats = score_metrics(db, max_size=max_size)
+        describe_stats = describe_images(
             db,
             model_name=model_name,
             options=DescriptionOptions(
@@ -118,6 +118,19 @@ def pipeline_cmd(
                 ),
             ),
         )
+
+        logger.info("=" * 60)
+        logger.info("Pipeline summary:")
+        logger.info("  Discovered: %d scanned, %d upserted, %d skipped", discover_stats.scanned, discover_stats.upserted, discover_stats.skipped)
+        if discover_stats.failed_db > 0 or discover_stats.failed_processing > 0:
+            logger.warning(
+                "  DB failures: %d | Processing failures: %d",
+                discover_stats.failed_db,
+                discover_stats.failed_processing,
+            )
+        logger.info("  Metrics scored: %d", metrics_stats.processed)
+        logger.info("  Descriptions generated: %d", describe_stats.processed)
+        logger.info("=" * 60)
 
         logger.info("Pipeline complete.")
     finally:

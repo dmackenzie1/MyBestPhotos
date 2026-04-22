@@ -32,7 +32,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      postgres-migrations:
+      postgres-bootstrap:
         condition: service_completed_successfully
     volumes:
       - ${PHOTO_INGEST_ROOT:-./sample-photos}:/photos/library:ro
@@ -86,13 +86,13 @@ services:
       PHOTO_CURATOR_CACHE_DIR: /data/cache
       PHOTO_CURATOR_THUMBS_DIR: /data/cache/thumbs
       PHOTO_CURATOR_DESCRIPTION_PROVIDER: ${PHOTO_CURATOR_DESCRIPTION_PROVIDER:-basic}
-      PHOTO_CURATOR_LMSTUDIO_BASE_URL: ${PHOTO_CURATOR_LMSTUDIO_BASE_URL:-http://192.168.10.64:1234/v1}
+      PHOTO_CURATOR_LMSTUDIO_BASE_URL: ${PHOTO_CURATOR_LMSTUDIO_BASE_URL:-http://host.docker.internal:1234/v1}
       PHOTO_CURATOR_LMSTUDIO_MODEL: ${PHOTO_CURATOR_LMSTUDIO_MODEL:-qwen3.6-35b-a3b}
       PHOTO_CURATOR_LMSTUDIO_TIMEOUT_SECONDS: ${PHOTO_CURATOR_LMSTUDIO_TIMEOUT_SECONDS:-60}
     depends_on:
       postgres:
         condition: service_healthy
-      postgres-migrations:
+      postgres-bootstrap:
         condition: service_completed_successfully
       app-server:
         condition: service_healthy
@@ -107,13 +107,12 @@ services:
       sh -lc "uv sync --project . &&
               uv run --project . photo-curator pipeline"
 
-  postgres-migrations:
+  postgres-bootstrap:
     image: pgvector/pgvector:pg16
-    container_name: mybestphotos-postgres-migrations
+    container_name: mybestphotos-postgres-bootstrap
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-photo_curator}
       POSTGRES_USER: ${POSTGRES_USER:-photo_curator}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-photo_curator}
       PGPASSWORD: ${POSTGRES_PASSWORD:-photo_curator}
       PGHOST: postgres
       PGPORT: 5432
@@ -121,8 +120,13 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./services/postgres:/migrations:ro
-    command: ["bash", "/migrations/apply-migrations.sh"]
+      - ./services/postgres:/sql:ro
+    command: >-
+      psql -v ON_ERROR_STOP=1
+      -U ${POSTGRES_USER:-photo_curator}
+      -d ${POSTGRES_DB:-photo_curator}
+      -h postgres
+      -f /sql/bootstrap.sql
     restart: "no"
 
 volumes:

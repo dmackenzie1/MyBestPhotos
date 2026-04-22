@@ -79,11 +79,12 @@ GPU note: GPU runtime settings are isolated in `docker-compose.prod.yml` (adds `
 
 ### 3) Bootstrap the stock database schema
 
-No manual migration step is required. On a fresh `pgdata` volume, Postgres automatically loads:
+Schema is applied automatically on every startup via two complementary mechanisms:
 
-- `services/postgres/init/001_stock_schema.sql`
+- **Fresh volumes:** Postgres loads `services/postgres/init/001_stock_schema.sql` during first init.
+- **Existing volumes:** The `postgres-bootstrap` service runs `bootstrap.sql` (idempotent, uses `IF NOT EXISTS`) before dependent services start.
 
-If you need to force a clean re-bootstrap, recreate volumes:
+No manual step is required. If you need to force a clean re-bootstrap:
 
 ```bash
 docker compose down -v
@@ -132,11 +133,10 @@ For long-running local processing, use this sequence:
 
 ## Database schema strategy
 
-- **Baseline:** stock schema lives at `services/postgres/init/001_stock_schema.sql`.
-- **Execution:** Postgres loads this file automatically on first init of an empty data directory.
-- **For schema updates in this pre-production phase:** update the stock schema directly and re-bootstrap local volumes.
+- **Fresh volumes:** `services/postgres/init/001_stock_schema.sql` loads via Postgres initdb.
+- **Every startup:** `postgres-bootstrap` service runs `bootstrap.sql` (idempotent, all tables use `IF NOT EXISTS`).
+- **For schema updates in this pre-production phase:** update both `init/001_stock_schema.sql` and `bootstrap.sql`, then re-bootstrap local volumes with `docker compose down -v`.
 - **For large backfills:** run backfill from runner or one-off SQL script after bootstrap.
-
 
 ## UI screenshot capture
 
