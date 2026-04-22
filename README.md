@@ -1,70 +1,121 @@
-# MyBestPhotos (Photo Curator)
+# MyBestPhotos
 
-Local-only photo curation pipeline for ~10,000 images. It ingests photo metadata, computes technical metrics, generates CLIP embeddings, scores aesthetics, deduplicates near-identical photos, and selects a diverse top-N set. All originals remain in place.
+A practical personal photo curation stack with a clear service layout and Docker Compose orchestration.
 
-## Highlights
-- **Local-only** processing: no runtime downloads or web calls.
-- **Postgres + pgvector** for embeddings, metrics, and runs.
-- **GPU aware**: uses CUDA-enabled PyTorch if available; falls back to CPU.
-- **Windows-friendly**: uv-based workflows for PowerShell.
+## Repository layout
 
-## Quickstart (Windows)
+```text
+services/
+  app/
+    server/   # Node + Express API (TypeScript)
+    client/   # React + Vite UI (TypeScript)
+  nginx/      # Reverse proxy
+  postgres/   # SQL migrations
+packages/
+  shared/     # Shared TypeScript API contracts
+src/photo_curator/  # Python runner (uv)
+reference/    # Design and asset references
+docs/         # Architecture and process docs
+docker-compose.yml
+```
 
-### 1) Prereqs
-- Python 3.11+
-- [uv](https://github.com/astral-sh/uv)
-- Docker Desktop
+## Stack
 
-### 2) Setup
-```powershell
+- Postgres (`services/postgres`)
+- Node API (`services/app/server`)
+- React client (`services/app/client`)
+- NGINX (`services/nginx`)
+- Python runner with `uv` (`src/photo_curator`)
+
+## Quickstart
+
+### 1) Environment
+
+```bash
+cp .env.example .env
+```
+
+Set your photo roots:
+- `PHOTO_ROOT_1=/path/to/photosA`
+- `PHOTO_ROOT_2=/path/to/photosB`
+- `PHOTO_ROOT_3=/path/to/photosC` (optional)
+
+Set runner roots list (container paths):
+- `PHOTO_ROOTS_JSON=["/photos/repo1","/photos/repo2","/photos/repo3"]`
+
+### 2) Start stack
+
+```bash
+docker compose up -d postgres app-server app-client nginx
+```
+
+Open UI at:
+- http://localhost:8080
+
+### 3) Apply database migrations
+
+```bash
+docker compose exec postgres psql -U ${POSTGRES_USER:-photo_curator} -d ${POSTGRES_DB:-photo_curator} -f /migrations/001_init.sql
+docker compose exec postgres psql -U ${POSTGRES_USER:-photo_curator} -d ${POSTGRES_DB:-photo_curator} -f /migrations/002_core_v1.sql
+```
+
+### 4) Run ingest/scoring/description pipeline
+
+```bash
+docker compose --profile runner run --rm python-runner
+```
+
+## NPM wiring
+
+Workspace scripts:
+
+```bash
+npm run build
+npm run build:shared
+npm run build:server
+npm run build:client
+npm run dev:server
+npm run dev:client
+```
+
+## API stub mode (for UI-first work)
+
+Set `STUB_MODE=true` for `app-server` and it will return deterministic mock data for:
+- photo list
+- detail
+- labels patch
+- facets
+- image route
+
+This lets frontend iteration continue even before real ingest data is available.
+
+## Python runner and uv
+
+Python execution uses `uv` in the runner container. Keep Python commands in this style:
+
+```bash
 uv sync --project .
-docker compose up -d
+uv run --project . photo-curator pipeline
 ```
 
-### 3) Initialize the database
-```powershell
-docker compose exec db psql -U ${env:POSTGRES_USER} -d ${env:POSTGRES_DB} -f /migrations/001_init.sql
-```
+If adding PyTorch-based models later, prefer explicit CUDA/ROCm build selection in docs and image tags.
 
-### 4) Run a pipeline
-```powershell
-uv run --project . photo-curator pipeline --roots "D:\Photos" "E:\Dropbox\Camera Uploads" --top-n 100
-```
+## Required process rule
 
-## CLI examples
-```powershell
-uv run --project . photo-curator ingest --roots "D:\Photos" "E:\Dropbox\Camera Uploads" --extensions jpg png webp
-uv run --project . photo-curator score-technical
-uv run --project . photo-curator embed --model "ViT-B-32" --weights-path "C:\models\open_clip_vit_b_32.pt" --batch-size 64
-uv run --project . photo-curator score-aesthetic
-uv run --project . photo-curator dedup
-uv run --project . photo-curator select-top --top-n 100 --output ./output --copy true
-uv run --project . photo-curator pipeline --top-n 100
-```
+Every merge must include a branch intent document under:
+- `docs/branch-intents/`
 
-## Configuration
-- Copy `.env.example` to `.env` and update connection details.
-- Copy `config.example.toml` to `config.toml` for defaults.
-- CLI flags override config; env vars override config defaults.
+Include intent, scope, architecture decisions, what went right, what went wrong, validation, and follow-ups.
 
-### CUDA notes
-If you have CUDA-enabled PyTorch installed, the embedding step will use the GPU automatically. Otherwise it uses CPU. You can install a CUDA wheel per PyTorch instructions, then run embeddings with `--device cuda`.
+## References
 
-### CLIP weights (offline only)
-To avoid any runtime downloads, the embedding step requires a local weights file. Provide `--weights-path` or set `PHOTO_CURATOR_CLIP_WEIGHTS_PATH` in `.env`.
+- `reference/README.md`
+- Place inspiration screenshot as `reference/ui-inspiration.png`
 
-## Project structure
-```
-.
-├── migrations/
-├── src/photo_curator/
-└── docker-compose.yml
-```
+## What else should we do next?
 
-## Outputs
-- `reports/report.csv`
-- `reports/gallery.html`
-- Optional output directory with copies (`--copy true`) or symlinks (`--link true`, may require admin privileges on Windows)
-
-## Logs
-Structured logs are written to `./logs/` by default.
+1. Add server-side pagination totals and richer facets.
+2. Add category extraction into `description_json` for stronger filters.
+3. Add e2e smoke checks for `docker compose up` + API health + one pipeline run.
+4. Add UI screenshot artifacts in CI for visual regressions.
+5. Add optional semantic search only after FTS limits are observed.

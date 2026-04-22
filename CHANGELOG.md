@@ -2,6 +2,13 @@
 
 All notable changes to this repository will be documented here.
 
+## [2026-04-22] Services restructure + artistic UI iteration
+- Restructured application code under `services/app/server` and `services/app/client` with top-level compose wiring.
+- Added dedicated `services/nginx` and `services/postgres` directories.
+- Added API stub mode (`STUB_MODE`) for frontend-first development.
+- Improved UI styling to better match the dark, card-based reference layout.
+- Added `reference/` and expanded `docs/` architecture/process documentation with mandatory branch-intent policy.
+
 ## [2024-12-04] Capture HAM
 - Added an EchoLink-backed HAM capture service and N5OAK profile that lean on the core capture agent.
 

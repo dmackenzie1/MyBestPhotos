@@ -1,6 +1,7 @@
 services:
-  db:
+  postgres:
     image: pgvector/pgvector:pg16
+    container_name: mybestphotos-postgres
     ports:
       - "5432:5432"
     environment:
@@ -9,7 +10,66 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-photo_curator}
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./migrations:/migrations:ro
+      - ./services/postgres/migrations:/migrations:ro
+
+  app-server:
+    build:
+      context: .
+      dockerfile: services/app/server/Dockerfile
+    container_name: mybestphotos-app-server
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-photo_curator}:${POSTGRES_PASSWORD:-photo_curator}@postgres:5432/${POSTGRES_DB:-photo_curator}
+      THUMBS_DIR: /data/cache/thumbs
+      PORT: 3001
+      STUB_MODE: ${STUB_MODE:-false}
+    depends_on:
+      - postgres
+    volumes:
+      - ${PHOTO_ROOT_1:-./sample-photos}:/photos/repo1:ro
+      - ${PHOTO_ROOT_2:-./sample-photos2}:/photos/repo2:ro
+      - ${PHOTO_ROOT_3:-./sample-photos3}:/photos/repo3:ro
+      - ./data/cache/thumbs:/data/cache/thumbs:ro
+
+  app-client:
+    build:
+      context: .
+      dockerfile: services/app/client/Dockerfile
+    container_name: mybestphotos-app-client
+    depends_on:
+      - app-server
+
+  nginx:
+    build:
+      context: .
+      dockerfile: services/nginx/Dockerfile
+    container_name: mybestphotos-nginx
+    ports:
+      - "8080:80"
+    depends_on:
+      - app-client
+      - app-server
+
+  python-runner:
+    image: ghcr.io/astral-sh/uv:python3.12-bookworm
+    container_name: mybestphotos-python-runner
+    working_dir: /workspace
+    profiles: ["runner"]
+    environment:
+      PHOTO_CURATOR_DB_DSN: postgresql://${POSTGRES_USER:-photo_curator}:${POSTGRES_PASSWORD:-photo_curator}@postgres:5432/${POSTGRES_DB:-photo_curator}
+      PHOTO_CURATOR_DEFAULT_ROOTS: ${PHOTO_ROOTS_JSON:-["/photos/repo1","/photos/repo2","/photos/repo3"]}
+      PHOTO_CURATOR_CACHE_DIR: /data/cache
+      PHOTO_CURATOR_THUMBS_DIR: /data/cache/thumbs
+    depends_on:
+      - postgres
+    volumes:
+      - ./:/workspace
+      - ${PHOTO_ROOT_1:-./sample-photos}:/photos/repo1:ro
+      - ${PHOTO_ROOT_2:-./sample-photos2}:/photos/repo2:ro
+      - ${PHOTO_ROOT_3:-./sample-photos3}:/photos/repo3:ro
+      - ./data/cache:/data/cache
+    command: >
+      sh -lc "uv sync --project . &&
+              uv run --project . photo-curator pipeline"
 
 volumes:
   pgdata:

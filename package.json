@@ -1,0 +1,18 @@
+{
+  "name": "mybestphotos-stack",
+  "private": true,
+  "workspaces": [
+    "services/app/server",
+    "services/app/client",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run -ws build",
+    "build:shared": "npm run -w packages/shared build",
+    "build:server": "npm run -w services/app/server build",
+    "build:client": "npm run -w services/app/client build",
+    "dev:server": "npm run -w services/app/server dev",
+    "dev:client": "npm run -w services/app/client dev",
+    "lint": "npm run -ws lint"
+  }
+}
