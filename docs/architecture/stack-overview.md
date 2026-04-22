@@ -12,9 +12,9 @@ Top-level Docker Compose orchestrates:
 - Keeps infra concerns separate in `services/nginx` and `services/postgres`.
 - Uses a runner profile for periodic ingestion jobs without always-on worker complexity.
 
-## Multi-root support
-- Compose mounts a single host root from `PHOTO_ROOT` to `/photos/library`.
-- Python runner consumes `PHOTO_INGEST_ROOTS` (CSV, default `/photos/library`) and stores `source_root + relative_path`.
+## Ingest root wiring
+- Compose mounts a single host root from `PHOTO_INGEST_ROOT` to `/photos/library`.
+- Python runner scans `/photos/library` by default and stores `source_root + relative_path`.
 
 ## Optional local model endpoint
 - Runner can call LM Studio over local network (`PHOTO_CURATOR_DESCRIPTION_PROVIDER=lmstudio`).

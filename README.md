@@ -41,11 +41,11 @@ docker-compose.yml
 cp .env.example .env
 ```
 
-Set your photo roots:
-- `PHOTO_ROOT=/path/to/photos`
+Set your single photo ingest mount:
+- `PHOTO_INGEST_ROOT=/path/to/photos`
 
-Set runner roots list (container paths, CSV):
-- `PHOTO_INGEST_ROOTS=/photos/library`
+The Python runner scans that mounted path at:
+- `/photos/library`
 
 Optional LM Studio settings (for vision-based descriptions):
 - `PHOTO_CURATOR_DESCRIPTION_PROVIDER=lmstudio`

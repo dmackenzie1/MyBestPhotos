@@ -32,7 +32,7 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ${PHOTO_ROOT:-./sample-photos}:/photos/library:ro
+      - ${PHOTO_INGEST_ROOT:-./sample-photos}:/photos/library:ro
       - ./data/cache/thumbs:/data/cache/thumbs:ro
     ports:
       - "3001:3001"
@@ -80,7 +80,7 @@ services:
     profiles: ["runner"]
     environment:
       PHOTO_CURATOR_DB_DSN: postgresql://${POSTGRES_USER:-photo_curator}:${POSTGRES_PASSWORD:-photo_curator}@postgres:5432/${POSTGRES_DB:-photo_curator}
-      PHOTO_CURATOR_DEFAULT_ROOTS: ${PHOTO_INGEST_ROOTS:-/photos/library}
+      PHOTO_CURATOR_DEFAULT_ROOTS: /photos/library
       PHOTO_CURATOR_CACHE_DIR: /data/cache
       PHOTO_CURATOR_THUMBS_DIR: /data/cache/thumbs
       PHOTO_CURATOR_DESCRIPTION_PROVIDER: ${PHOTO_CURATOR_DESCRIPTION_PROVIDER:-basic}
@@ -94,7 +94,7 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./:/workspace
-      - ${PHOTO_ROOT:-./sample-photos}:/photos/library:ro
+      - ${PHOTO_INGEST_ROOT:-./sample-photos}:/photos/library:ro
       - ./data/cache:/data/cache
     command: >
       sh -lc "uv sync --project . &&
