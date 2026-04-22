@@ -171,7 +171,9 @@ def _describe_with_lmstudio(
 
 def discover_files(db: Database, settings: Settings, roots: list[Path], extensions: list[str]) -> DiscoverStats:
     if not roots:
-        raise ValueError("No roots provided. Set PHOTO_CURATOR_DEFAULT_ROOTS or pass --roots.")
+        raise ValueError(
+            "No roots provided. Set PHOTO_CURATOR_DEFAULT_ROOTS (or PHOTO_INGEST_ROOTS) or pass --roots."
+        )
 
     ext_set = {ext.lower().lstrip(".") for ext in extensions} or SUPPORTED_EXTENSIONS
     stats = DiscoverStats()

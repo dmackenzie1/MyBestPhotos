@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 import os
 from pathlib import Path
 import tomllib
 from typing import Any
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -42,6 +44,28 @@ class Settings(BaseSettings):
     similarity_threshold: float = 0.88
     lambda_penalty: float = 0.15
 
+    @field_validator("default_roots", mode="before")
+    @classmethod
+    def _coerce_default_roots(cls, value: Any) -> list[str]:
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return [str(item).strip() for item in value if str(item).strip()]
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                return []
+            if text.startswith("["):
+                try:
+                    parsed = json.loads(text)
+                except json.JSONDecodeError:
+                    return []
+                if isinstance(parsed, list):
+                    return [str(item).strip() for item in parsed if str(item).strip()]
+                return []
+            return [part.strip() for part in text.split(",") if part.strip()]
+        return value
+
     @classmethod
     def settings_customise_sources(
         cls,
@@ -72,6 +96,11 @@ def load_settings(config_path: str | None = None) -> LoadedConfig:
     for section in data.values():
         if isinstance(section, dict):
             flat.update(section)
+
+    if "PHOTO_CURATOR_DEFAULT_ROOTS" not in os.environ:
+        ingest_roots_csv = os.getenv("PHOTO_INGEST_ROOTS")
+        if ingest_roots_csv is not None:
+            flat["default_roots"] = ingest_roots_csv
 
     settings = Settings(**flat)
     return LoadedConfig(settings=settings, raw=data)

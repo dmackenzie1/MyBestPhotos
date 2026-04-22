@@ -46,8 +46,8 @@ Set your photo roots:
 - `PHOTO_ROOT_2=/path/to/photosB`
 - `PHOTO_ROOT_3=/path/to/photosC` (optional)
 
-Set runner roots list (container paths):
-- `PHOTO_ROOTS_JSON=["/photos/repo1","/photos/repo2","/photos/repo3"]`
+Set runner roots list (container paths, CSV):
+- `PHOTO_INGEST_ROOTS=/photos/repo1,/photos/repo2,/photos/repo3`
 
 Optional LM Studio settings (for vision-based descriptions):
 - `PHOTO_CURATOR_DESCRIPTION_PROVIDER=lmstudio`
