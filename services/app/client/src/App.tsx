@@ -28,13 +28,15 @@ export default function App() {
   const [category, setCategory] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [dateBounds, setDateBounds] = useState<{ min: string; max: string }>({ min: "", max: "" });
+  const [notesDraft, setNotesDraft] = useState("");
 
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [facets, setFacets] = useState<FacetsResponse>({ camera: [], categories: [] });
+  const [facets, setFacets] = useState<FacetsResponse>({ camera: [], categories: [], dateBounds: { min: null, max: null } });
   const [stubActive, setStubActive] = useState(false);
   const [settings, setSettings] = useState<SettingsState>({
     showScores: true,
@@ -69,8 +71,15 @@ export default function App() {
   useEffect(() => {
     if (stubActive) return;
     void getJson<FacetsResponse>(`${API_BASE}/facets`)
-      .then(setFacets)
-      .catch(() => setFacets({ camera: [], categories: [] }));
+      .then((response) => {
+        setFacets(response);
+        const nextMin = response.dateBounds?.min ?? "";
+        const nextMax = response.dateBounds?.max ?? "";
+        setDateBounds({ min: nextMin, max: nextMax });
+        setDateFrom((previous) => previous || nextMin);
+        setDateTo((previous) => previous || nextMax);
+      })
+      .catch(() => setFacets({ camera: [], categories: [], dateBounds: { min: null, max: null } }));
   }, [stubActive]);
 
   useEffect(() => {
@@ -112,19 +121,25 @@ export default function App() {
   useEffect(() => {
     if (!selectedId) {
       setDetail(null);
+      setNotesDraft("");
       return;
     }
 
     if (stubActive) {
       setDetail(FALLBACK_DETAIL);
+      setNotesDraft(FALLBACK_DETAIL.labels.notes || "");
       return;
     }
 
     void getJson<PhotoDetail>(`${API_BASE}/photos/${selectedId}`)
-      .then(setDetail)
+      .then((photoDetail) => {
+        setDetail(photoDetail);
+        setNotesDraft(photoDetail.labels.notes || "");
+      })
       .catch(() => {
         setStubActive(true);
         setDetail(FALLBACK_DETAIL);
+        setNotesDraft(FALLBACK_DETAIL.labels.notes || "");
       });
   }, [selectedId, stubActive]);
 
@@ -164,6 +179,11 @@ export default function App() {
       }),
       getJson<PhotoDetail>(`${API_BASE}/photos/${selectedId}`).then(setDetail),
     ]);
+  }
+
+  async function saveNotes() {
+    if (!detail) return;
+    await patchLabels({ notes: notesDraft });
   }
 
   const cameraMakeOptions = Array.from(
@@ -207,8 +227,8 @@ export default function App() {
     setCategory("");
     setCameraMake("");
     setCameraModel("");
-    setDateFrom("");
-    setDateTo("");
+    setDateFrom(dateBounds.min);
+    setDateTo(dateBounds.max);
     setMinScore(0.6);
   }
 
@@ -240,6 +260,8 @@ export default function App() {
             cameraModel={cameraModel}
             dateFrom={dateFrom}
             dateTo={dateTo}
+            dateMin={dateBounds.min}
+            dateMax={dateBounds.max}
             minScore={minScore}
             facets={facets}
             cameraMakeOptions={cameraMakeOptions}
@@ -251,9 +273,12 @@ export default function App() {
               setCameraModel("");
             }}
             onCameraModelChange={setCameraModel}
-            onDateFromChange={setDateFrom}
-            onDateToChange={setDateTo}
-            onMinScoreChange={setMinScore}
+            onDateFromChange={(value) => setDateFrom(value)}
+            onDateToChange={(value) => setDateTo(value)}
+            onMinScoreChange={(value) => {
+              if (!Number.isFinite(value)) return;
+              setMinScore(Math.min(1, Math.max(0, value)));
+            }}
             onReset={resetFilters}
           />
 
@@ -277,10 +302,9 @@ export default function App() {
             selectedTags={selectedTags}
             apiBase={API_BASE}
             onPatchLabels={patchLabels}
-            onNotesChange={(notes) => {
-              if (!detail) return;
-              setDetail({ ...detail, labels: { ...detail.labels, notes } });
-            }}
+            notesDraft={notesDraft}
+            onNotesChange={setNotesDraft}
+            onSaveNotes={saveNotes}
           />
         </div>
       )}

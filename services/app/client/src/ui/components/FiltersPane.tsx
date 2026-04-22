@@ -8,6 +8,8 @@ type FiltersPaneProps = {
   cameraModel: string;
   dateFrom: string;
   dateTo: string;
+  dateMin: string;
+  dateMax: string;
   minScore: number;
   facets: FacetsResponse;
   cameraMakeOptions: string[];
@@ -30,6 +32,8 @@ export function FiltersPane(props: FiltersPaneProps) {
     cameraModel,
     dateFrom,
     dateTo,
+    dateMin,
+    dateMax,
     minScore,
     facets,
     cameraMakeOptions,
@@ -91,14 +95,35 @@ export function FiltersPane(props: FiltersPaneProps) {
       </select>
 
       <label>Date from</label>
-      <input type="date" value={dateFrom} onChange={(event) => onDateFromChange(event.target.value)} />
+      <input
+        type="date"
+        value={dateFrom}
+        min={dateMin || undefined}
+        max={dateMax || undefined}
+        onChange={(event) => onDateFromChange(event.target.value)}
+      />
 
       <label>Date to</label>
-      <input type="date" value={dateTo} onChange={(event) => onDateToChange(event.target.value)} />
+      <input
+        type="date"
+        value={dateTo}
+        min={dateMin || undefined}
+        max={dateMax || undefined}
+        onChange={(event) => onDateToChange(event.target.value)}
+      />
 
       <label>Min Print Score (12x18)</label>
-      <input type="range" min={0.5} max={1} step={0.01} value={minScore} onChange={(event) => onMinScoreChange(Number(event.target.value))} />
-      <div className="score-val">{minScore.toFixed(2)} - 1.00</div>
+      <div className="score-block">
+        <input
+          type="number"
+          min={0}
+          max={1}
+          step={0.01}
+          value={minScore}
+          onChange={(event) => onMinScoreChange(Number(event.target.value))}
+        />
+        <div className="score-val">Range: {minScore.toFixed(2)} to 1.00</div>
+      </div>
     </aside>
   );
 }
