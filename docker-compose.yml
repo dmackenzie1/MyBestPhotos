@@ -59,8 +59,14 @@ services:
       PHOTO_CURATOR_DEFAULT_ROOTS: ${PHOTO_ROOTS_JSON:-["/photos/repo1","/photos/repo2","/photos/repo3"]}
       PHOTO_CURATOR_CACHE_DIR: /data/cache
       PHOTO_CURATOR_THUMBS_DIR: /data/cache/thumbs
+      PHOTO_CURATOR_DESCRIPTION_PROVIDER: ${PHOTO_CURATOR_DESCRIPTION_PROVIDER:-basic}
+      PHOTO_CURATOR_LMSTUDIO_BASE_URL: ${PHOTO_CURATOR_LMSTUDIO_BASE_URL:-http://host.docker.internal:1234/v1}
+      PHOTO_CURATOR_LMSTUDIO_MODEL: ${PHOTO_CURATOR_LMSTUDIO_MODEL:-qwen2.5-vl-7b-instruct}
+      PHOTO_CURATOR_LMSTUDIO_TIMEOUT_SECONDS: ${PHOTO_CURATOR_LMSTUDIO_TIMEOUT_SECONDS:-60}
     depends_on:
       - postgres
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./:/workspace
       - ${PHOTO_ROOT_1:-./sample-photos}:/photos/repo1:ro
