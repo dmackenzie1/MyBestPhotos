@@ -40,27 +40,15 @@ def score_nima(
     db: "Database",
     *,
     max_size: int = 1024,
-    batch_size: int = 100,
-    refresh_all: bool = False,
-    nima_model_version: str = "nima_style_v0",
 ):
     from photo_curator.pipeline_v1.advanced_stage import score_nima as _score_nima
 
-    return _score_nima(
-        db,
-        max_size=max_size,
-        batch_size=batch_size,
-        refresh_all=refresh_all,
-        nima_model_version=nima_model_version,
-    )
+    return _score_nima(db, max_size=max_size)
 
 
 def run_advanced_runners(
     db: "Database",
     *,
-    nima_batch_size: int = 100,
-    nima_refresh_all: bool = False,
-    nima_model_version: str = "nima_style_v0",
     run_descriptions: bool = True,
     description_model_name: str = "basic-caption-v1",
     description_options: DescriptionOptions | None = None,
@@ -71,9 +59,6 @@ def run_advanced_runners(
 
     return _run_advanced_runners(
         db,
-        nima_batch_size=nima_batch_size,
-        nima_refresh_all=nima_refresh_all,
-        nima_model_version=nima_model_version,
         run_descriptions=run_descriptions,
         description_model_name=description_model_name,
         description_options=description_options,

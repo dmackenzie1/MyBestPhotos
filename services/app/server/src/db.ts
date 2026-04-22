@@ -11,3 +11,12 @@ pool.on("error", (err: Error) => {
 });
 
 export default pool;
+
+export async function checkHealth(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const result = await pool.query("SELECT 1 AS health_check");
+    return { ok: result.rows.length > 0 };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}

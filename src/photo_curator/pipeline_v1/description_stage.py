@@ -176,20 +176,54 @@ def describe_images(
                     path=photo_path,
                 )
 
-        semantic_relevance_score = 0.15
+        semantic_relevance_score = 0.0
         categories = _extract_categories(description_text)
+
+        # Description richness: unique word ratio and length contribute to content quality
         if description_text:
-            semantic_relevance_score += min(0.45, len(description_text.split()) / 40.0)
-        if camera_make or camera_model:
-            semantic_relevance_score += 0.1
-        semantic_relevance_score += min(0.25, 0.08 * len(categories))
+            words = description_text.split()
+            unique_words = len(set(w.lower() for w in words))
+            total_words = max(len(words), 1)
+            unique_ratio = unique_words / total_words
+
+            # Length component: longer descriptions tend to be more descriptive
+            length_score = min(1.0, total_words / 30.0)
+
+            # Unique word ratio bonus: diverse vocabulary indicates richer content
+            vocab_bonus = unique_ratio * 0.25
+
+            semantic_relevance_score += length_score * 0.4 + vocab_bonus
+
+        # Category richness: primary differentiator with basic descriptions
+        if categories:
+            category_bonus = min(1.0, len(categories) / 3.0) ** 0.8 * 0.45
+            semantic_relevance_score += category_bonus
+
+        # Camera metadata bonus: DSLR/mirrorless cameras get more credit than phones
+        if camera_make and camera_model:
+            make_lower = camera_make.lower()
+            is_dslr = any(kw in make_lower for kw in ["canon", "nikon", "sony", "fujifilm", "pentax"])
+            is_mirrorless = any(kw in make_lower for kw in ["samsung", "lg", "apple", "tcl"])
+            if is_dslr:
+                semantic_relevance_score += 0.25
+            elif is_mirrorless:
+                semantic_relevance_score += 0.12
+            else:
+                semantic_relevance_score += 0.08
+
+        # Technical quality as a proxy for "describability": sharper photos are more relevant
+        if technical_quality_score is not None and technical_quality_score > 0:
+            tech_bonus = (technical_quality_score - 0.3) * 0.25
+            semantic_relevance_score += max(0, min(tech_bonus, 0.15))
+
+        # Clamp to [0, 1]
         semantic_relevance_score = max(0.0, min(1.0, semantic_relevance_score))
 
         curation_score = max(
             0.0,
             min(
                 1.0,
-                (0.7 * (technical_quality_score or print_12x18 or 0.0))
+                (0.5 * (technical_quality_score or print_12x18 or 0.0))
                 + (0.3 * semantic_relevance_score),
             ),
         )

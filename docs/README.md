@@ -7,6 +7,9 @@ This index is intentionally short: it points to the stable architecture docs and
 - `docs/architecture/api-contract.md`
 - `docs/architecture/runner-notes.md`
 
+## Process docs
+- `docs/continuous-improvement.md` — How to observe score distributions, run diagnostics, and iterate on scoring improvements.
+
 ## Branch-intent docs
 - `docs/branch-intents/TEMPLATE.md`
 - `docs/branch-intents/*.md`

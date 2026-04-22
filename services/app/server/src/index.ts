@@ -4,7 +4,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { z } from "zod";
 import type { LabelPatch, PhotoDetail, PhotoListItem } from "@mybestphotos/shared";
-import pool from "./db.js";
+import pool, { checkHealth } from "./db.js";
 
 const app = express();
 app.use(cors());
@@ -205,8 +205,61 @@ function buildPhotoFilters(query: ListQuery): SqlFilters {
   };
 }
 
-app.get("/api/v1/health", (_req, res) => {
-  res.json({ ok: true, stubMode: STUB_MODE });
+app.get("/api/v1/health", async (_req, res) => {
+  const dbResult = await checkHealth();
+
+  let pipelineInfo: Record<string, unknown> | null = null;
+  try {
+    const runRows = await pool.query(
+      `SELECT id, run_id, started_at, completed_at, status, nima_model_version,
+              total_files_ingested, total_metrics_scored, total_nima_scored, notes
+       FROM pipeline_runs ORDER BY id DESC LIMIT 1`
+    );
+    if (runRows.rows.length > 0) {
+      const r = runRows.rows[0];
+      pipelineInfo = {
+        last_run_id: r.run_id,
+        started_at: r.started_at?.toString(),
+        completed_at: r.completed_at?.toString(),
+        status: r.status,
+        nima_model_version: r.nima_model_version,
+        total_files_ingested: Number(r.total_files_ingested),
+        total_metrics_scored: Number(r.total_metrics_scored),
+        total_nima_scored: Number(r.total_nima_scored),
+        notes: r.notes,
+      };
+    }
+  } catch {
+    // Pipeline info unavailable; leave as null
+  }
+
+  let fileStats: Record<string, unknown> | null = null;
+  try {
+    const countRows = await pool.query(
+      `SELECT COUNT(*)::int AS total_files,
+              (SELECT COUNT(*) FROM file_metrics WHERE nima_score IS NOT NULL)::int AS scored_nima,
+              (SELECT COUNT(*) FROM file_descriptions)::int AS described
+       FROM files`
+    );
+    if (countRows.rows.length > 0) {
+      const s = countRows.rows[0];
+      fileStats = {
+        total_files: Number(s.total_files),
+        scored_nima: Number(s.scored_nima),
+        described: Number(s.described),
+      };
+    }
+  } catch {
+    // File stats unavailable; leave as null
+  }
+
+  res.json({
+    ok: dbResult.ok,
+    stubMode: STUB_MODE,
+    database: dbResult.ok ? "connected" : `error: ${dbResult.error}`,
+    pipeline: pipelineInfo,
+    fileStats,
+  });
 });
 
 app.get("/api/v1/photos", async (req, res) => {

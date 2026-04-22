@@ -241,6 +241,9 @@ If LM Studio is unavailable, the runner logs a warning and falls back per-image 
 - Current runner logs stage progress (`discover`, `score-metrics`, `describe`) to console and `logs/`.
 - Compose now separates base ingest and advanced enrichment into two runner containers so advanced passes can evolve independently.
 - Current ranking defaults to a transparent `curation_score` built from technical quality + lightweight semantic relevance.
+- **Score distribution logging**: After each run, the pipeline logs min/p25/median/p75/p90/stddev for every score field. Look for `stddev < 0.05` warnings — they indicate compressed scores that may not be discriminative enough.
+- **Run tracking in database**: Each pipeline run creates a record in `pipeline_runs` with full distribution stats. Query it via `psql` or the `/api/v1/health` endpoint.
+- **Diagnostic queries**: Run `scripts/diagnose_scores.sql` for score distributions, NULL analysis, clustering checks, and run comparison. See `docs/continuous-improvement.md`.
 - NIMA-style scoring is now treated as advanced, rerunnable enrichment and stored in `file_metrics` (`nima_score`, `aesthetic_score`, `keep_score`, `nima_model_version`).
 - WebSocket live progress is not yet implemented; recommended next step is an `/api/v1/jobs` + WS stream for in-flight pipeline status events.
 
