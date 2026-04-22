@@ -1,0 +1,25 @@
+# Keep local virtualenvs out of Docker build contexts (Windows .venv/lib64 causes sender errors)
+.venv/
+
+# VCS and editor noise
+.git/
+.idea/
+.vs/
+
+# Dependency/build artifacts
+node_modules/
+services/web/ui/node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+build/
+dist/
+*.egg-info/
+
+# Local env/config/cache/log outputs
+.env
+.cache/
+logs/
+reports/
+output/
