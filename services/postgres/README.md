@@ -2,19 +2,22 @@
 
 This directory owns database-related artifacts.
 
-- `migrations/001_init.sql` (legacy schema)
-- `migrations/002_core_v1.sql` (current core schema)
+- `init/001_stock_schema.sql` (current baseline schema loaded on first DB init)
+- `migrations/001_init.sql` (legacy schema reference)
+- `migrations/002_core_v1.sql` (legacy migration-era schema reference)
 
-Migrations run automatically via the `postgres-migrations` one-shot service during `docker compose up`.
+## Startup behavior
 
-Apply manually from compose:
+The Compose `postgres` service mounts `init/001_stock_schema.sql` into
+`/docker-entrypoint-initdb.d/` so a fresh volume is initialized with the stock schema automatically.
+
+This initialization runs only when the Postgres data directory is empty.
+
+## Resetting to stock schema
+
+If you need a clean baseline DB again, remove the DB volume and restart:
 
 ```bash
-docker compose run --rm postgres-migrations
+docker compose down -v
+docker compose up -d postgres
 ```
-
-## Migration strategy
-
-- `apply-migrations.sh` creates `schema_migrations` if missing.
-- Each `migrations/*.sql` file in `/migrations` runs once and is tracked by filename.
-- Add new migrations with incrementing prefixes (for example `003_add_indexes.sql`).
