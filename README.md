@@ -55,8 +55,12 @@ Optional LM Studio settings (for vision-based descriptions):
 
 Optional ingest throttles (useful for test runs on large libraries):
 - `PHOTO_CURATOR_INGEST_LIMIT=500` (0 means no limit)
-- `PHOTO_CURATOR_INGEST_SELECTION_STRATEGY=first|random`
+- `PHOTO_CURATOR_INGEST_SELECTION_STRATEGY=first|random|newest`
 - `PHOTO_CURATOR_INGEST_SELECTION_SEED=42` (used when strategy is `random`)
+
+Compatibility aliases (also supported):
+- `INGEST_FILE_LIMIT=500`
+- `INGEST_SELECTION_STRATEGY=first|random|newest`
 
 > Default uses a LAN host URL; if LM Studio runs on the same host as Docker Desktop, `host.docker.internal` is also a good option.
 

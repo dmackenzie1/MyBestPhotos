@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import os
 import tempfile
 import unittest
 
@@ -70,6 +71,31 @@ class IngestSelectionTests(unittest.TestCase):
 
             self.assertEqual(eligible, 4)
             self.assertEqual(len(selected), 4)
+
+    def test_newest_strategy_picks_most_recent_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            paths: list[Path] = []
+            for idx in range(5):
+                path = root / f"img_{idx}.jpg"
+                path.write_bytes(b"jpg")
+                paths.append(path)
+
+            for idx, path in enumerate(paths):
+                ts = 1_700_000_000 + idx
+                os.utime(path, (ts, ts))
+
+            eligible, selected = _select_discovery_candidates(
+                [root],
+                {"jpg"},
+                ingest_limit=2,
+                strategy="newest",
+                seed=7,
+            )
+
+            self.assertEqual(eligible, 5)
+            self.assertEqual(len(selected), 2)
+            self.assertEqual([path.name for _, path in selected], ["img_4.jpg", "img_3.jpg"])
 
 
 if __name__ == "__main__":
