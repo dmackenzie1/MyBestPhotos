@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     clip_model: str = "ViT-B-32"
     clip_weights_path: str = ""
     embedding_device: str = "auto"
+    description_provider: str = "basic"
+    lmstudio_base_url: str = "http://127.0.0.1:1234/v1"
+    lmstudio_model: str = "qwen2.5-vl-7b-instruct"
+    lmstudio_timeout_seconds: float = 60.0
 
     aesthetics_method: str = "aesthetic_v0"
 

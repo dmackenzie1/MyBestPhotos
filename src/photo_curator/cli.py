@@ -8,7 +8,7 @@ from loguru import logger
 
 from photo_curator.config import Settings, ensure_dirs, load_settings
 from photo_curator.db import Database
-from photo_curator.pipeline_v1 import describe_images, discover_files, score_metrics
+from photo_curator.pipeline_v1 import DescriptionOptions, describe_images, discover_files, score_metrics
 from photo_curator.utils.logging import configure_logging
 
 app = typer.Typer(help="Photo curation ingestion and enrichment pipeline")
@@ -48,10 +48,20 @@ def score_metrics_cmd(
 @app.command("describe")
 def describe_cmd(
     model_name: str = typer.Option("basic-caption-v1", "--model-name"),
+    description_provider: Optional[str] = typer.Option(None, "--description-provider"),
     config: Optional[str] = typer.Option(None, "--config"),
 ) -> None:
-    db, _settings = _init_db(config)
-    describe_images(db, model_name=model_name)
+    db, settings = _init_db(config)
+    describe_images(
+        db,
+        model_name=model_name,
+        options=DescriptionOptions(
+            provider=(description_provider or settings.description_provider).strip().lower(),
+            lmstudio_base_url=settings.lmstudio_base_url,
+            lmstudio_model=settings.lmstudio_model,
+            lmstudio_timeout_seconds=settings.lmstudio_timeout_seconds,
+        ),
+    )
 
 
 @app.command("pipeline")
@@ -60,6 +70,7 @@ def pipeline_cmd(
     extensions: list[str] = typer.Option([], "--extensions", help="File extensions"),
     max_size: int = typer.Option(1280, "--max-size"),
     model_name: str = typer.Option("basic-caption-v1", "--model-name"),
+    description_provider: Optional[str] = typer.Option(None, "--description-provider"),
     config: Optional[str] = typer.Option(None, "--config"),
 ) -> None:
     db, settings = _init_db(config)
@@ -68,7 +79,16 @@ def pipeline_cmd(
 
     discover_files(db, settings, roots=target_roots, extensions=target_extensions)
     score_metrics(db, max_size=max_size)
-    describe_images(db, model_name=model_name)
+    describe_images(
+        db,
+        model_name=model_name,
+        options=DescriptionOptions(
+            provider=(description_provider or settings.description_provider).strip().lower(),
+            lmstudio_base_url=settings.lmstudio_base_url,
+            lmstudio_model=settings.lmstudio_model,
+            lmstudio_timeout_seconds=settings.lmstudio_timeout_seconds,
+        ),
+    )
 
     logger.info("Pipeline complete.")
 

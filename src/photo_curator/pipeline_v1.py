@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import base64
 import json
 import mimetypes
 from pathlib import Path
 import re
 from typing import Iterable
+from urllib import error, request
 
 import cv2
 from loguru import logger
@@ -31,6 +33,14 @@ class DiscoverStats:
 @dataclass
 class StageStats:
     processed: int = 0
+
+
+@dataclass(frozen=True)
+class DescriptionOptions:
+    provider: str = "basic"
+    lmstudio_base_url: str = "http://127.0.0.1:1234/v1"
+    lmstudio_model: str = "qwen2.5-vl-7b-instruct"
+    lmstudio_timeout_seconds: float = 60.0
 
 
 def _iter_files(roots: Iterable[Path], extensions: set[str]) -> Iterable[tuple[Path, Path]]:
@@ -90,6 +100,73 @@ def _to_float(value: object) -> float | None:
         return float(text)
     except ValueError:
         return None
+
+
+def _describe_with_lmstudio(
+    path: Path,
+    filename: str,
+    camera_make: str | None,
+    camera_model: str | None,
+    options: DescriptionOptions,
+) -> str | None:
+    mime_type = mimetypes.guess_type(filename)[0] or "image/jpeg"
+    image_base64 = base64.b64encode(path.read_bytes()).decode("utf-8")
+
+    prompt = (
+        "Describe this personal photo in 1-2 neutral sentences suitable for search. "
+        "Mention obvious subjects, scene context, and photographic qualities if clear. "
+        "Avoid guessing names or sensitive details."
+    )
+    if camera_make or camera_model:
+        prompt += (
+            f" Camera metadata: {camera_make or 'unknown'} {camera_model or 'unknown'}."
+        )
+
+    payload = {
+        "model": options.lmstudio_model,
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{mime_type};base64,{image_base64}",
+                        },
+                    },
+                ],
+            }
+        ],
+        "temperature": 0.1,
+    }
+    body = json.dumps(payload).encode("utf-8")
+    endpoint = f"{options.lmstudio_base_url.rstrip('/')}/chat/completions"
+    req = request.Request(
+        endpoint,
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    try:
+        with request.urlopen(req, timeout=options.lmstudio_timeout_seconds) as response:
+            response_body = response.read()
+    except (TimeoutError, error.URLError, error.HTTPError) as exc:
+        logger.warning("LM Studio request failed for {path}: {error}", path=path, error=exc)
+        return None
+
+    try:
+        parsed = json.loads(response_body.decode("utf-8"))
+        content = parsed["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, json.JSONDecodeError, TypeError) as exc:
+        logger.warning("LM Studio response parse failed for {path}: {error}", path=path, error=exc)
+        return None
+
+    if not isinstance(content, str):
+        return None
+    cleaned = content.strip()
+    return cleaned or None
 
 
 def discover_files(db: Database, settings: Settings, roots: list[Path], extensions: list[str]) -> DiscoverStats:
@@ -270,10 +347,26 @@ def score_metrics(db: Database, max_size: int = 1024) -> StageStats:
     return stats
 
 
-def describe_images(db: Database, model_name: str = "basic-caption-v1") -> StageStats:
+def describe_images(
+    db: Database,
+    model_name: str = "basic-caption-v1",
+    options: DescriptionOptions | None = None,
+) -> StageStats:
+    resolved_options = options or DescriptionOptions()
+    if resolved_options.provider not in {"basic", "lmstudio"}:
+        logger.warning(
+            "Unknown description provider '{provider}', falling back to basic",
+            provider=resolved_options.provider,
+        )
+        resolved_options = DescriptionOptions(
+            provider="basic",
+            lmstudio_base_url=resolved_options.lmstudio_base_url,
+            lmstudio_model=resolved_options.lmstudio_model,
+            lmstudio_timeout_seconds=resolved_options.lmstudio_timeout_seconds,
+        )
     rows = db.fetchall(
         """
-        SELECT f.id, f.filename, f.camera_make, f.camera_model, f.photo_taken_at,
+        SELECT f.id, f.filename, f.source_root, f.relative_path, f.camera_make, f.camera_model, f.photo_taken_at,
                m.print_score_12x18, m.blur_score, m.brightness_score, m.contrast_score
         FROM files f
         LEFT JOIN file_metrics m ON m.file_id = f.id
@@ -286,6 +379,8 @@ def describe_images(db: Database, model_name: str = "basic-caption-v1") -> Stage
         (
             file_id,
             filename,
+            source_root,
+            relative_path,
             camera_make,
             camera_model,
             photo_taken_at,
@@ -302,14 +397,30 @@ def describe_images(db: Database, model_name: str = "basic-caption-v1") -> Stage
             elif print_12x18 < 0.6:
                 quality_hint = "fair"
 
-        description_text = (
+        basic_description_text = (
             f"Photo {filename} captured"
             + (f" on {photo_taken_at.date()}" if photo_taken_at else "")
             + (f" with {camera_make} {camera_model}" if camera_make or camera_model else "")
             + f". Overall technical quality looks {quality_hint}."
         )
+        description_text = basic_description_text
+        if resolved_options.provider == "lmstudio":
+            photo_path = Path(source_root) / relative_path
+            if photo_path.exists():
+                lmstudio_description = _describe_with_lmstudio(
+                    photo_path,
+                    filename=filename,
+                    camera_make=camera_make,
+                    camera_model=camera_model,
+                    options=resolved_options,
+                )
+                if lmstudio_description:
+                    description_text = lmstudio_description
+            else:
+                logger.warning("LM Studio skipped: source file not found at {path}", path=photo_path)
 
         description_json = {
+            "provider": resolved_options.provider,
             "quality_hint": quality_hint,
             "camera_make": camera_make,
             "camera_model": camera_model,
@@ -336,5 +447,9 @@ def describe_images(db: Database, model_name: str = "basic-caption-v1") -> Stage
         )
         stats.processed += 1
 
-    logger.info("Description stage complete: processed={count}", count=stats.processed)
+    logger.info(
+        "Description stage complete: processed={count}, provider={provider}",
+        count=stats.processed,
+        provider=resolved_options.provider,
+    )
     return stats
