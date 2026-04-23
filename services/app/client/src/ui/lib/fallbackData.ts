@@ -13,6 +13,7 @@ export const FALLBACK_ITEMS: PhotoListItem[] = [
     printScore8x10: 0.9,
     printScore6x8: 0.94,
     curationScore: 0.93,
+    aestheticScore: 0.89,
     descriptionText: "Young girl smiling with golden retriever in natural light.",
     keepFlag: true,
     rejectFlag: false,
@@ -46,6 +47,7 @@ export const FALLBACK_DETAIL: PhotoDetail = {
     technicalQualityScore: 0.92,
     semanticRelevanceScore: 0.84,
     curationScore: 0.9,
+    aestheticScore: 0.88,
   },
   labels: {
     keepFlag: true,
