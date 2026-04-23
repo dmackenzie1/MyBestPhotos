@@ -5,12 +5,13 @@ from pathlib import Path
 import cv2
 from loguru import logger
 import numpy as np
+from PIL import Image
 from tqdm import tqdm
 
+from photo_curator.aesthetics import load_clip_aesthetic_scorer
 from photo_curator.db import Database
 from photo_curator.pipeline_run import _compute_distribution
 
-from photo_curator.nima.inference import assess_quality
 from photo_curator.pipeline_v1.common import _load_image
 from photo_curator.pipeline_v1.description_stage import describe_images
 from photo_curator.pipeline_v1.metrics_stage import _compute_metrics
@@ -80,11 +81,14 @@ def score_nima(
     db: Database,
     *,
     max_size: int = 1024,
+    clip_model: str = "ViT-B-32",
+    clip_device: str = "auto",
 ) -> StageStats:
     _BATCH_SIZE = 500
     nima_model_version = "nima_real_v1"
 
     stats = StageStats()
+    clip_scorer = load_clip_aesthetic_scorer(clip_model, clip_device)
     while True:
         rows = db.fetchall(
             """
@@ -127,14 +131,20 @@ def score_nima(
                 entropy_score,
                 technical_quality_score,
             ) = _resolve_or_compute_metrics(
-                (blur_score, brightness_score, contrast_score, entropy_score, technical_quality_score),
+                (
+                    blur_score,
+                    brightness_score,
+                    contrast_score,
+                    entropy_score,
+                    technical_quality_score,
+                ),
                 image,
             )
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             composition_balance_score = _composition_balance_score(gray)
 
-            # Real NIMA inference: returns (mean_normalized_to_0_1, std)
-            nima_mean, nima_std = assess_quality(image)
+            pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+            nima_mean = clip_scorer.score_pil_images([pil_image])[0]
 
             # Blend real NIMA score with composition balance signal.
             # Composition balance provides supplementary structural guidance.
@@ -143,14 +153,14 @@ def score_nima(
             # Aesthetic score: NIMA primary + blur resistance (sharp photos look more aesthetic)
             blur_resistance = 1.0 - blur_score
             aesthetic_raw = (0.80 * nima_spread) + (0.20 * blur_resistance)
-            aesthetic_spread = max(0.0, min(1.0, aesthetic_raw ** 0.75))
+            aesthetic_spread = max(0.0, min(1.0, aesthetic_raw**0.75))
 
             # Keep score: combined technical quality + aesthetics for ranking workflows
             keep_raw = (0.65 * technical_quality_score) + (0.35 * aesthetic_spread)
-            keep_spread = max(0.0, min(1.0, keep_raw ** 0.8))
+            keep_spread = max(0.0, min(1.0, keep_raw**0.8))
 
             db.execute(
-            """
+                """
             INSERT INTO file_metrics (
               file_id, nima_score, aesthetic_score, keep_score,
               nima_model_version, advanced_metadata_updated_at
@@ -180,8 +190,10 @@ def run_advanced_runners(
     run_descriptions: bool = True,
     description_model_name: str = "basic-caption-v1",
     description_options: DescriptionOptions | None = None,
+    clip_model: str = "ViT-B-32",
+    clip_device: str = "auto",
 ) -> AdvancedRunnerStats:
-    nima_stats = score_nima(db)
+    nima_stats = score_nima(db, clip_model=clip_model, clip_device=clip_device)
     describe_stats = StageStats()
     if run_descriptions:
         describe_stats = describe_images(
@@ -254,4 +266,6 @@ def _log_advanced_distribution(db: Database) -> None:
             null_counts[name] = int(row[0][0])
 
     if null_counts:
-        logger.info("  NULL counts: {nulls}", nulls=", ".join(f"{n}={c}" for n, c in null_counts.items()))
+        logger.info(
+            "  NULL counts: {nulls}", nulls=", ".join(f"{n}={c}" for n, c in null_counts.items())
+        )
