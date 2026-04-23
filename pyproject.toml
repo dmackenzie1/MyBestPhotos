@@ -21,6 +21,8 @@ dependencies = [
   "psycopg-pool",
   "pgvector",
   "pydantic-settings",
+  "torch",
+  "torchvision",
   "tqdm",
   "typer",
 ]

@@ -10,11 +10,11 @@ from tqdm import tqdm
 from photo_curator.db import Database
 from photo_curator.pipeline_run import _compute_distribution
 
+from photo_curator.nima.inference import assess_quality
 from photo_curator.pipeline_v1.common import _load_image
 from photo_curator.pipeline_v1.description_stage import describe_images
 from photo_curator.pipeline_v1.metrics_stage import _compute_metrics
 from photo_curator.pipeline_v1.models import AdvancedRunnerStats, DescriptionOptions, StageStats
-from photo_curator.pipeline_v1.scoring_math import _compute_nima_style_score
 
 
 def _composition_balance_score(gray) -> float:
@@ -80,9 +80,9 @@ def score_nima(
     db: Database,
     *,
     max_size: int = 1024,
-    nima_model_version: str = "nima_style_v0",
 ) -> StageStats:
     _BATCH_SIZE = 500
+    nima_model_version = "nima_real_v1"
 
     stats = StageStats()
     while True:
@@ -92,12 +92,12 @@ def score_nima(
                    fm.blur_score, fm.brightness_score, fm.contrast_score, fm.entropy_score, fm.technical_quality_score
             FROM files f
             LEFT JOIN file_metrics fm ON fm.file_id = f.id
-            WHERE fm.nima_score IS NULL
+            WHERE fm.nima_score IS NULL OR fm.nima_model_version != %s
             ORDER BY COALESCE(fm.advanced_metadata_updated_at, fm.updated_at, f.updated_at, f.created_at) ASC NULLS FIRST,
                      f.id ASC
             LIMIT %s
             """,
-            (_BATCH_SIZE,),
+            (nima_model_version, _BATCH_SIZE),
         )
 
         if not rows:
@@ -132,14 +132,22 @@ def score_nima(
             )
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             composition_balance_score = _composition_balance_score(gray)
-            nima_score, aesthetic_score, keep_score = _compute_nima_style_score(
-                blur_score=blur_score,
-                brightness_score=brightness_score,
-                contrast_score=contrast_score,
-                entropy_score=entropy_score,
-                technical_quality_score=technical_quality_score,
-                composition_balance_score=composition_balance_score,
-            )
+
+            # Real NIMA inference: returns (mean_normalized_to_0_1, std)
+            nima_mean, nima_std = assess_quality(image)
+
+            # Blend real NIMA score with composition balance signal.
+            # Composition balance provides supplementary structural guidance.
+            nima_spread = max(0.0, min(1.0, 0.85 * nima_mean + 0.15 * composition_balance_score))
+
+            # Aesthetic score: NIMA primary + blur resistance (sharp photos look more aesthetic)
+            blur_resistance = 1.0 - blur_score
+            aesthetic_raw = (0.80 * nima_spread) + (0.20 * blur_resistance)
+            aesthetic_spread = max(0.0, min(1.0, aesthetic_raw ** 0.75))
+
+            # Keep score: combined technical quality + aesthetics for ranking workflows
+            keep_raw = (0.65 * technical_quality_score) + (0.35 * aesthetic_spread)
+            keep_spread = max(0.0, min(1.0, keep_raw ** 0.8))
 
             db.execute(
             """
@@ -155,7 +163,7 @@ def score_nima(
               advanced_metadata_updated_at = now(),
               updated_at = now()
             """,
-                (file_id, nima_score, aesthetic_score, keep_score, nima_model_version),
+                (file_id, nima_spread, aesthetic_spread, keep_spread, nima_model_version),
             )
             stats.processed += 1
 
