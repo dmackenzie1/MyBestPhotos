@@ -35,3 +35,17 @@
   color: #e5f0ff;
   border-bottom-color: var(--accent);
 }
+
+.sort-select select {
+  background: #0a162b;
+  border: 1px solid #1e335b;
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sort-select select:hover {
+  border-color: #2d5a9e;
+}

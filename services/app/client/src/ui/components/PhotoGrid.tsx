@@ -50,7 +50,12 @@ export function PhotoGrid({
         {items.map((item) => (
           <button key={item.id} className={`card ${selectedId === item.id ? "selected" : ""}`} onClick={() => onSelectPhoto(item.id)}>
             <img src={`${apiBase}/photos/${item.id}/image?size=thumb`} alt={item.filename} loading="lazy" />
-            {settings.showScores && <div className="overlay">{item.printScore12x18?.toFixed(2) ?? "--"}</div>}
+            {settings.showScores && (
+              <div className="overlay">
+                <span>{item.aestheticScore?.toFixed(2) ?? "--"}</span>
+                <span className="secondary">{item.printScore12x18?.toFixed(2) ?? "--"}</span>
+              </div>
+            )}
             <div className="card-body">
               <strong>{item.filename}</strong>
               <small>{item.photoTakenAt ? new Date(item.photoTakenAt).toLocaleString() : "Unknown date"}</small>

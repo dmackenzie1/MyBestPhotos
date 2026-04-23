@@ -45,6 +45,8 @@ export default function App() {
     density: "comfortable",
   });
 
+  const [sort, setSort] = useState<string>("aesthetic_desc");
+
   const pageSize = 60;
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -60,9 +62,9 @@ export default function App() {
     params.set("status", status);
     params.set("page", String(page));
     params.set("pageSize", String(pageSize));
-    params.set("sort", "curation_desc");
+    params.set("sort", sort);
     return params.toString();
-  }, [search, cameraMake, cameraModel, category, dateFrom, dateTo, minScore, status, page]);
+  }, [search, cameraMake, cameraModel, category, dateFrom, dateTo, minScore, status, page, sort]);
 
   useEffect(() => {
     setPage(1);
@@ -234,7 +236,7 @@ export default function App() {
 
   return (
     <div className="shell">
-      <TopBar viewMode={viewMode} search={search} onSearchChange={setSearch} onViewModeChange={setViewMode} />
+      <TopBar viewMode={viewMode} search={search} onSearchChange={setSearch} onViewModeChange={setViewMode} sort={sort} onSortChange={setSort} />
       {stubActive && <div className="banner">Stub mode active: API unavailable, showing sample data.</div>}
 
       {viewMode === "timeline" && (

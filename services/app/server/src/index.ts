@@ -25,6 +25,7 @@ const mockList: PhotoListItem[] = [
     printScore8x10: 0.94,
     printScore6x8: 0.96,
     curationScore: 0.93,
+    aestheticScore: 0.87,
     descriptionText: "Young girl smiling and hugging a golden retriever outdoors.",
     keepFlag: true,
     rejectFlag: false,
@@ -42,6 +43,7 @@ const mockList: PhotoListItem[] = [
     printScore8x10: 0.88,
     printScore6x8: 0.9,
     curationScore: 0.87,
+    aestheticScore: 0.82,
     descriptionText: "Family portrait in warm evening light in a backyard.",
     keepFlag: null,
     rejectFlag: null,
@@ -77,6 +79,7 @@ const mockDetail = (id: number): PhotoDetail => {
       technicalQualityScore: 0.92,
       semanticRelevanceScore: 0.85,
       curationScore: selected.curationScore,
+      aestheticScore: selected.aestheticScore,
       printScore6x8: selected.printScore6x8,
       printScore8x10: selected.printScore8x10,
       printScore12x18: selected.printScore12x18,
@@ -105,8 +108,8 @@ const listQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
   pageSize: z.coerce.number().min(1).max(200).default(40),
   sort: z
-    .enum(["date_desc", "date_asc", "print_12x18_desc", "curation_desc", "filename_asc"])
-    .default("date_desc"),
+    .enum(["date_desc", "date_asc", "print_12x18_desc", "curation_desc", "aesthetic_desc", "filename_asc"])
+    .default("aesthetic_desc"),
 });
 
 type ListQuery = z.infer<typeof listQuerySchema>;
@@ -138,6 +141,7 @@ type PhotoListRow = {
   print_score_8x10: number | null;
   print_score_6x8: number | null;
   curation_score: number | null;
+  aesthetic_score: number | null;
   description_text: string | null;
   keep_flag: boolean | null;
   reject_flag: boolean | null;
@@ -290,6 +294,8 @@ app.get("/api/v1/photos", async (req, res) => {
         ? "fm.print_score_12x18 DESC NULLS LAST"
         : query.sort === "curation_desc"
           ? "fm.curation_score DESC NULLS LAST"
+        : query.sort === "aesthetic_desc"
+          ? "fm.aesthetic_score DESC NULLS LAST"
         : query.sort === "filename_asc"
           ? "f.filename ASC"
           : "f.photo_taken_at DESC NULLS LAST";
@@ -309,6 +315,7 @@ app.get("/api/v1/photos", async (req, res) => {
       fm.print_score_8x10,
       fm.print_score_6x8,
       fm.curation_score,
+      fm.aesthetic_score,
       fd.description_text,
       fl.keep_flag,
       fl.reject_flag,
@@ -347,10 +354,11 @@ app.get("/api/v1/photos", async (req, res) => {
     printScore8x10: row.print_score_8x10,
     printScore6x8: row.print_score_6x8,
     curationScore: row.curation_score,
+    aestheticScore: row.aesthetic_score,
     descriptionText: row.description_text,
     keepFlag: row.keep_flag,
     rejectFlag: row.reject_flag,
-    favoriteFlag: row.favorite_flag,
+    favoriteFlag: row.favoriteFlag,
   }));
 
   res.json({
@@ -382,6 +390,7 @@ app.get("/api/v1/photos/:id", async (req, res) => {
         fd.description_text, fd.description_json,
         fm.blur_score, fm.brightness_score, fm.contrast_score, fm.entropy_score, fm.noise_score,
         fm.technical_quality_score, fm.semantic_relevance_score, fm.curation_score,
+        fm.aesthetic_score,
         fm.print_score_6x8, fm.print_score_8x10, fm.print_score_12x18,
         fl.keep_flag, fl.reject_flag, fl.favorite_flag,
         fl.print_candidate_6x8, fl.print_candidate_8x10, fl.print_candidate_12x18,
@@ -424,6 +433,7 @@ app.get("/api/v1/photos/:id", async (req, res) => {
       technicalQualityScore: row.technical_quality_score,
       semanticRelevanceScore: row.semantic_relevance_score,
       curationScore: row.curation_score,
+      aestheticScore: row.aesthetic_score,
       printScore6x8: row.print_score_6x8,
       printScore8x10: row.print_score_8x10,
       printScore12x18: row.print_score_12x18,

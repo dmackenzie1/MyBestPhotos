@@ -61,6 +61,14 @@
   padding: 4px 8px;
 }
 
+.overlay .secondary {
+  display: block;
+  font-size: 11px;
+  color: #a0d8b5;
+  margin-top: 2px;
+  font-weight: 400;
+}
+
 .card-body { padding: 6px; display: flex; flex-direction: column; gap: 3px; }
 .card-body small { color: var(--soft); }
 
