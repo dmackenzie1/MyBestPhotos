@@ -12,7 +12,6 @@ from photo_curator.aesthetics import load_clip_aesthetic_scorer
 from photo_curator.db import Database
 from photo_curator.pipeline_run import _compute_distribution
 
-from photo_curator.nima.inference import assess_quality, heuristic_score
 from photo_curator.pipeline_v1.common import _load_image
 from photo_curator.pipeline_v1.description_stage import describe_images
 from photo_curator.pipeline_v1.metrics_stage import _compute_metrics
@@ -144,10 +143,13 @@ def score_nima(
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             composition_balance_score = _composition_balance_score(gray)
 
-            # Real NIMA inference: returns (mean_normalized_to_0_1, std)
-            nima_mean, nima_std = assess_quality(image)
+            # Use CLIP aesthetics as the primary advanced-stage quality signal.
+            # Keep the downstream blending logic to preserve score behavior contracts.
+            rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            clip_score = clip_scorer.score_pil_images([Image.fromarray(rgb_image)])[0]
+            nima_mean = max(0.0, min(1.0, float(clip_score)))
 
-            # Blend real NIMA score with composition balance signal.
+            # Blend primary score with composition balance signal.
             # Composition balance provides supplementary structural guidance.
             nima_spread = max(0.0, min(1.0, 0.85 * nima_mean + 0.15 * composition_balance_score))
 
