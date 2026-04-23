@@ -6,6 +6,7 @@ from typing import Optional
 import typer
 from loguru import logger
 
+from photo_curator.aesthetics import score_file_aesthetic
 from photo_curator.config import Settings, ensure_dirs, load_settings
 from photo_curator.db import Database
 from photo_curator.pipeline_run import PipelineRun, write_run_artifact
@@ -48,10 +49,16 @@ def discover_cmd(
         target_roots = roots or [Path(root) for root in settings.default_roots]
         target_extensions = extensions or settings.extensions
 
-        run_tracker.start(ingest_limit=settings.ingest_limit, ingest_strategy=settings.ingest_selection_strategy)
+        run_tracker.start(
+            ingest_limit=settings.ingest_limit, ingest_strategy=settings.ingest_selection_strategy
+        )
 
-        discover_stats = discover_files(db, settings, roots=target_roots, extensions=target_extensions)
-        run_tracker.update_stage(files_ingested=discover_stats.upserted, skipped=discover_stats.skipped)
+        discover_stats = discover_files(
+            db, settings, roots=target_roots, extensions=target_extensions
+        )
+        run_tracker.update_stage(
+            files_ingested=discover_stats.upserted, skipped=discover_stats.skipped
+        )
 
         logger.info(
             "Discover complete: scanned={scanned} upserted={upserted} skipped={skipped} failed_db={failed_db} failed_processing={failed_proc}",
@@ -81,7 +88,9 @@ def score_metrics_cmd(
         run_id = run_tracker.complete()
         write_run_artifact(db, run_id, report_dir=settings.report_dir)
 
-        logger.info("Metrics scored: {count} (run: {run_id})", count=metrics_stats.processed, run_id=run_id)
+        logger.info(
+            "Metrics scored: {count} (run: {run_id})", count=metrics_stats.processed, run_id=run_id
+        )
     finally:
         _close_db(db)
 
@@ -132,7 +141,9 @@ def pipeline_cmd(
         # Start tracking this run
         run_tracker.start(
             nima_model_version="nima_style_v0",
-            description_provider=(description_provider or settings.description_provider).strip().lower(),
+            description_provider=(description_provider or settings.description_provider)
+            .strip()
+            .lower(),
             ingest_limit=settings.ingest_limit,
             ingest_strategy=settings.ingest_selection_strategy,
         )
@@ -140,7 +151,9 @@ def pipeline_cmd(
         discover_stats = discover_files(
             db, settings, roots=target_roots, extensions=target_extensions
         )
-        run_tracker.update_stage(files_ingested=discover_stats.upserted, skipped=discover_stats.skipped)
+        run_tracker.update_stage(
+            files_ingested=discover_stats.upserted, skipped=discover_stats.skipped
+        )
 
         metrics_stats = score_metrics(db, max_size=max_size)
         run_tracker.update_stage(metrics_scored=metrics_stats.processed)
@@ -159,8 +172,12 @@ def pipeline_cmd(
                     else settings.lmstudio_timeout_seconds
                 ),
             ),
+            clip_model=settings.clip_model,
+            clip_device=settings.embedding_device,
         )
-        run_tracker.update_stage(nima_scored=advanced_stats.nima_processed, described=advanced_stats.described_processed)
+        run_tracker.update_stage(
+            nima_scored=advanced_stats.nima_processed, described=advanced_stats.described_processed
+        )
 
         # Complete the run with score distributions stored in DB + artifact file
         run_id = run_tracker.complete()
@@ -215,7 +232,9 @@ def base_ingest_cmd(
         discover_stats = discover_files(
             db, settings, roots=target_roots, extensions=target_extensions
         )
-        run_tracker.update_stage(files_ingested=discover_stats.upserted, skipped=discover_stats.skipped)
+        run_tracker.update_stage(
+            files_ingested=discover_stats.upserted, skipped=discover_stats.skipped
+        )
 
         metrics_stats = score_metrics(db, max_size=max_size)
         run_tracker.update_stage(metrics_scored=metrics_stats.processed)
@@ -242,13 +261,21 @@ def score_nima_cmd(
     try:
         run_tracker.start(nima_model_version="nima_style_v0")
 
-        stats = score_nima(db)
+        stats = score_nima(
+            db,
+            clip_model=settings.clip_model,
+            clip_device=settings.embedding_device,
+        )
         run_tracker.update_stage(nima_scored=stats.processed)
 
         run_id = run_tracker.complete()
         write_run_artifact(db, run_id, report_dir=settings.report_dir)
 
-        logger.info("NIMA runner complete: processed={processed} (run: {run_id})", processed=stats.processed, run_id=run_id)
+        logger.info(
+            "NIMA runner complete: processed={processed} (run: {run_id})",
+            processed=stats.processed,
+            run_id=run_id,
+        )
     finally:
         _close_db(db)
 
@@ -266,7 +293,9 @@ def advanced_runner_cmd(
     try:
         run_tracker.start(
             nima_model_version="nima_style_v0",
-            description_provider=(description_provider or settings.description_provider).strip().lower(),
+            description_provider=(description_provider or settings.description_provider)
+            .strip()
+            .lower(),
         )
 
         stats = run_advanced_runners(
@@ -283,8 +312,12 @@ def advanced_runner_cmd(
                     else settings.lmstudio_timeout_seconds
                 ),
             ),
+            clip_model=settings.clip_model,
+            clip_device=settings.embedding_device,
         )
-        run_tracker.update_stage(nima_scored=stats.nima_processed, described=stats.described_processed)
+        run_tracker.update_stage(
+            nima_scored=stats.nima_processed, described=stats.described_processed
+        )
 
         run_id = run_tracker.complete()
         write_run_artifact(db, run_id, report_dir=settings.report_dir)
@@ -294,6 +327,29 @@ def advanced_runner_cmd(
             nima=stats.nima_processed,
             desc=stats.described_processed,
             run_id=run_id,
+        )
+    finally:
+        _close_db(db)
+
+
+@app.command("score-aesthetic")
+def score_aesthetic_cmd(
+    batch_size: int = typer.Option(32, "--batch-size"),
+    config: Optional[str] = typer.Option(None, "--config"),
+) -> None:
+    db, settings = _init_db(config)
+    try:
+        stats = score_file_aesthetic(
+            db,
+            model_name=settings.clip_model,
+            device=settings.embedding_device,
+            batch_size=batch_size,
+            only_missing=True,
+        )
+        logger.info(
+            "Aesthetic rescoring complete: processed={processed} failed={failed}",
+            processed=stats.processed,
+            failed=stats.failed,
         )
     finally:
         _close_db(db)
