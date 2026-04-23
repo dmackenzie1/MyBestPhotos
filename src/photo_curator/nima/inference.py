@@ -21,9 +21,34 @@ import torchvision.models as models
 import torchvision.transforms as transforms
 from PIL import Image
 
+try:
+    import cv2  # noqa: F401
+except ImportError:
+    cv2 = None  # type: ignore[assignment]
+
 # Lazy-import the vendored model to avoid hard dependency at module load time.
 _model_instance: Optional[object] = None
-_weights_path: Optional[Path] = None
+_cached_weights_path: Optional[Path] = None
+_weights_download_failed: bool = False
+_model_init_error: Optional[RuntimeError] = None
+
+
+def _get_explicit_weights_path() -> Optional[Path]:
+    raw_path = os.environ.get("PHOTO_CURATOR_NIMA_WEIGHTS_PATH", "").strip()
+    if not raw_path:
+        return None
+    expanded = Path(raw_path).expanduser()
+    if expanded.is_file():
+        return expanded
+    return None
+
+
+def _get_mounted_weights_path() -> Optional[Path]:
+    """Check for weights mounted into the container at /data/nima/."""
+    mounted = Path("/data/nima/pretrained_weights.pth")
+    if mounted.is_file():
+        return mounted
+    return None
 
 
 def _get_weights_dir() -> Path:
@@ -35,10 +60,10 @@ def _get_weights_dir() -> Path:
 
 
 def _weights_path() -> Path:
-    global _weights_path
-    if _weights_path is None:
-        _weights_path = _get_weights_dir() / "pretrained_weights.pth"
-    return _weights_path
+    global _cached_weights_path
+    if _cached_weights_path is None:
+        _cached_weights_path = _get_weights_dir() / "pretrained_weights.pth"
+    return _cached_weights_path
 
 
 def _download_weights(weights_path: Path) -> Path:
@@ -82,13 +107,15 @@ def _download_weights(weights_path: Path) -> Path:
         urllib.request.urlretrieve(drive_url, str(weights_path))  # type: ignore[union-attr]
         return weights_path
     except Exception as exc:  # noqa: BLE001
+        global _weights_download_failed
         print(f"Warning: could not download NIMA weights: {exc}", file=sys.stderr)  # noqa: T201
-        return Path()
+        _weights_download_failed = True
+        return None
 
 
-def _ensure_weights(weights_path: Path) -> Path:
+def _ensure_weights(weights_path: Path) -> Optional[Path]:
     try:
-        if weights_path.exists():
+        if weights_path.is_file():
             return weights_path
     except OSError as exc:
         print(
@@ -101,7 +128,7 @@ def _ensure_weights(weights_path: Path) -> Path:
     )
     if weights_path != fallback_weights_path:
         try:
-            if fallback_weights_path.exists():
+            if fallback_weights_path.is_file():
                 print(
                     f"Using fallback NIMA weights path: {fallback_weights_path}",
                     file=sys.stderr,
@@ -113,7 +140,18 @@ def _ensure_weights(weights_path: Path) -> Path:
                 file=sys.stderr,
             )  # noqa: T201
 
-    return _download_weights(weights_path)
+    result = _download_weights(weights_path)
+    if result is None and weights_path != fallback_weights_path:
+        try:
+            if fallback_weights_path.is_file():
+                print(
+                    f"Using fallback NIMA weights path after download failure: {fallback_weights_path}",
+                    file=sys.stderr,
+                )  # noqa: T201
+                return fallback_weights_path
+        except OSError:
+            pass
+    return result
 
 
 # ImageNet normalization constants used by the original NIMA paper.
@@ -161,24 +199,108 @@ def get_model(weights_path: Optional[Path] = None) -> object:
         weights_path: optional path to pretrained weights (auto-detected if omitted).
 
     Returns:
-        torch.nn.Module in eval mode, ready for inference.
+        torch.nn.Module in eval mode, ready for inference, or None if weights unavailable.
     """
-    global _model_instance
+    global _model_instance, _model_init_error
 
     if _model_instance is not None:
         return _model_instance
 
-    wp = weights_path or _weights_path()
-    wp = _ensure_weights(wp)
+    if _model_init_error is not None:
+        raise _model_init_error
 
-    if not wp.exists():
-        raise RuntimeError(
+    # Check explicit env var first (via helper)
+    wp = _get_explicit_weights_path()
+    if wp is None:
+        wp = _get_mounted_weights_path()  # Check mounted volume next
+    if wp is None and _weights_download_failed:
+        return None  # Already tried download, skip repeated attempts
+    elif wp is None:
+        wp = weights_path or _weights_path()
+        wp = _ensure_weights(wp)
+
+    if not wp.is_file():
+        _model_init_error = RuntimeError(
             "NIMA pretrained weights not found. "
-            f"Expected at {wp}. Run with internet access to download, or place them manually."
+            f"Expected at {wp}. "
+            "Run with internet access to download, place them manually, "
+            "or set PHOTO_CURATOR_NIMA_WEIGHTS_PATH to a local weights file."
         )
+        raise _model_init_error
 
-    _model_instance = _load_model(wp)
+    try:
+        _model_instance = _load_model(wp)
+    except Exception as exc:  # noqa: BLE001
+        _model_init_error = RuntimeError(
+            f"Failed to initialize NIMA model from weights at {wp}: {exc}"
+        )
+        raise _model_init_error from exc
+
     return _model_instance
+
+
+def heuristic_score(image_np: np.ndarray) -> tuple[float, float]:
+    """Heuristic aesthetic score when NIMA weights are unavailable.
+
+    Uses the same formula as scoring_math._compute_nima_style_score but takes a raw image
+    and returns (mean_normalized_to_0_1, std) matching assess_quality's output signature.
+
+    This is a drop-in replacement for assess_quality() — same function signature, same return type.
+    """
+    if cv2 is None:
+        raise RuntimeError("cv2 (opencv-python-headless) required for heuristic scoring")
+
+    gray = cv2.cvtColor(image_np, cv2.COLOR_BGR2GRAY) if image_np.ndim == 3 else image_np
+    height, width = gray.shape[:2]
+    if height == 0 or width == 0:
+        return (0.5, 0.1)
+
+    # Blur score: Laplacian variance
+    laplacian = cv2.Laplacian(gray, cv2.CV_64F)
+    blur_score = float(laplacian.var()) / (width * height + 1e-6)
+
+    # Brightness score: mean intensity normalized to [0, 1]
+    brightness_score = float(gray.mean()) / 255.0
+
+    # Contrast score: std of intensity normalized to [0, 1]
+    contrast_score = float(gray.std()) / 255.0
+
+    # Entropy score: histogram entropy normalized to [0, 1]
+    hist = cv2.calcHist([gray], [0], None, [256], [0, 256])
+    hist = hist / hist.sum()
+    entropy_score = float(-np.sum(hist * np.log2(hist + 1e-6))) / 8.0
+
+    # Technical quality: weighted combination of blur, contrast, brightness
+    technical_quality_score = max(0.0, min(1.0, (1.0 - blur_score) * 0.4 + contrast_score * 0.3 + entropy_score * 0.3))
+
+    # Composition balance via gradient-based saliency centering
+    grad_x = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
+    grad_y = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
+    saliency = cv2.magnitude(grad_x, grad_y)
+    total = float(saliency.sum()) + 1e-6
+    yy, xx = np.indices(gray.shape, dtype=np.float32)
+    cx = float(np.sum(xx * saliency) / total)
+    cy = float(np.sum(yy * saliency) / total)
+    thirds = [
+        (width / 3.0, height / 3.0),
+        (2.0 * width / 3.0, height / 3.0),
+        (width / 3.0, 2.0 * height / 3.0),
+        (2.0 * width / 3.0, 2.0 * height / 3.0),
+    ]
+    min_distance = min(np.hypot(cx - tx, cy - ty) for tx, ty in thirds)
+    max_distance = float(np.hypot(width, height))
+    composition_balance_score = max(0.0, min(1.0, 1.0 - (min_distance / (max_distance + 1e-6))))
+
+    # Same formula as scoring_math._compute_nima_style_score
+    nima_base = (0.35 * technical_quality_score) + (0.20 * contrast_score) + (0.15 * brightness_score) + (0.15 * entropy_score) + (0.15 * composition_balance_score)
+    nima_spread = max(0.0, min(1.0, nima_base ** 0.7))
+
+    blur_resistance = 1.0 - blur_score
+    aesthetic_raw = (0.80 * nima_spread) + (0.20 * blur_resistance)
+    aesthetic_spread = max(0.0, min(1.0, aesthetic_raw ** 0.75))
+
+    # Return mean and std matching NIMA output format
+    return (nima_spread, 0.1 + (1.0 - nima_spread) * 0.05)
 
 
 def assess_quality(image_np: np.ndarray) -> tuple[float, float]:
@@ -192,6 +314,8 @@ def assess_quality(image_np: np.ndarray) -> tuple[float, float]:
         (mapped from the original 1-10 scale by dividing by 10).
     """
     model = get_model()
+    if model is None:
+        raise RuntimeError("NIMA weights unavailable — call heuristic_score() instead")
 
     # Convert BGR -> RGB for PIL.
     if image_np.shape[2] == 3:

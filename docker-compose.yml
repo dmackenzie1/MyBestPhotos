@@ -108,7 +108,9 @@ services:
               uv run --project . photo-curator base-ingest"
 
   python-advanced-runner:
-    image: ghcr.io/astral-sh/uv:python3.12-bookworm
+    build:
+      context: .
+      dockerfile: services/python-runner/Dockerfile
     container_name: mybestphotos-python-advanced-runner
     working_dir: /workspace
     environment:
@@ -127,18 +129,15 @@ services:
         condition: service_completed_successfully
       app-server:
         condition: service_healthy
-      python-runner:
-        condition: service_completed_successfully
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./:/workspace
       - ${PHOTO_INGEST_ROOT:-./sample-photos}:/photos/library:ro
       - ./data/cache:/data/cache
-      - uv-cache:/root/.cache/uv
-    command: >
-      sh -lc "uv sync --project . &&
-              uv run --project . photo-curator advanced-runner"
+      - ./data/nima:/data/nima:ro
+    gpus: all
+    command: uv run --project . photo-curator advanced-runner
 
   postgres-bootstrap:
     image: pgvector/pgvector:pg16

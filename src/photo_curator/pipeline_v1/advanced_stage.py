@@ -10,7 +10,7 @@ from tqdm import tqdm
 from photo_curator.db import Database
 from photo_curator.pipeline_run import _compute_distribution
 
-from photo_curator.nima.inference import assess_quality
+from photo_curator.nima.inference import assess_quality, heuristic_score
 from photo_curator.pipeline_v1.common import _load_image
 from photo_curator.pipeline_v1.description_stage import describe_images
 from photo_curator.pipeline_v1.metrics_stage import _compute_metrics
@@ -134,7 +134,11 @@ def score_nima(
             composition_balance_score = _composition_balance_score(gray)
 
             # Real NIMA inference: returns (mean_normalized_to_0_1, std)
-            nima_mean, nima_std = assess_quality(image)
+            try:
+                nima_mean, nima_std = assess_quality(image)
+            except Exception:  # noqa: BLE001
+                logger.warning("NIMA weights unavailable, using heuristic fallback for {path}", path=path)
+                nima_mean, nima_std = heuristic_score(image)
 
             # Blend real NIMA score with composition balance signal.
             # Composition balance provides supplementary structural guidance.
