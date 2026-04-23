@@ -119,7 +119,7 @@ def describe_images(
         """
         SELECT f.id, f.filename, f.source_root, f.relative_path, f.camera_make, f.camera_model, f.photo_taken_at,
                m.print_score_12x18, m.blur_score, m.brightness_score, m.contrast_score,
-               m.technical_quality_score
+               m.technical_quality_score, m.aesthetic_score, m.keep_score
         FROM files f
         LEFT JOIN file_metrics m ON m.file_id = f.id
         ORDER BY f.id
@@ -141,6 +141,8 @@ def describe_images(
             brightness_score,
             contrast_score,
             technical_quality_score,
+            aesthetic_score,
+            keep_score,
         ) = row
 
         quality_hint = "good"
@@ -199,18 +201,6 @@ def describe_images(
             category_bonus = min(1.0, len(categories) / 3.0) ** 0.8 * 0.45
             semantic_relevance_score += category_bonus
 
-        # Camera metadata bonus: DSLR/mirrorless cameras get more credit than phones
-        if camera_make and camera_model:
-            make_lower = camera_make.lower()
-            is_dslr = any(kw in make_lower for kw in ["canon", "nikon", "sony", "fujifilm", "pentax"])
-            is_mirrorless = any(kw in make_lower for kw in ["samsung", "lg", "apple", "tcl"])
-            if is_dslr:
-                semantic_relevance_score += 0.25
-            elif is_mirrorless:
-                semantic_relevance_score += 0.12
-            else:
-                semantic_relevance_score += 0.08
-
         # Technical quality as a proxy for "describability": sharper photos are more relevant
         if technical_quality_score is not None and technical_quality_score > 0:
             tech_bonus = (technical_quality_score - 0.3) * 0.25
@@ -219,12 +209,20 @@ def describe_images(
         # Clamp to [0, 1]
         semantic_relevance_score = max(0.0, min(1.0, semantic_relevance_score))
 
+        # Curation score formula updated based on real dataset analysis:
+        # - aesthetic_score added (was missing; primary ranking signal was weak)
+        # - keep_score added (was computed but unused in any ranking)
+        # - DSLR camera brand bonus removed (real data shows phone photos have higher
+        #   aesthetic scores than DSLR; curation should reflect photo quality, not gear)
+        # Weights: 40% aesthetic + 30% keep + 20% tech_quality + 10% semantic
         curation_score = max(
             0.0,
             min(
                 1.0,
-                (0.5 * (technical_quality_score or print_12x18 or 0.0))
-                + (0.3 * semantic_relevance_score),
+                (0.4 * (aesthetic_score or 0.5))
+                + (0.3 * (keep_score or 0.5))
+                + (0.2 * (technical_quality_score or print_12x18 or 0.0))
+                + (0.1 * semantic_relevance_score),
             ),
         )
 

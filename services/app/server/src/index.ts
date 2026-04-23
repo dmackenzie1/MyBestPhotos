@@ -108,7 +108,11 @@ const listQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
   pageSize: z.coerce.number().min(1).max(200).default(40),
   sort: z
-    .enum(["date_desc", "date_asc", "print_12x18_desc", "curation_desc", "aesthetic_desc", "filename_asc"])
+    .enum([
+      "date_desc", "date_asc",
+      "print_12x18_desc", "curation_desc", "aesthetic_desc", "keep_desc", "keep_asc",
+      "filename_asc"
+    ])
     .default("aesthetic_desc"),
 });
 
@@ -296,6 +300,10 @@ app.get("/api/v1/photos", async (req, res) => {
           ? "fm.curation_score DESC NULLS LAST"
         : query.sort === "aesthetic_desc"
           ? "fm.aesthetic_score DESC NULLS LAST"
+        : query.sort === "keep_desc"
+          ? "fm.keep_score DESC NULLS LAST"
+        : query.sort === "keep_asc"
+          ? "fm.keep_score ASC NULLS FIRST"
         : query.sort === "filename_asc"
           ? "f.filename ASC"
           : "f.photo_taken_at DESC NULLS LAST";
@@ -358,7 +366,7 @@ app.get("/api/v1/photos", async (req, res) => {
     descriptionText: row.description_text,
     keepFlag: row.keep_flag,
     rejectFlag: row.reject_flag,
-    favoriteFlag: row.favoriteFlag,
+    favoriteFlag: row.favorite_flag,
   }));
 
   res.json({

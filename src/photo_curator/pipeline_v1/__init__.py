@@ -40,7 +40,7 @@ def score_nima(
     db: "Database",
     *,
     max_size: int = 1024,
-    clip_model: str = "ViT-B-32",
+    clip_model: str | None = None,
     clip_device: str = "auto",
 ):
     from photo_curator.pipeline_v1.advanced_stage import score_nima as _score_nima
@@ -54,7 +54,7 @@ def run_advanced_runners(
     run_descriptions: bool = True,
     description_model_name: str = "basic-caption-v1",
     description_options: DescriptionOptions | None = None,
-    clip_model: str = "ViT-B-32",
+    clip_model: str | None = None,
     clip_device: str = "auto",
 ):
     from photo_curator.pipeline_v1.advanced_stage import (

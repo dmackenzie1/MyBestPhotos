@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     ingest_selection_strategy: str = "random"
     ingest_selection_seed: int = 42
     duplicate_cap_per_filename_or_sha: int = 2
-    clip_model: str = "ViT-B-32"
+    clip_model: str | None = None
     clip_weights_path: str = ""
     embedding_device: str = "auto"
     description_provider: str = "basic"
