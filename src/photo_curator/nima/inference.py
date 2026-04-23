@@ -9,10 +9,10 @@ Weights are downloaded from Google Drive on first use if not already cached.
 
 from __future__ import annotations
 
-import hashlib
 import os
 import sys
 from pathlib import Path
+import tempfile
 from typing import Optional
 
 import numpy as np
@@ -27,7 +27,10 @@ _weights_path: Optional[Path] = None
 
 
 def _get_weights_dir() -> Path:
-    cache_dir = os.environ.get("PHOTO_CURATOR_CACHE_DIR", str(Path(__file__).resolve().parent.parent.parent.parent / "data" / "cache"))
+    cache_dir = os.environ.get(
+        "PHOTO_CURATOR_CACHE_DIR",
+        str(Path(__file__).resolve().parent.parent.parent.parent / "data" / "cache"),
+    )
     return Path(cache_dir) / "nima"
 
 
@@ -46,7 +49,18 @@ def _download_weights(weights_path: Path) -> Path:
 
     Falls back to a warning if download fails -- scoring will use heuristic fallback.
     """
-    weights_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        weights_path.parent.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        print(
+            f"Warning: could not create NIMA cache directory {weights_path.parent}: {exc}",
+            file=sys.stderr,
+        )  # noqa: T201
+        fallback_weights_path = (
+            Path(tempfile.gettempdir()) / "photo-curator-cache" / "nima" / "pretrained_weights.pth"
+        )
+        fallback_weights_path.parent.mkdir(parents=True, exist_ok=True)
+        weights_path = fallback_weights_path
 
     # Try gdown first (lightweight), then urllib as fallback
     try:
@@ -61,7 +75,9 @@ def _download_weights(weights_path: Path) -> Path:
     try:
         import urllib.request  # noqa: F401
 
-        drive_url = "https://drive.google.com/uc?export=download&id=1w9Ig_d6yZqUZSR63kPjZLrEjJ1n845B_"
+        drive_url = (
+            "https://drive.google.com/uc?export=download&id=1w9Ig_d6yZqUZSR63kPjZLrEjJ1n845B_"
+        )
         print(f"Downloading NIMA weights from {drive_url}")  # noqa: T201
         urllib.request.urlretrieve(drive_url, str(weights_path))  # type: ignore[union-attr]
         return weights_path
@@ -71,8 +87,32 @@ def _download_weights(weights_path: Path) -> Path:
 
 
 def _ensure_weights(weights_path: Path) -> Path:
-    if weights_path.exists():
-        return weights_path
+    try:
+        if weights_path.exists():
+            return weights_path
+    except OSError as exc:
+        print(
+            f"Warning: could not access NIMA weights path {weights_path}: {exc}",
+            file=sys.stderr,
+        )  # noqa: T201
+
+    fallback_weights_path = (
+        Path(tempfile.gettempdir()) / "photo-curator-cache" / "nima" / "pretrained_weights.pth"
+    )
+    if weights_path != fallback_weights_path:
+        try:
+            if fallback_weights_path.exists():
+                print(
+                    f"Using fallback NIMA weights path: {fallback_weights_path}",
+                    file=sys.stderr,
+                )  # noqa: T201
+                return fallback_weights_path
+        except OSError as exc:
+            print(
+                f"Warning: could not access fallback NIMA weights path {fallback_weights_path}: {exc}",
+                file=sys.stderr,
+            )  # noqa: T201
+
     return _download_weights(weights_path)
 
 
@@ -219,7 +259,9 @@ def assess_quality_batch(images: list[np.ndarray]) -> list[tuple[float, float]]:
 
         indices = torch.arange(1, 11, dtype=distributions.dtype, device=distributions.device)
         means = torch.sum(indices * dists.T, dim=1) / 10.0  # normalize to [0, 1]
-        stds = torch.sqrt(torch.sum(dists * (indices.unsqueeze(0) - indices.unsqueeze(0)) ** 2, dim=1))
+        stds = torch.sqrt(
+            torch.sum(dists * (indices.unsqueeze(0) - indices.unsqueeze(0)) ** 2, dim=1)
+        )
 
         for j in range(len(batch_images)):
             results.append((float(means[j].cpu().numpy()), float(stds[j].cpu().numpy())))
