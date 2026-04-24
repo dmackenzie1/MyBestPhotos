@@ -215,13 +215,16 @@ def describe_images(
         # - DSLR camera brand bonus removed (real data shows phone photos have higher
         #   aesthetic scores than DSLR; curation should reflect photo quality, not gear)
         # Weights: 40% aesthetic + 30% keep + 20% tech_quality + 10% semantic
+        _aesthetic = aesthetic_score if aesthetic_score is not None else 0.5
+        _keep = keep_score if keep_score is not None else 0.5
+        _tech = technical_quality_score if technical_quality_score is not None else (print_12x18 or 0.0)
         curation_score = max(
             0.0,
             min(
                 1.0,
-                (0.4 * (aesthetic_score or 0.5))
-                + (0.3 * (keep_score or 0.5))
-                + (0.2 * (technical_quality_score or print_12x18 or 0.0))
+                (0.4 * _aesthetic)
+                + (0.3 * _keep)
+                + (0.2 * _tech)
                 + (0.1 * semantic_relevance_score),
             ),
         )

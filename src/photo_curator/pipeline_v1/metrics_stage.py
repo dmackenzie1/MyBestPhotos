@@ -78,17 +78,18 @@ def _compute_metrics(
 
     print_scores = []
     for target_ratio, base_mult in print_configs:
-        # Compute aspect ratio mismatch penalty.
-        # Use the smaller of landscape/portrait matching to handle both orientations.
-        ratio_match_landscape = min(image_aspect / target_ratio, target_ratio / max(image_aspect, 1e-6)) if image_aspect >= 1 else 0
-        ratio_match_portrait = min(target_ratio / max(image_aspect, 1e-6), image_aspect) if image_aspect < 1 else 0
-        # For portrait images (aspect < 1), compare against reciprocal of target.
-        if image_aspect < 1:
-            portrait_target = 1.0 / target_ratio
-            ratio_match_portrait = min(image_aspect / portrait_target, portrait_target / max(image_aspect, 1e-6))
-            ratio_penalty = max(0.3, 1.0 - (1.0 - ratio_match_portrait) * 2.5)
-        else:
-            ratio_penalty = max(0.3, 1.0 - (1.0 - min(image_aspect / target_ratio, target_ratio / max(image_aspect, 1e-6))) * 2.5)
+        # Print sizes can be used in either orientation (portrait or landscape).
+        # Compare the image aspect against both orientations of the print and take
+        # the better match. A 4:3 photo should get a perfect match for 6x8 portrait
+        # regardless of whether the photo itself is landscape or portrait.
+        # ratio_match: how close to 1.0, where 1.0 = perfect aspect match.
+        ratio_match_orientation_1 = min(image_aspect / target_ratio, target_ratio / max(image_aspect, 1e-6))
+        ratio_match_orientation_2 = min(image_aspect * target_ratio, 1.0 / max(image_aspect * target_ratio, 1e-6))
+        best_ratio_match = max(ratio_match_orientation_1, ratio_match_orientation_2)
+        # Penalty: multiplicative factor that reduces score for aspect mismatch.
+        # At perfect match (ratio=1.0): penalty=1.0 (no reduction).
+        # At worst case (ratio=0): penalty=0.3 (floor to prevent total collapse).
+        ratio_penalty = max(0.3, 2.0 * best_ratio_match - 1.0)
 
         print_score = technical_quality_score * base_mult * ratio_penalty
         print_scores.append(max(0.0, min(1.0, print_score)))

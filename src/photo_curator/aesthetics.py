@@ -21,10 +21,11 @@ from photo_curator.pipeline_run import _compute_distribution
 # significantly better discrimination than ViT-B-32 text-prompt scoring.
 DEFAULT_CLIP_MODEL = "ViT-H-14"
 
-# Temperature scaling: lower values sharpen the output distribution.
-# t=0.1 was chosen based on empirical testing showing ~5x improvement
-# in score spread (stddev) over un-scaled sigmoid outputs.
-AESTHETIC_TEMPERATURE = 0.1
+# Temperature scaling: lower values sharpen the output distribution, higher values soften it.
+# t=2.0 was chosen to provide moderate spread improvement without pushing scores toward
+# extremes (bimodal 0/1 distribution). At t=0.1, raw CLIP differences are multiplied by 10x
+# before sigmoid, which would collapse most scores to exactly 0 or 1 — the opposite of spread.
+AESTHETIC_TEMPERATURE = 2.0
 
 
 @dataclass
@@ -93,14 +94,21 @@ def _resolve_clip(model_name: str, device: str) -> ClipAestheticScorer:
     # not general text-image matching like the "openai" tag.
     available_pretrained = [tag for arch, tag in open_clip.list_pretrained() if arch == model_name]
 
-    # Check for aesthetic-specific pretrained weights first
+    # Check for aesthetic-specific pretrained weights first.
+    # LAION-Aesthetic v2 weights are typically named with "aesthetic" or "laion_aesthetic".
+    # Also check for the dedicated ViT-H-14 aesthetic model if available.
     aesthetic_tag = None
     for tag in available_pretrained:
-        if "aesthetic" in tag.lower():
+        lower_tag = tag.lower()
+        if "aesthetic" in lower_tag or "laion_aesthetic" in lower_tag:
             aesthetic_tag = tag
             break
 
-    pretrained_tag = aesthetic_tag or ("openai" if "openai" in available_pretrained else None)
+    # If no aesthetic-specific weights found, prefer the largest model variant.
+    # For ViT-H-14 this is typically "openai"; for other models it may vary.
+    pretrained_tag = aesthetic_tag if aesthetic_tag else None
+    if pretrained_tag is None and "openai" in available_pretrained:
+        pretrained_tag = "openai"
 
     if pretrained_tag:
         logger.info(
