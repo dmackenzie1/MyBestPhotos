@@ -254,6 +254,7 @@ export default function App() {
   }, [items]);
 
   const selectedTags = useMemo(() => getSelectedTags(detail), [detail]);
+  const filtersFullyCollapsed = filtersCollapsed && !filtersHovered;
 
   function resetFilters() {
     setStatus("all");
@@ -272,7 +273,7 @@ export default function App() {
       {stubActive && <div className="banner">Stub mode active: API unavailable, showing sample data.</div>}
 
       {viewMode === "timeline" && (
-        <div className="layout timeline-layout">
+        <div className={`layout timeline-layout ${filtersFullyCollapsed ? "filters-collapsed" : ""}`}>
           <FiltersPane
             isCollapsed={filtersCollapsed}
             isHovered={filtersHovered}
@@ -342,7 +343,7 @@ export default function App() {
       )}
 
       {viewMode === "browse" && (
-        <div className="layout">
+        <div className={`layout ${filtersFullyCollapsed ? "filters-collapsed" : ""}`}>
           <FiltersPane
             isCollapsed={filtersCollapsed}
             isHovered={filtersHovered}

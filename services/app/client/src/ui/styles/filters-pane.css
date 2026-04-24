@@ -1,11 +1,12 @@
 .filters {
-  padding: 7px;
+  padding: 6px;
   max-height: calc(100vh - 76px);
   overflow: auto;
   transition: width 0.2s ease;
 }
 .filters .section-header h3 {
   color: #c5d4eb;
+  font-size: 13px;
 }
 .filters.collapsed {
   width: 52px;
@@ -14,7 +15,7 @@
 .filters.open {
   width: 100%;
 }
-.filters label { display: block; margin-top: 7px; color: var(--soft); font-size: 12px; }
+.filters label { display: block; margin-top: 6px; color: #7188ad; font-size: 10px; }
 .filters select,
 .filters textarea,
 .filters input[type="date"],
@@ -25,7 +26,8 @@ textarea {
   border: 1px solid #2a456f;
   color: var(--text);
   border-radius: 6px;
-  padding: 6px;
+  padding: 5px;
+  font-size: 11px;
 }
 
 .icon-btn {
@@ -66,8 +68,9 @@ textarea {
   border: 1px solid #20395e;
   border-radius: 6px;
   color: var(--soft);
-  padding: 6px 8px;
+  padding: 5px 7px;
   cursor: pointer;
+  font-size: 11px;
 }
 
 .topic-chip.active {
@@ -77,7 +80,7 @@ textarea {
 
 .score-block {
   margin-top: 3px;
-  padding: 6px;
+  padding: 5px;
   border: 1px solid #20395e;
   border-radius: 6px;
   background: #0a1629;
@@ -97,4 +100,4 @@ textarea {
   margin-top: 0;
 }
 
-.score-val { margin-top: 4px; color: var(--good); font-weight: 600; font-size: 12px; }
+.score-val { margin-top: 4px; color: var(--good); font-weight: 600; font-size: 11px; }

@@ -37,6 +37,15 @@ const SORT_HELP_TEXT: Record<string, string> = {
   filename_asc: "Alphabetical by filename.",
 };
 
+function scoreBadgeForSort(item: PhotoListItem, sort: string): string {
+  if (sort === "curation_desc") return item.curationScore?.toFixed(2) ?? "--";
+  if (sort === "print_12x18_desc") return item.printScore12x18?.toFixed(2) ?? "--";
+  if (sort === "date_desc" || sort === "date_asc") {
+    return item.photoTakenAt ? String(new Date(item.photoTakenAt).getFullYear()) : "--";
+  }
+  return item.aestheticScore?.toFixed(2) ?? "--";
+}
+
 export function PhotoGrid({
   items,
   selectedId,
@@ -63,7 +72,6 @@ export function PhotoGrid({
       </div>
 
       <div className="grid-head">
-        <h2>Browse photos</h2>
         <div className="grid-controls">
           <span>{items.length} loaded / {total || items.length} total</span>
           <label className="grid-sort">
@@ -78,7 +86,7 @@ export function PhotoGrid({
       </div>
       <p className="sort-help">{SORT_HELP_TEXT[sort] ?? "Sort photos using the selected strategy."}</p>
 
-      <div className="grid compact">
+      <div className="grid compact" style={{ "--icon-scale": String(iconScale) } as CSSProperties}>
         {items.map((item) => (
           <article
             key={item.id}
@@ -93,8 +101,7 @@ export function PhotoGrid({
           >
             <img src={`${apiBase}/photos/${item.id}/image?size=thumb`} alt={item.filename} loading="lazy" />
             <div className="overlay">
-              <span>{item.aestheticScore?.toFixed(2) ?? "--"}</span>
-              <span className="secondary">{item.printScore12x18?.toFixed(2) ?? "--"}</span>
+              <span>{scoreBadgeForSort(item, sort)}</span>
             </div>
             <div className="card-actions" onClick={(event) => event.stopPropagation()}>
               <button
