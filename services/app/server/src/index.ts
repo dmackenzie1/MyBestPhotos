@@ -524,7 +524,9 @@ app.get("/api/v1/photos/:id/image", async (req, res) => {
   const requestedName = typeof req.query.downloadName === "string" ? req.query.downloadName : row.filename;
   const fallbackName = typeof row.filename === "string" && row.filename.trim() ? row.filename : "image";
   const safeName = sanitizeContentDispositionFilename(String(requestedName || fallbackName));
-  res.setHeader("Content-Disposition", `inline; filename=\"${safeName}\"`);
+  const downloadRequested = req.query.download === "1" || req.query.download === "true";
+  const dispositionType = downloadRequested ? "attachment" : "inline";
+  res.setHeader("Content-Disposition", `${dispositionType}; filename=\"${safeName}\"`);
   if (size === "thumb") {
     const thumbDir = process.env.THUMBS_DIR || "/data/cache/thumbs";
     const thumbPath = path.join(thumbDir, `${row.sha256}.jpg`);
