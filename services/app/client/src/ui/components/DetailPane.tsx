@@ -54,16 +54,15 @@ export function DetailPane({
           )}
 
           <div className="actions">
-            <button onClick={() => void onPatchLabels({ keepFlag: true, rejectFlag: false })}>Keep</button>
-            <button onClick={() => void onPatchLabels({ favoriteFlag: !(detail.labels.favoriteFlag ?? false) })}>Favorite</button>
-            <button onClick={() => void onPatchLabels({ rejectFlag: true, keepFlag: false })}>Reject</button>
+            <button type="button" onClick={() => void onPatchLabels({ favoriteFlag: !(detail.labels.favoriteFlag ?? false) })}>
+              {detail.labels.favoriteFlag ? "Unfavorite" : "Favorite"}
+            </button>
+            {detail.labels.rejectFlag ? (
+              <button type="button" onClick={() => void onPatchLabels({ rejectFlag: false })}>Show in Main</button>
+            ) : (
+              <button type="button" onClick={() => void onPatchLabels({ rejectFlag: true, keepFlag: false })}>Hide</button>
+            )}
             <a className="action-link" href={`${apiBase}/photos/${detail.id}/image?size=full&downloadName=${encodeURIComponent(detail.filename)}`} target="_blank" rel="noreferrer">Open Full</a>
-          </div>
-
-          <div className="actions">
-            <button onClick={() => void onPatchLabels({ printCandidate6x8: !(detail.labels.printCandidate6x8 ?? false) })}>6x8</button>
-            <button onClick={() => void onPatchLabels({ printCandidate8x10: !(detail.labels.printCandidate8x10 ?? false) })}>8x10</button>
-            <button onClick={() => void onPatchLabels({ printCandidate12x18: !(detail.labels.printCandidate12x18 ?? false) })}>12x18</button>
           </div>
 
           <div className="notes-block">
@@ -72,7 +71,7 @@ export function DetailPane({
               value={notesDraft}
               onChange={(event) => onNotesChange(event.target.value)}
             />
-            <button onClick={() => void onSaveNotes()}>Save Notes</button>
+            <button type="button" onClick={() => void onSaveNotes()}>Save Notes</button>
           </div>
         </>
       ) : (

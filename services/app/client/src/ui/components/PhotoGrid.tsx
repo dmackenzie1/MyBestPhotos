@@ -9,7 +9,7 @@ type PhotoGridProps = {
   total: number;
   isLoading: boolean;
   hasMore: boolean;
-  statusSummary: { all: number; keep: number; favorite: number; reject: number; unreviewed: number };
+  statusSummary: { all: number; favorite: number; hidden: number; unreviewed: number };
   apiBase: string;
   sort: string;
   iconScale: number;
@@ -57,10 +57,9 @@ export function PhotoGrid({
   return (
     <main className="grid-area panel">
       <div className="status-tabs">
-        <button className={`status-tab ${status === "all" ? "active" : ""}`} onClick={() => onStatusChange("all")}>All <span>{statusSummary.all}</span></button>
-        <button className={`status-tab ${status === "favorite" ? "active" : ""}`} onClick={() => onStatusChange("favorite")}>Favorites <span>{statusSummary.favorite}</span></button>
-        <button className={`status-tab ${status === "reject" ? "active" : ""}`} onClick={() => onStatusChange("reject")}>Rejected <span>{statusSummary.reject}</span></button>
-        <button className={`status-tab ${status === "keep" ? "active" : ""}`} onClick={() => onStatusChange("keep")}>For Print <span>{statusSummary.keep}</span></button>
+        <button type="button" className={`status-tab ${status === "all" ? "active" : ""}`} onClick={() => onStatusChange("all")}>Main <span>{statusSummary.all}</span></button>
+        <button type="button" className={`status-tab ${status === "favorite" ? "active" : ""}`} onClick={() => onStatusChange("favorite")}>Favorites <span>{statusSummary.favorite}</span></button>
+        <button type="button" className={`status-tab ${status === "hidden" ? "active" : ""}`} onClick={() => onStatusChange("hidden")}>Hidden <span>{statusSummary.hidden}</span></button>
       </div>
 
       <div className="grid-head">
@@ -98,9 +97,18 @@ export function PhotoGrid({
               <span className="secondary">{item.printScore12x18?.toFixed(2) ?? "--"}</span>
             </div>
             <div className="card-actions" onClick={(event) => event.stopPropagation()}>
-              <button title="Keep" onClick={() => void onQuickLabel(item.id, { keepFlag: true, rejectFlag: false })}>＋</button>
-              <button title="Favorite" onClick={() => void onQuickLabel(item.id, { favoriteFlag: true })}>★</button>
-              <button title="Reject" onClick={() => void onQuickLabel(item.id, { rejectFlag: true, keepFlag: false })}>－</button>
+              <button
+                type="button"
+                title={item.favoriteFlag ? "Unfavorite" : "Favorite"}
+                onClick={() => void onQuickLabel(item.id, { favoriteFlag: !(item.favoriteFlag ?? false) })}
+              >
+                ★
+              </button>
+              {item.rejectFlag ? (
+                <button type="button" title="Show in main" onClick={() => void onQuickLabel(item.id, { rejectFlag: false })}>＋</button>
+              ) : (
+                <button type="button" title="Hide from main" onClick={() => void onQuickLabel(item.id, { rejectFlag: true, keepFlag: false })}>－</button>
+              )}
               <a title="Open full image" href={`${apiBase}/photos/${item.id}/image?size=full`} target="_blank" rel="noreferrer">⤢</a>
             </div>
             <div className="card-body">

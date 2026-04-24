@@ -73,18 +73,17 @@ export function FiltersPane(props: FiltersPaneProps) {
       <div className="section-header">
         <h3>{isOpen ? "Filters" : "F"}</h3>
         <div className="filter-actions">
-          {isOpen && <button className="icon-btn" title="Reset filters" onClick={onReset}>↺</button>}
-          <button className="icon-btn" title={isCollapsed ? "Expand filters" : "Collapse filters"} onClick={onToggleCollapsed}>{isCollapsed ? "⟫" : "⟪"}</button>
+          {isOpen && <button type="button" className="icon-btn" title="Reset filters" onClick={onReset}>↺</button>}
+          <button type="button" className="icon-btn" title={isCollapsed ? "Expand filters" : "Collapse filters"} onClick={onToggleCollapsed}>{isCollapsed ? "⟫" : "⟪"}</button>
         </div>
       </div>
       {!isOpen ? null : (
         <>
           <label>Status</label>
           <select value={status} onChange={(event) => onStatusChange(event.target.value)}>
-            <option value="all">All photos</option>
-            <option value="keep">Keep</option>
+            <option value="all">Main</option>
             <option value="favorite">Favorite</option>
-            <option value="reject">Rejected</option>
+            <option value="hidden">Hidden</option>
             <option value="unreviewed">Unreviewed</option>
           </select>
 
@@ -136,6 +135,7 @@ export function FiltersPane(props: FiltersPaneProps) {
             <div className="topics">
               {(facets.categories || []).map((row) => (
                 <button
+                  type="button"
                   key={row.category}
                   className={`topic-chip ${category === row.category ? "active" : ""}`}
                   onClick={() => onCategoryChange(category === row.category ? "" : row.category)}

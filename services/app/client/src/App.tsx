@@ -170,15 +170,40 @@ export default function App() {
       body: JSON.stringify(payload),
     });
 
-    await Promise.all([
-      getJson<PhotoListResponse>(`${API_BASE}/photos?${queryString}`).then((data) => {
-        setItems(data.items);
-        setSelectedId((previousSelected) => reconcileSelection(data.items, previousSelected));
-      }),
-      selectedId
-        ? getJson<PhotoDetail>(`${API_BASE}/photos/${selectedId}`).then(setDetail)
-        : Promise.resolve(),
-    ]);
+    setItems((previousItems) => {
+      const patchedItems = previousItems
+        .map((item) => (item.id === photoId
+          ? {
+              ...item,
+              keepFlag: payload.keepFlag === undefined ? item.keepFlag : payload.keepFlag,
+              rejectFlag: payload.rejectFlag === undefined ? item.rejectFlag : payload.rejectFlag,
+              favoriteFlag: payload.favoriteFlag === undefined ? item.favoriteFlag : payload.favoriteFlag,
+            }
+          : item))
+        .filter((item) => {
+          if (status === "all") return item.rejectFlag !== true;
+          if (status === "favorite") return item.favoriteFlag === true && item.rejectFlag !== true;
+          if (status === "hidden") return item.rejectFlag === true;
+          if (status === "unreviewed") {
+            return item.rejectFlag !== true && item.favoriteFlag !== true && item.keepFlag !== true;
+          }
+          return true;
+        });
+
+      setSelectedId((previousSelected) => reconcileSelection(patchedItems, previousSelected));
+      return patchedItems;
+    });
+
+    setDetail((previousDetail) => {
+      if (!previousDetail || previousDetail.id !== photoId) return previousDetail;
+      return {
+        ...previousDetail,
+        labels: {
+          ...previousDetail.labels,
+          ...payload,
+        },
+      };
+    });
   }
 
   async function patchLabels(payload: LabelPatch) {
@@ -205,8 +230,11 @@ export default function App() {
   );
 
   const statusSummary = useMemo(() => {
-    const summary = { all: items.length, keep: 0, favorite: 0, reject: 0, unreviewed: 0 };
-    for (const item of items) summary[statusFromItem(item)] += 1;
+    const summary = { all: 0, favorite: 0, hidden: 0, unreviewed: 0 };
+    for (const item of items) {
+      if (item.rejectFlag !== true) summary.all += 1;
+      summary[statusFromItem(item)] += 1;
+    }
     return summary;
   }, [items]);
 
