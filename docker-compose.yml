@@ -137,7 +137,12 @@ services:
       - ./data/cache:/data/cache
       - ./data/nima:/data/nima:ro
     gpus: all
-    command: uv run --project . photo-curator advanced-runner
+    command: >-
+      sh -lc "uv run --project . photo-curator advanced-runner
+      --batch-size ${PHOTO_CURATOR_ADVANCED_BATCH_SIZE:-500}
+      --force-rescore-all
+      --defer-apply-until-complete
+      --skip-descriptions"
 
   postgres-bootstrap:
     image: pgvector/pgvector:pg16

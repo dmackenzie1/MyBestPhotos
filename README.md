@@ -107,9 +107,14 @@ docker compose up -d postgres
 
 The default stack startup runs two one-shot runner containers:
 - `python-runner` for **base ingest**
-- `python-advanced-runner` for **advanced enrichment**
+- `python-advanced-runner` for **full-pass advanced rescoring** (all files, batched, deferred apply)
 
 `python-advanced-runner` waits for `python-runner` to complete successfully.
+Its default Compose command now runs with:
+- `--force-rescore-all` (overwrite existing advanced scores),
+- `--defer-apply-until-complete` (avoid row-by-row score churn during the pass),
+- `--skip-descriptions` (skip external description API calls during full-pass rescoring),
+- `--batch-size ${PHOTO_CURATOR_ADVANCED_BATCH_SIZE:-500}` (override via env for very large libraries).
 
 For manual reruns (for example after adding new files):
 
@@ -169,7 +174,7 @@ For long-running local processing, use this sequence:
 - For a full advanced-score refresh without row-by-row score churn in the UI/API, run:
   ```bash
   docker compose run --rm python-advanced-runner \
-    sh -lc "uv run --project . photo-curator advanced-runner --force-rescore-all --defer-apply-until-complete --skip-descriptions"
+    sh -lc "uv run --project . photo-curator advanced-runner --batch-size 500 --force-rescore-all --defer-apply-until-complete --skip-descriptions"
   ```
 
 ## Database schema strategy
