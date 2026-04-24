@@ -41,6 +41,7 @@ export default function App() {
   const [filtersHovered, setFiltersHovered] = useState(false);
 
   const [sort, setSort] = useState<string>("aesthetic_desc");
+  const [iconScale, setIconScale] = useState(1);
 
   const pageSize = 60;
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -64,7 +65,7 @@ export default function App() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, cameraMake, cameraModel, category, dateFrom, dateTo, minScore, maxScore, status]);
+  }, [search, cameraMake, cameraModel, category, dateFrom, dateTo, minScore, maxScore, status, sort]);
 
   useEffect(() => {
     if (stubActive) return;
@@ -243,13 +244,73 @@ export default function App() {
       {stubActive && <div className="banner">Stub mode active: API unavailable, showing sample data.</div>}
 
       {viewMode === "timeline" && (
-        <TimelineView
-          itemsCount={items.length}
-          groups={timelineGroups}
-          apiBase={API_BASE}
-          onSelectPhoto={setSelectedId}
-          onJumpToBrowse={() => setViewMode("browse")}
-        />
+        <div className="layout timeline-layout">
+          <FiltersPane
+            isCollapsed={filtersCollapsed}
+            isHovered={filtersHovered}
+            status={status}
+            category={category}
+            cameraMake={cameraMake}
+            cameraModel={cameraModel}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            dateMin={dateBounds.min}
+            dateMax={dateBounds.max}
+            minScore={minScore}
+            maxScore={maxScore}
+            facets={facets}
+            cameraMakeOptions={cameraMakeOptions}
+            cameraModelOptions={cameraModelOptions}
+            iconScale={iconScale}
+            onStatusChange={setStatus}
+            onCategoryChange={setCategory}
+            onCameraMakeChange={(value) => {
+              setCameraMake(value);
+              setCameraModel("");
+            }}
+            onCameraModelChange={setCameraModel}
+            onDateFromChange={(value) => setDateFrom(value)}
+            onDateToChange={(value) => setDateTo(value)}
+            onMinScoreChange={(value) => {
+              if (!Number.isFinite(value)) return;
+              setMinScore(Math.min(maxScore, Math.max(0, value)));
+            }}
+            onMaxScoreChange={(value) => {
+              if (!Number.isFinite(value)) return;
+              setMaxScore(Math.max(minScore, Math.min(1, value)));
+            }}
+            onIconScaleChange={setIconScale}
+            onReset={resetFilters}
+            onToggleCollapsed={() => setFiltersCollapsed((previous) => !previous)}
+            onMouseEnter={() => setFiltersHovered(true)}
+            onMouseLeave={() => setFiltersHovered(false)}
+          />
+
+          <TimelineView
+            itemsCount={items.length}
+            total={total}
+            groups={timelineGroups}
+            apiBase={API_BASE}
+            sort={sort}
+            hasMore={hasMore}
+            isLoading={isLoading}
+            iconScale={iconScale}
+            onSelectPhoto={setSelectedId}
+            onSortChange={setSort}
+            onLoadMore={() => setPage((previous) => previous + 1)}
+            onJumpToBrowse={() => setViewMode("browse")}
+          />
+
+          <DetailPane
+            detail={detail}
+            selectedTags={selectedTags}
+            apiBase={API_BASE}
+            onPatchLabels={patchLabels}
+            notesDraft={notesDraft}
+            onNotesChange={setNotesDraft}
+            onSaveNotes={saveNotes}
+          />
+        </div>
       )}
 
       {viewMode === "browse" && (
@@ -270,6 +331,7 @@ export default function App() {
             facets={facets}
             cameraMakeOptions={cameraMakeOptions}
             cameraModelOptions={cameraModelOptions}
+            iconScale={iconScale}
             onStatusChange={setStatus}
             onCategoryChange={setCategory}
             onCameraMakeChange={(value) => {
@@ -287,6 +349,7 @@ export default function App() {
               if (!Number.isFinite(value)) return;
               setMaxScore(Math.max(minScore, Math.min(1, value)));
             }}
+            onIconScaleChange={setIconScale}
             onReset={resetFilters}
             onToggleCollapsed={() => setFiltersCollapsed((previous) => !previous)}
             onMouseEnter={() => setFiltersHovered(true)}
@@ -303,6 +366,7 @@ export default function App() {
             statusSummary={statusSummary}
             apiBase={API_BASE}
             sort={sort}
+            iconScale={iconScale}
             loadMoreRef={loadMoreRef}
             onSelectPhoto={setSelectedId}
             onStatusChange={setStatus}

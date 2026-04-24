@@ -1,4 +1,4 @@
-import type { RefObject } from "react";
+import type { CSSProperties, RefObject } from "react";
 import type { LabelPatch, PhotoListItem } from "@mybestphotos/shared";
 import "../styles/photo-grid.css";
 
@@ -12,6 +12,7 @@ type PhotoGridProps = {
   statusSummary: { all: number; keep: number; favorite: number; reject: number; unreviewed: number };
   apiBase: string;
   sort: string;
+  iconScale: number;
   loadMoreRef: RefObject<HTMLDivElement>;
   onSelectPhoto: (id: number) => void;
   onStatusChange: (status: string) => void;
@@ -28,6 +29,15 @@ const SORT_OPTIONS = [
   { value: "filename_asc", label: "Filename" },
 ];
 
+const SORT_HELP_TEXT: Record<string, string> = {
+  aesthetic_desc: "Aesthetic ranks visual appeal predicted by the model.",
+  curation_desc: "Curation blends aesthetic, technical quality, and semantic context.",
+  print_12x18_desc: "Print Score prioritizes sharpness/detail for 12x18 output.",
+  date_desc: "Newest first by photo timestamp.",
+  date_asc: "Oldest first by photo timestamp.",
+  filename_asc: "Alphabetical by filename.",
+};
+
 export function PhotoGrid({
   items,
   selectedId,
@@ -38,6 +48,7 @@ export function PhotoGrid({
   statusSummary,
   apiBase,
   sort,
+  iconScale,
   loadMoreRef,
   onSelectPhoto,
   onStatusChange,
@@ -67,12 +78,14 @@ export function PhotoGrid({
           </label>
         </div>
       </div>
+      <p className="sort-help">{SORT_HELP_TEXT[sort] ?? "Sort photos using the selected strategy."}</p>
 
       <div className="grid compact">
         {items.map((item) => (
           <article
             key={item.id}
             className={`card ${selectedId === item.id ? "selected" : ""}`}
+            style={{ "--icon-scale": String(iconScale) } as CSSProperties}
             role="button"
             tabIndex={0}
             onClick={() => onSelectPhoto(item.id)}

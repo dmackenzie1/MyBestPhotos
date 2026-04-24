@@ -25,7 +25,7 @@ export function DetailPane({
     <section className="detail panel">
       {detail ? (
         <>
-          <img src={`${apiBase}/photos/${detail.id}/image?size=full`} alt={detail.filename} className="preview" />
+          <img src={`${apiBase}/photos/${detail.id}/image?size=full&downloadName=${encodeURIComponent(detail.filename)}`} alt={detail.filename} className="preview" />
           <h3>{detail.filename}</h3>
           <p>{detail.descriptionText || "No description available."}</p>
 
@@ -57,7 +57,7 @@ export function DetailPane({
             <button onClick={() => void onPatchLabels({ keepFlag: true, rejectFlag: false })}>Keep</button>
             <button onClick={() => void onPatchLabels({ favoriteFlag: !(detail.labels.favoriteFlag ?? false) })}>Favorite</button>
             <button onClick={() => void onPatchLabels({ rejectFlag: true, keepFlag: false })}>Reject</button>
-            <a className="action-link" href={`${apiBase}/photos/${detail.id}/image?size=full`} target="_blank" rel="noreferrer">Open Full</a>
+            <a className="action-link" href={`${apiBase}/photos/${detail.id}/image?size=full&downloadName=${encodeURIComponent(detail.filename)}`} target="_blank" rel="noreferrer">Open Full</a>
           </div>
 
           <div className="actions">

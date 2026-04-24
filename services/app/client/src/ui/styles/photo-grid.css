@@ -30,6 +30,7 @@
 .status-tab.active { color: #e7f1ff; border-color: var(--accent); }
 
 .grid-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.sort-help { margin: -5px 0 9px; color: #8fa5c8; font-size: 12px; }
 .grid-controls {
   display: flex;
   align-items: center;
@@ -53,6 +54,7 @@
 .grid.compact { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
 
 .card {
+  --icon-scale: 1;
   background: #0a1629;
   border: 1px solid #20395e;
   border-radius: 8px;
@@ -89,7 +91,7 @@
 }
 
 .card-body { padding: 5px; display: flex; flex-direction: column; gap: 2px; }
-.card-body strong { font-size: 14px; }
+.card-body strong { font-size: 14px; color: #c7d6ef; }
 .card-body small { color: var(--soft); font-size: 12px; }
 
 .card-actions {
@@ -106,8 +108,8 @@
 
 .card-actions button,
 .card-actions a {
-  width: 24px;
-  height: 24px;
+  width: calc(24px * var(--icon-scale));
+  height: calc(24px * var(--icon-scale));
   border-radius: 5px;
   border: 1px solid #2d4f80;
   background: rgba(10, 27, 52, 0.9);
@@ -118,6 +120,7 @@
   text-decoration: none;
   padding: 0;
   cursor: pointer;
+  font-size: calc(14px * var(--icon-scale));
 }
 
 .infinite-sentinel { height: 1px; margin-top: 2px; }

@@ -1,10 +1,19 @@
 .timeline { margin: 12px; padding: 16px; }
+.timeline-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.timeline-sort {
+  margin-left: 6px;
+}
 .timeline-group { margin-top: 16px; }
 .timeline-group h3 { margin: 0 0 10px; }
 .timeline-group h3 small { color: var(--soft); margin-left: 8px; font-weight: 500; }
 .timeline-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
 
 .timeline-item {
+  --icon-scale: 1;
   border: 1px solid #20395e;
   background: #0a1629;
   border-radius: 10px;
@@ -15,4 +24,19 @@
 }
 
 .timeline-item img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
-.timeline-item span { display: block; padding: 8px; font-size: 12px; }
+.timeline-item span { display: block; padding: 8px; font-size: calc(12px * var(--icon-scale)); color: #c0cee6; }
+
+.timeline-load-more-wrap {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.timeline-load-more {
+  border: 1px solid #2d4f80;
+  background: #0b1a32;
+  color: #cfe0fb;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
