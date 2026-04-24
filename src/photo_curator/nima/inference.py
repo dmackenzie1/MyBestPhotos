@@ -295,10 +295,6 @@ def heuristic_score(image_np: np.ndarray) -> tuple[float, float]:
     nima_base = (0.35 * technical_quality_score) + (0.20 * contrast_score) + (0.15 * brightness_score) + (0.15 * entropy_score) + (0.15 * composition_balance_score)
     nima_spread = max(0.0, min(1.0, nima_base ** 0.7))
 
-    blur_resistance = 1.0 - blur_score
-    aesthetic_raw = (0.80 * nima_spread) + (0.20 * blur_resistance)
-    aesthetic_spread = max(0.0, min(1.0, aesthetic_raw ** 0.75))
-
     # Return mean and std matching NIMA output format
     return (nima_spread, 0.1 + (1.0 - nima_spread) * 0.05)
 

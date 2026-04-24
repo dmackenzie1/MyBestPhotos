@@ -8,7 +8,7 @@ import numpy as np
 from tqdm import tqdm
 
 from photo_curator.db import Database
-from photo_curator.pipeline_run import ScoreDistribution, _compute_distribution
+from photo_curator.pipeline_run import _compute_distribution
 
 from photo_curator.pipeline_v1.common import _load_image, _safe_norm
 from photo_curator.pipeline_v1.models import StageStats
@@ -38,7 +38,6 @@ def _compute_metrics(
     hist /= np.sum(hist) + 1e-8
     entropy = float(-np.sum(hist * np.log2(hist + 1e-12)) / 8.0)
 
-    noise = float(np.std(gray - cv2.GaussianBlur(gray, (3, 3), 0)) / 255.0)
     # High-frequency band analysis: measure variance in the highest frequency bands
     # after applying a stronger low-pass filter to isolate fine-grained noise patterns
     smoothed = cv2.GaussianBlur(gray.astype(np.float64), (15, 15), 3.0)

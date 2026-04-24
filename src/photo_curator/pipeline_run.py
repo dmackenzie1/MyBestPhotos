@@ -105,17 +105,6 @@ def _log_distribution(name: str, dist: ScoreDistribution) -> None:
         logger.info("  %-25s  (no data)", name=name)
         return
 
-    # Check for clustering: how many values fall within the tightest 10% band
-    range_val = dist.max_val - dist.min_val
-    cluster_count = 0
-    if range_val > 0 and dist.count > 10:
-        bin_width = range_val / 20.0
-        for i in range(20):
-            lo = dist.min_val + i * bin_width
-            hi = lo + bin_width
-            count_in_bin = sum(1 for v in [dist.min_val] if False)  # placeholder
-            cluster_count = max(cluster_count, 0)
-
     logger.info(
         "  {name}  n={count}  min={min_val:.4f}  p25={p25:.4f}  median={median:.4f}  p75={p75:.4f}  p90={p90:.4f}  max={max_val:.4f}  stddev={stddev:.4f}",
         name=name,
@@ -496,7 +485,7 @@ def write_run_artifact(
 
     # Get score distributions from DB
     rows = db.fetchall(
-        f"""
+        """
         SELECT blur_min, blur_max, blur_median, blur_p25, blur_p75, blur_stddev,
                brightness_min, brightness_max, brightness_median, brightness_p25, brightness_p75, brightness_stddev,
                contrast_min, contrast_max, contrast_median, contrast_p25, contrast_p75, contrast_stddev,
