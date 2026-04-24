@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS files (
   height INTEGER,
   orientation INTEGER,
   photo_taken_at TIMESTAMPTZ,
-  photo_taken_at_source TEXT NOT NULL DEFAULT 'ingest_time',
+  photo_taken_at_source TEXT,
   camera_make TEXT,
   camera_model TEXT,
   gps_lat DOUBLE PRECISION,
