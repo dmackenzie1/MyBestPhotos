@@ -50,7 +50,7 @@ The Python runner scans that mounted path at:
 Optional LM Studio settings (for vision-based descriptions):
 - `PHOTO_CURATOR_DESCRIPTION_PROVIDER=lmstudio`
 - `PHOTO_CURATOR_LMSTUDIO_BASE_URL=http://192.168.10.64:1234/v1` (or your LAN host URL)
-- `PHOTO_CURATOR_LMSTUDIO_MODEL=qwen3.6-35b-a3b`
+- `PHOTO_CURATOR_LMSTUDIO_MODEL=qwen3.5-9b`
 - `PHOTO_CURATOR_LMSTUDIO_TIMEOUT_SECONDS=60`
 
 Optional ingest throttles (useful for test runs on large libraries):
@@ -69,10 +69,10 @@ Compatibility aliases (also supported):
 
 ```bash
 # base/default stack
-docker compose up -d postgres app-server app-client python-runner python-advanced-runner nginx
+docker compose up -d postgres app-server app-client python-runner python-advanced-runner python-llm-runner nginx
 
 # prod/gpu overlay
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d postgres app-server app-client python-runner python-advanced-runner nginx
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d postgres app-server app-client python-runner python-advanced-runner python-llm-runner nginx
 ```
 
 Open UI at:
@@ -105,11 +105,13 @@ docker compose up -d postgres
 
 ### 4) Run base ingest and advanced runners
 
-The default stack startup runs two one-shot runner containers:
+The default stack startup runs three one-shot runner containers:
 - `python-runner` for **base ingest**
 - `python-advanced-runner` for **full-pass advanced rescoring** (all files, batched, deferred apply)
+- `python-llm-runner` for **LM Studio descriptions + tags + wall-art/aesthetic scores + semantic vectors**
 
 `python-advanced-runner` waits for `python-runner` to complete successfully.
+`python-llm-runner` waits for `python-runner` to complete successfully and then refreshes per-photo LLM results.
 Its default Compose command now runs with:
 - `--force-rescore-all` (overwrite existing advanced scores),
 - `--defer-apply-until-complete` (avoid row-by-row score churn during the pass),
@@ -121,6 +123,7 @@ For manual reruns (for example after adding new files):
 ```bash
 docker compose run --rm python-runner
 docker compose run --rm python-advanced-runner
+docker compose run --rm python-llm-runner
 ```
 
 Inside the runner, the CLI now supports two explicit passes:
@@ -131,6 +134,9 @@ uv run --project . photo-curator base-ingest
 
 # advanced enrichment (NIMA-style aesthetic scoring + descriptions)
 uv run --project . photo-curator advanced-runner
+
+# LLM descriptions + semantic vectors (LM Studio OpenAI-compatible endpoint)
+uv run --project . photo-curator llm-runner
 
 # standalone NIMA backfill
 uv run --project . photo-curator score-nima --batch-size 200
@@ -153,9 +159,9 @@ curl -s http://localhost:8080/api/v1/photos | jq '.items | length'
 
 For long-running local processing, use this sequence:
 
-1. Start base stack: `docker compose up -d postgres app-server app-client python-runner python-advanced-runner nginx` (or add `-f docker-compose.prod.yml` for GPU hosts).
+1. Start base stack: `docker compose up -d postgres app-server app-client python-runner python-advanced-runner python-llm-runner nginx` (or add `-f docker-compose.prod.yml` for GPU hosts).
 2. (Optional reset) `docker compose down -v && docker compose up -d postgres` to rebuild from stock schema.
-3. Watch `docker compose logs -f python-runner python-advanced-runner` for runner completion.
+3. Watch `docker compose logs -f python-runner python-advanced-runner python-llm-runner` for runner completion.
 4. Re-run ingest whenever new files arrive: `docker compose run --rm python-runner` (pipeline is upsert-oriented).
 
 ### Recovery and reruns
@@ -164,11 +170,11 @@ For long-running local processing, use this sequence:
 - If descriptions need regeneration, run:
   ```bash
   docker compose run --rm python-runner \
-    sh -lc "uv run --project . photo-curator describe --description-provider lmstudio --model-name qwen3.6-35b-a3b"
+    sh -lc "uv run --project . photo-curator describe --description-provider lmstudio --model-name qwen3.5-9b"
 
   # GPU/prod overlay variant
   docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm python-runner \
-    sh -lc "uv run --project . photo-curator describe --description-provider lmstudio --model-name qwen3.6-35b-a3b"
+    sh -lc "uv run --project . photo-curator describe --description-provider lmstudio --model-name qwen3.5-9b"
   ```
 - `pgdata` volume preserves DB state across container restarts.
 - For a full advanced-score refresh without row-by-row score churn in the UI/API, run:

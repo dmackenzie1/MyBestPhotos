@@ -77,11 +77,22 @@ def run_advanced_runners(
     )
 
 
+def run_llm_descriptions(
+    db: "Database",
+    *,
+    options: DescriptionOptions | None = None,
+):
+    from photo_curator.pipeline_v1.llm_stage import run_llm_descriptions as _run_llm_descriptions
+
+    return _run_llm_descriptions(db, options=options or DescriptionOptions())
+
+
 __all__ = [
     "DescriptionOptions",
     "describe_images",
     "discover_files",
     "run_advanced_runners",
+    "run_llm_descriptions",
     "score_metrics",
     "score_nima",
     "_compute_nima_style_score",

@@ -38,6 +38,7 @@ export function DetailPane({
 
           <div className="chip-row">
             <span className="chip">Aesthetic {formatMetric(detail.metrics.aestheticScore)}</span>
+            <span className="chip">Wall Art {formatMetric(detail.metrics.wallArtScore)}</span>
             <span className="chip">Print 12x18 {formatMetric(detail.metrics.printScore12x18)}</span>
             <span className="chip">Curation {formatMetric(detail.metrics.curationScore)}</span>
             <span className="chip">Sharpness {formatMetric(1 - (detail.metrics.blurScore ?? 0))}</span>
