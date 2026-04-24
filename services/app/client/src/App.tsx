@@ -2,15 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { LabelPatch, PhotoDetail, PhotoListItem } from "@mybestphotos/shared";
 import { DetailPane } from "./ui/components/DetailPane";
 import { FiltersPane } from "./ui/components/FiltersPane";
-import { MapPlaceholder } from "./ui/components/MapPlaceholder";
 import { PhotoGrid } from "./ui/components/PhotoGrid";
-import { SettingsView } from "./ui/components/SettingsView";
 import { TimelineView } from "./ui/components/TimelineView";
 import { TopBar } from "./ui/components/TopBar";
 import { getJson } from "./ui/lib/api";
 import { FALLBACK_DETAIL, FALLBACK_ITEMS } from "./ui/lib/fallbackData";
 import { getSelectedTags, reconcileSelection, statusFromItem } from "./ui/lib/utils";
-import type { FacetsResponse, PhotoListResponse, SettingsState, ViewMode } from "./ui/types";
+import type { FacetsResponse, PhotoListResponse, ViewMode } from "./ui/types";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api/v1";
 
@@ -22,6 +20,7 @@ export default function App() {
 
   const [search, setSearch] = useState("");
   const [minScore, setMinScore] = useState(0.6);
+  const [maxScore, setMaxScore] = useState(1);
   const [status, setStatus] = useState("all");
   const [cameraMake, setCameraMake] = useState("");
   const [cameraModel, setCameraModel] = useState("");
@@ -38,12 +37,8 @@ export default function App() {
 
   const [facets, setFacets] = useState<FacetsResponse>({ camera: [], categories: [], dateBounds: { min: null, max: null } });
   const [stubActive, setStubActive] = useState(false);
-  const [settings, setSettings] = useState<SettingsState>({
-    showScores: true,
-    compactCards: false,
-    autoplayDetailPreview: true,
-    density: "comfortable",
-  });
+  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+  const [filtersHovered, setFiltersHovered] = useState(false);
 
   const [sort, setSort] = useState<string>("aesthetic_desc");
 
@@ -59,16 +54,17 @@ export default function App() {
     if (dateFrom) params.set("dateFrom", `${dateFrom}T00:00:00.000Z`);
     if (dateTo) params.set("dateTo", `${dateTo}T23:59:59.999Z`);
     params.set("minPrintScore12x18", String(minScore));
+    params.set("maxPrintScore12x18", String(maxScore));
     params.set("status", status);
     params.set("page", String(page));
     params.set("pageSize", String(pageSize));
     params.set("sort", sort);
     return params.toString();
-  }, [search, cameraMake, cameraModel, category, dateFrom, dateTo, minScore, status, page, sort]);
+  }, [search, cameraMake, cameraModel, category, dateFrom, dateTo, minScore, maxScore, status, page, sort]);
 
   useEffect(() => {
     setPage(1);
-  }, [search, cameraMake, cameraModel, category, dateFrom, dateTo, minScore, status]);
+  }, [search, cameraMake, cameraModel, category, dateFrom, dateTo, minScore, maxScore, status]);
 
   useEffect(() => {
     if (stubActive) return;
@@ -161,14 +157,13 @@ export default function App() {
     return () => observer.disconnect();
   }, [hasMore, isLoading]);
 
-  async function patchLabels(payload: LabelPatch) {
-    if (!selectedId) return;
-    if (stubActive && detail) {
+  async function patchLabelsForPhoto(photoId: number, payload: LabelPatch) {
+    if (stubActive && detail && selectedId === photoId) {
       setDetail({ ...detail, labels: { ...detail.labels, ...payload } });
       return;
     }
 
-    await fetch(`${API_BASE}/photos/${selectedId}/labels`, {
+    await fetch(`${API_BASE}/photos/${photoId}/labels`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -179,8 +174,15 @@ export default function App() {
         setItems(data.items);
         setSelectedId((previousSelected) => reconcileSelection(data.items, previousSelected));
       }),
-      getJson<PhotoDetail>(`${API_BASE}/photos/${selectedId}`).then(setDetail),
+      selectedId
+        ? getJson<PhotoDetail>(`${API_BASE}/photos/${selectedId}`).then(setDetail)
+        : Promise.resolve(),
     ]);
+  }
+
+  async function patchLabels(payload: LabelPatch) {
+    if (!selectedId) return;
+    await patchLabelsForPhoto(selectedId, payload);
   }
 
   async function saveNotes() {
@@ -232,11 +234,12 @@ export default function App() {
     setDateFrom(dateBounds.min);
     setDateTo(dateBounds.max);
     setMinScore(0.6);
+    setMaxScore(1);
   }
 
   return (
     <div className="shell">
-      <TopBar viewMode={viewMode} search={search} onSearchChange={setSearch} onViewModeChange={setViewMode} sort={sort} onSortChange={setSort} />
+      <TopBar viewMode={viewMode} search={search} onSearchChange={setSearch} onViewModeChange={setViewMode} />
       {stubActive && <div className="banner">Stub mode active: API unavailable, showing sample data.</div>}
 
       {viewMode === "timeline" && (
@@ -249,13 +252,11 @@ export default function App() {
         />
       )}
 
-      {viewMode === "map" && <MapPlaceholder />}
-
-      {viewMode === "settings" && <SettingsView settings={settings} onSettingsChange={setSettings} />}
-
       {viewMode === "browse" && (
         <div className="layout">
           <FiltersPane
+            isCollapsed={filtersCollapsed}
+            isHovered={filtersHovered}
             status={status}
             category={category}
             cameraMake={cameraMake}
@@ -265,6 +266,7 @@ export default function App() {
             dateMin={dateBounds.min}
             dateMax={dateBounds.max}
             minScore={minScore}
+            maxScore={maxScore}
             facets={facets}
             cameraMakeOptions={cameraMakeOptions}
             cameraModelOptions={cameraModelOptions}
@@ -279,9 +281,16 @@ export default function App() {
             onDateToChange={(value) => setDateTo(value)}
             onMinScoreChange={(value) => {
               if (!Number.isFinite(value)) return;
-              setMinScore(Math.min(1, Math.max(0, value)));
+              setMinScore(Math.min(maxScore, Math.max(0, value)));
+            }}
+            onMaxScoreChange={(value) => {
+              if (!Number.isFinite(value)) return;
+              setMaxScore(Math.max(minScore, Math.min(1, value)));
             }}
             onReset={resetFilters}
+            onToggleCollapsed={() => setFiltersCollapsed((previous) => !previous)}
+            onMouseEnter={() => setFiltersHovered(true)}
+            onMouseLeave={() => setFiltersHovered(false)}
           />
 
           <PhotoGrid
@@ -291,12 +300,14 @@ export default function App() {
             total={total}
             isLoading={isLoading}
             hasMore={hasMore}
-            settings={settings}
             statusSummary={statusSummary}
             apiBase={API_BASE}
+            sort={sort}
             loadMoreRef={loadMoreRef}
             onSelectPhoto={setSelectedId}
             onStatusChange={setStatus}
+            onSortChange={setSort}
+            onQuickLabel={patchLabelsForPhoto}
           />
 
           <DetailPane

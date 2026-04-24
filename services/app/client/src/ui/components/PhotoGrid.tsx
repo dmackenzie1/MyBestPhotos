@@ -1,6 +1,5 @@
 import type { RefObject } from "react";
-import type { PhotoListItem } from "@mybestphotos/shared";
-import type { SettingsState } from "../types";
+import type { LabelPatch, PhotoListItem } from "@mybestphotos/shared";
 import "../styles/photo-grid.css";
 
 type PhotoGridProps = {
@@ -10,13 +9,24 @@ type PhotoGridProps = {
   total: number;
   isLoading: boolean;
   hasMore: boolean;
-  settings: SettingsState;
   statusSummary: { all: number; keep: number; favorite: number; reject: number; unreviewed: number };
   apiBase: string;
+  sort: string;
   loadMoreRef: RefObject<HTMLDivElement>;
   onSelectPhoto: (id: number) => void;
   onStatusChange: (status: string) => void;
+  onSortChange: (value: string) => void;
+  onQuickLabel: (id: number, payload: LabelPatch) => Promise<void>;
 };
+
+const SORT_OPTIONS = [
+  { value: "aesthetic_desc", label: "Aesthetic" },
+  { value: "curation_desc", label: "Curation" },
+  { value: "print_12x18_desc", label: "Print Score" },
+  { value: "date_desc", label: "Date (Newest)" },
+  { value: "date_asc", label: "Date (Oldest)" },
+  { value: "filename_asc", label: "Filename" },
+];
 
 export function PhotoGrid({
   items,
@@ -25,12 +35,14 @@ export function PhotoGrid({
   total,
   isLoading,
   hasMore,
-  settings,
   statusSummary,
   apiBase,
+  sort,
   loadMoreRef,
   onSelectPhoto,
   onStatusChange,
+  onSortChange,
+  onQuickLabel,
 }: PhotoGridProps) {
   return (
     <main className="grid-area panel">
@@ -43,24 +55,47 @@ export function PhotoGrid({
 
       <div className="grid-head">
         <h2>Browse photos</h2>
-        <span>{items.length} loaded / {total || items.length} total</span>
+        <div className="grid-controls">
+          <span>{items.length} loaded / {total || items.length} total</span>
+          <label className="grid-sort">
+            Sort
+            <select value={sort} onChange={(event) => onSortChange(event.target.value)}>
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
       </div>
 
-      <div className={`grid ${settings.compactCards || settings.density === "compact" ? "compact" : ""}`}>
+      <div className="grid compact">
         {items.map((item) => (
-          <button key={item.id} className={`card ${selectedId === item.id ? "selected" : ""}`} onClick={() => onSelectPhoto(item.id)}>
+          <article
+            key={item.id}
+            className={`card ${selectedId === item.id ? "selected" : ""}`}
+            role="button"
+            tabIndex={0}
+            onClick={() => onSelectPhoto(item.id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") onSelectPhoto(item.id);
+            }}
+          >
             <img src={`${apiBase}/photos/${item.id}/image?size=thumb`} alt={item.filename} loading="lazy" />
-            {settings.showScores && (
-              <div className="overlay">
-                <span>{item.aestheticScore?.toFixed(2) ?? "--"}</span>
-                <span className="secondary">{item.printScore12x18?.toFixed(2) ?? "--"}</span>
-              </div>
-            )}
+            <div className="overlay">
+              <span>{item.aestheticScore?.toFixed(2) ?? "--"}</span>
+              <span className="secondary">{item.printScore12x18?.toFixed(2) ?? "--"}</span>
+            </div>
+            <div className="card-actions" onClick={(event) => event.stopPropagation()}>
+              <button title="Keep" onClick={() => void onQuickLabel(item.id, { keepFlag: true, rejectFlag: false })}>＋</button>
+              <button title="Favorite" onClick={() => void onQuickLabel(item.id, { favoriteFlag: true })}>★</button>
+              <button title="Reject" onClick={() => void onQuickLabel(item.id, { rejectFlag: true, keepFlag: false })}>－</button>
+              <a title="Open full image" href={`${apiBase}/photos/${item.id}/image?size=full`} target="_blank" rel="noreferrer">⤢</a>
+            </div>
             <div className="card-body">
               <strong>{item.filename}</strong>
               <small>{item.photoTakenAt ? new Date(item.photoTakenAt).toLocaleString() : "Unknown date"}</small>
             </div>
-          </button>
+          </article>
         ))}
       </div>
 
