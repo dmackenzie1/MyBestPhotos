@@ -129,6 +129,12 @@ uv run --project . photo-curator advanced-runner
 
 # standalone NIMA backfill
 uv run --project . photo-curator score-nima --batch-size 200
+
+# full rescore of every image, but keep old scores visible until the pass completes
+uv run --project . photo-curator advanced-runner \
+  --force-rescore-all \
+  --defer-apply-until-complete \
+  --skip-descriptions
 ```
 
 ### 5) Verify ingest and API health
@@ -160,6 +166,11 @@ For long-running local processing, use this sequence:
     sh -lc "uv run --project . photo-curator describe --description-provider lmstudio --model-name qwen3.6-35b-a3b"
   ```
 - `pgdata` volume preserves DB state across container restarts.
+- For a full advanced-score refresh without row-by-row score churn in the UI/API, run:
+  ```bash
+  docker compose run --rm python-advanced-runner \
+    sh -lc "uv run --project . photo-curator advanced-runner --force-rescore-all --defer-apply-until-complete --skip-descriptions"
+  ```
 
 ## Database schema strategy
 
