@@ -54,8 +54,11 @@ def run_advanced_runners(
     run_descriptions: bool = True,
     description_model_name: str = "basic-caption-v1",
     description_options: DescriptionOptions | None = None,
+    batch_size: int = 500,
     clip_model: str | None = None,
     clip_device: str = "auto",
+    force_rescore_all: bool = False,
+    defer_apply_until_complete: bool = False,
 ):
     from photo_curator.pipeline_v1.advanced_stage import (
         run_advanced_runners as _run_advanced_runners,
@@ -66,8 +69,11 @@ def run_advanced_runners(
         run_descriptions=run_descriptions,
         description_model_name=description_model_name,
         description_options=description_options,
+        batch_size=batch_size,
         clip_model=clip_model,
         clip_device=clip_device,
+        force_rescore_all=force_rescore_all,
+        defer_apply_until_complete=defer_apply_until_complete,
     )
 
 
