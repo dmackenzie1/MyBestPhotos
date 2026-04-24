@@ -105,7 +105,7 @@ const listQuerySchema = z.object({
   category: z.string().optional(),
   minPrintScore12x18: z.coerce.number().optional(),
   maxPrintScore12x18: z.coerce.number().optional(),
-  status: z.enum(["all", "keep", "favorite", "reject", "unreviewed"]).default("all"),
+  status: z.enum(["all", "keep", "favorite", "reject", "hidden", "unreviewed"]).default("all"),
   page: z.coerce.number().min(1).default(1),
   pageSize: z.coerce.number().min(1).max(200).default(40),
   sort: z
@@ -207,9 +207,10 @@ function buildPhotoFilters(query: ListQuery): SqlFilters {
     where.push(`coalesce(fm.print_score_12x18, 0) <= $${params.length}`);
   }
 
+  if (query.status === "all") where.push("coalesce(fl.reject_flag, false) = false");
   if (query.status === "keep") where.push("fl.keep_flag = true");
-  if (query.status === "favorite") where.push("fl.favorite_flag = true");
-  if (query.status === "reject") where.push("fl.reject_flag = true");
+  if (query.status === "favorite") where.push("fl.favorite_flag = true AND coalesce(fl.reject_flag, false) = false");
+  if (query.status === "reject" || query.status === "hidden") where.push("fl.reject_flag = true");
   if (query.status === "unreviewed") where.push("fl.file_id is null");
 
   return {

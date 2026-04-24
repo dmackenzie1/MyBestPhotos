@@ -16,4 +16,4 @@ export type FacetsResponse = {
   dateBounds?: { min: string | null; max: string | null };
 };
 
-export type DerivedStatus = "keep" | "favorite" | "reject" | "unreviewed";
+export type DerivedStatus = "favorite" | "hidden" | "unreviewed";
