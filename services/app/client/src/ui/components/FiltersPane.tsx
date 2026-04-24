@@ -17,6 +17,7 @@ type FiltersPaneProps = {
   facets: FacetsResponse;
   cameraMakeOptions: string[];
   cameraModelOptions: string[];
+  iconScale: number;
   onStatusChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
   onCameraMakeChange: (value: string) => void;
@@ -25,6 +26,7 @@ type FiltersPaneProps = {
   onDateToChange: (value: string) => void;
   onMinScoreChange: (value: number) => void;
   onMaxScoreChange: (value: number) => void;
+  onIconScaleChange: (value: number) => void;
   onReset: () => void;
   onToggleCollapsed: () => void;
   onMouseEnter: () => void;
@@ -47,6 +49,7 @@ export function FiltersPane(props: FiltersPaneProps) {
     facets,
     cameraMakeOptions,
     cameraModelOptions,
+    iconScale,
     onStatusChange,
     onCategoryChange,
     onCameraMakeChange,
@@ -56,6 +59,7 @@ export function FiltersPane(props: FiltersPaneProps) {
     onMinScoreChange,
     maxScore,
     onMaxScoreChange,
+    onIconScaleChange,
     onReset,
     onToggleCollapsed,
     onMouseEnter,
@@ -69,8 +73,8 @@ export function FiltersPane(props: FiltersPaneProps) {
       <div className="section-header">
         <h3>{isOpen ? "Filters" : "F"}</h3>
         <div className="filter-actions">
-          {isOpen && <button className="inline-btn" onClick={onReset}>Reset</button>}
-          <button className="inline-btn" onClick={onToggleCollapsed}>{isCollapsed ? "Expand" : "Collapse"}</button>
+          {isOpen && <button className="icon-btn" title="Reset filters" onClick={onReset}>↺</button>}
+          <button className="icon-btn" title={isCollapsed ? "Expand filters" : "Collapse filters"} onClick={onToggleCollapsed}>{isCollapsed ? "⟫" : "⟪"}</button>
         </div>
       </div>
       {!isOpen ? null : (
@@ -140,6 +144,23 @@ export function FiltersPane(props: FiltersPaneProps) {
                   <strong>{row.count}</strong>
                 </button>
               ))}
+            </div>
+          </div>
+
+          <div className="topics-wrap">
+            <label>Filters and properties panel</label>
+            <div className="score-block">
+              <label className="slider-label" htmlFor="icon-scale">Icon size</label>
+              <input
+                id="icon-scale"
+                type="range"
+                min={0.8}
+                max={1.35}
+                step={0.05}
+                value={iconScale}
+                onChange={(event) => onIconScaleChange(Number(event.target.value))}
+              />
+              <div className="score-val">Scale: {iconScale.toFixed(2)}×</div>
             </div>
           </div>
         </>

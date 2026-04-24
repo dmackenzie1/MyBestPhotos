@@ -4,6 +4,9 @@
   overflow: auto;
   transition: width 0.2s ease;
 }
+.filters .section-header h3 {
+  color: #c5d4eb;
+}
 .filters.collapsed {
   width: 52px;
   overflow: hidden;
@@ -25,16 +28,21 @@ textarea {
   padding: 6px;
 }
 
-.inline-btn {
+.icon-btn {
   border: 1px solid #2e4f86;
   background: #0b1a32;
   color: var(--soft);
-  border-radius: 6px;
-  padding: 4px 8px;
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
 }
 
-.inline-btn:hover { color: var(--text); }
+.icon-btn:hover { color: var(--text); }
 .filter-actions {
   display: flex;
   align-items: center;
@@ -83,6 +91,10 @@ textarea {
   width: 100%;
   margin-top: 0;
   accent-color: #5def9f;
+}
+
+.slider-label {
+  margin-top: 0;
 }
 
 .score-val { margin-top: 4px; color: var(--good); font-weight: 600; font-size: 12px; }

@@ -517,6 +517,10 @@ app.patch("/api/v1/photos/:id/labels", async (req, res) => {
   res.json({ ok: true });
 });
 
+function sanitizeContentDispositionFilename(filename: string): string {
+  return filename.replace(/[\r\n\\"]/g, "_");
+}
+
 app.get("/api/v1/photos/:id/image", async (req, res) => {
   const id = Number(req.params.id);
   const size = req.query.size === "thumb" ? "thumb" : "full";
@@ -529,13 +533,17 @@ app.get("/api/v1/photos/:id/image", async (req, res) => {
     }
   }
 
-  const rows = await pool.query("SELECT source_root, relative_path, sha256 FROM files WHERE id = $1", [id]);
+  const rows = await pool.query("SELECT source_root, relative_path, filename, sha256 FROM files WHERE id = $1", [id]);
   if (!rows.rowCount) {
     res.status(404).json({ error: "not found" });
     return;
   }
 
   const row = rows.rows[0];
+  const requestedName = typeof req.query.downloadName === "string" ? req.query.downloadName : row.filename;
+  const fallbackName = typeof row.filename === "string" && row.filename.trim() ? row.filename : "image";
+  const safeName = sanitizeContentDispositionFilename(String(requestedName || fallbackName));
+  res.setHeader("Content-Disposition", `inline; filename=\"${safeName}\"`);
   if (size === "thumb") {
     const thumbDir = process.env.THUMBS_DIR || "/data/cache/thumbs";
     const thumbPath = path.join(thumbDir, `${row.sha256}.jpg`);
