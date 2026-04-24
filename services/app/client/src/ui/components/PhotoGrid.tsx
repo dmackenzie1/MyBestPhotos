@@ -26,7 +26,6 @@ const SORT_OPTIONS = [
   { value: "print_12x18_desc", label: "Print Score" },
   { value: "date_desc", label: "Date (Newest)" },
   { value: "date_asc", label: "Date (Oldest)" },
-  { value: "filename_asc", label: "Filename" },
 ];
 
 const SORT_HELP_TEXT: Record<string, string> = {
