@@ -5,7 +5,9 @@ from pathlib import Path
 import re
 from typing import Any, Iterable
 
-DATE_RE = re.compile(r"(20\d{2})[-_]?([01]\d)[-_]?([0-3]\d)")
+DATE_RE = re.compile(r"(?<!\d)(20\d{2})[-_](0[1-9]|1[0-2])[-_](0[1-9]|[12]\d|3[01])(?!\d)")
+YEAR_MONTH_RE = re.compile(r"(?<!\d)(20\d{2})[-_](0[1-9]|1[0-2])(?!\d)")
+YEAR_RE = re.compile(r"(?<!\d)(20\d{2})(?!\d)")
 
 
 def _sanitize_str(value: object) -> object:
@@ -55,7 +57,28 @@ def _parse_datetime_from_candidate(value: str) -> datetime | None:
         return None
 
 
-def _resolve_taken_at(exif_datetime: str | None, path: Path) -> tuple[datetime, str]:
+def _parse_month_from_candidate(value: str) -> datetime | None:
+    match = YEAR_MONTH_RE.search(value)
+    if not match:
+        return None
+    year, month = [int(match.group(i)) for i in range(1, 3)]
+    try:
+        return datetime(year, month, 1, tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def _parse_year_from_candidate(value: str) -> datetime | None:
+    match = YEAR_RE.search(value)
+    if not match:
+        return None
+    try:
+        return datetime(int(match.group(1)), 1, 1, tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def _resolve_taken_at(exif_datetime: str | None, path: Path) -> tuple[datetime | None, str | None]:
     if exif_datetime:
         cleaned = exif_datetime.replace(":", "-", 2)
         for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
@@ -68,12 +91,30 @@ def _resolve_taken_at(exif_datetime: str | None, path: Path) -> tuple[datetime, 
     if from_name:
         return from_name, "filename"
 
-    for part in path.parts:
+    for part in reversed(path.parent.parts):
         from_dir = _parse_datetime_from_candidate(part)
         if from_dir:
             return from_dir, "directory"
 
-    return datetime.now(timezone.utc), "ingest_time"
+    month_from_name = _parse_month_from_candidate(path.name)
+    if month_from_name:
+        return month_from_name, "filename_month"
+
+    for part in reversed(path.parent.parts):
+        month_from_dir = _parse_month_from_candidate(part)
+        if month_from_dir:
+            return month_from_dir, "directory_month"
+
+    year_from_name = _parse_year_from_candidate(path.name)
+    if year_from_name:
+        return year_from_name, "filename_year"
+
+    for part in reversed(path.parent.parts):
+        year_from_dir = _parse_year_from_candidate(part)
+        if year_from_dir:
+            return year_from_dir, "directory_year"
+
+    return None, None
 
 
 def _to_float(value: object) -> float | None:
