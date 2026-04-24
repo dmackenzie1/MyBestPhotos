@@ -254,6 +254,15 @@ def base_ingest_cmd(
 
 @app.command("score-nima")
 def score_nima_cmd(
+    batch_size: int = typer.Option(500, "--batch-size", min=1),
+    force_rescore_all: bool = typer.Option(
+        False, "--force-rescore-all", help="Rescore every image instead of only stale/missing rows."
+    ),
+    defer_apply_until_complete: bool = typer.Option(
+        False,
+        "--defer-apply-until-complete",
+        help="Compute scores first and write updates only after scoring pass finishes.",
+    ),
     config: Optional[str] = typer.Option(None, "--config"),
 ) -> None:
     db, settings = _init_db(config)
@@ -263,8 +272,11 @@ def score_nima_cmd(
 
         stats = score_nima(
             db,
+            batch_size=batch_size,
             clip_model=settings.clip_model,
             clip_device=settings.embedding_device,
+            force_rescore_all=force_rescore_all,
+            defer_apply_until_complete=defer_apply_until_complete,
         )
         run_tracker.update_stage(nima_scored=stats.processed)
 
@@ -284,6 +296,15 @@ def score_nima_cmd(
 def advanced_runner_cmd(
     run_descriptions: bool = typer.Option(True, "--run-descriptions/--skip-descriptions"),
     model_name: str = typer.Option("basic-caption-v1", "--model-name"),
+    batch_size: int = typer.Option(500, "--batch-size", min=1),
+    force_rescore_all: bool = typer.Option(
+        False, "--force-rescore-all", help="Rescore every image instead of only stale/missing rows."
+    ),
+    defer_apply_until_complete: bool = typer.Option(
+        False,
+        "--defer-apply-until-complete",
+        help="Compute advanced scores first and write updates only after scoring pass finishes.",
+    ),
     description_provider: Optional[str] = typer.Option(None, "--description-provider"),
     lmstudio_timeout_seconds: Optional[float] = typer.Option(None, "--lmstudio-timeout-seconds"),
     config: Optional[str] = typer.Option(None, "--config"),
@@ -312,8 +333,11 @@ def advanced_runner_cmd(
                     else settings.lmstudio_timeout_seconds
                 ),
             ),
+            batch_size=batch_size,
             clip_model=settings.clip_model,
             clip_device=settings.embedding_device,
+            force_rescore_all=force_rescore_all,
+            defer_apply_until_complete=defer_apply_until_complete,
         )
         run_tracker.update_stage(
             nima_scored=stats.nima_processed, described=stats.described_processed

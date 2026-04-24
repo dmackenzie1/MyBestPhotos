@@ -81,32 +81,43 @@ def score_nima(
     db: Database,
     *,
     max_size: int = 1024,
+    batch_size: int = 500,
     clip_model: str | None = None,
     clip_device: str = "auto",
+    force_rescore_all: bool = False,
+    defer_apply_until_complete: bool = False,
 ) -> StageStats:
-    _BATCH_SIZE = 500
     nima_model_version = "nima_real_v1"
 
     stats = StageStats()
     clip_scorer = load_clip_aesthetic_scorer(clip_model, clip_device)
+    pending_updates: list[tuple[int, float, float, float, str]] = []
+    last_id = 0
     while True:
+        if force_rescore_all:
+            where_clause = "f.id > %s"
+            where_params: tuple[object, ...] = (last_id,)
+        else:
+            where_clause = "(fm.nima_score IS NULL OR fm.nima_model_version != %s) AND f.id > %s"
+            where_params = (nima_model_version, last_id)
+
         rows = db.fetchall(
-            """
+            f"""
             SELECT f.id, f.source_root, f.relative_path,
                    fm.blur_score, fm.brightness_score, fm.contrast_score, fm.entropy_score, fm.technical_quality_score
             FROM files f
             LEFT JOIN file_metrics fm ON fm.file_id = f.id
-            WHERE fm.nima_score IS NULL OR fm.nima_model_version != %s
-            ORDER BY COALESCE(fm.advanced_metadata_updated_at, fm.updated_at, f.updated_at, f.created_at) ASC NULLS FIRST,
-                     f.id ASC
+            WHERE {where_clause}
+            ORDER BY f.id ASC
             LIMIT %s
             """,
-            (nima_model_version, _BATCH_SIZE),
+            (*where_params, batch_size),
         )
 
         if not rows:
             break
 
+        last_id = int(rows[-1][0])
         for row in tqdm(rows, desc="NIMA"):
             (
                 file_id,
@@ -166,6 +177,37 @@ def score_nima(
             keep_raw = (0.45 * technical_quality_score) + (0.55 * aesthetic_spread)
             keep_spread = max(0.0, min(1.0, keep_raw**0.9))
 
+            update_payload = (
+                file_id,
+                nima_spread,
+                aesthetic_spread,
+                keep_spread,
+                nima_model_version,
+            )
+            if defer_apply_until_complete:
+                pending_updates.append(update_payload)
+            else:
+                db.execute(
+                    """
+                INSERT INTO file_metrics (
+                  file_id, nima_score, aesthetic_score, keep_score,
+                  nima_model_version, advanced_metadata_updated_at
+                ) VALUES (%s, %s, %s, %s, %s, now())
+                ON CONFLICT (file_id) DO UPDATE SET
+                  nima_score = EXCLUDED.nima_score,
+                  aesthetic_score = EXCLUDED.aesthetic_score,
+                  keep_score = EXCLUDED.keep_score,
+                  nima_model_version = EXCLUDED.nima_model_version,
+                  advanced_metadata_updated_at = now(),
+                  updated_at = now()
+                """,
+                    update_payload,
+                )
+            stats.processed += 1
+
+    if defer_apply_until_complete and pending_updates:
+        logger.info("Applying deferred NIMA updates: count={count}", count=len(pending_updates))
+        for update_payload in tqdm(pending_updates, desc="Apply NIMA updates"):
             db.execute(
                 """
             INSERT INTO file_metrics (
@@ -180,9 +222,8 @@ def score_nima(
               advanced_metadata_updated_at = now(),
               updated_at = now()
             """,
-                (file_id, nima_spread, aesthetic_spread, keep_spread, nima_model_version),
+                update_payload,
             )
-            stats.processed += 1
 
     logger.info(
         "NIMA stage complete: processed={processed}",
@@ -197,10 +238,20 @@ def run_advanced_runners(
     run_descriptions: bool = True,
     description_model_name: str = "basic-caption-v1",
     description_options: DescriptionOptions | None = None,
+    batch_size: int = 500,
     clip_model: str | None = None,
     clip_device: str = "auto",
+    force_rescore_all: bool = False,
+    defer_apply_until_complete: bool = False,
 ) -> AdvancedRunnerStats:
-    nima_stats = score_nima(db, clip_model=clip_model, clip_device=clip_device)
+    nima_stats = score_nima(
+        db,
+        batch_size=batch_size,
+        clip_model=clip_model,
+        clip_device=clip_device,
+        force_rescore_all=force_rescore_all,
+        defer_apply_until_complete=defer_apply_until_complete,
+    )
     describe_stats = StageStats()
     if run_descriptions:
         describe_stats = describe_images(
