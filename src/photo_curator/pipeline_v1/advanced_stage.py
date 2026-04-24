@@ -77,6 +77,26 @@ def _resolve_or_compute_metrics(
     )
 
 
+def _count_nima_candidates(
+    db: Database, *, force_rescore_all: bool, nima_model_version: str
+) -> int:
+    if force_rescore_all:
+        rows = db.fetchall("SELECT COUNT(*) FROM files")
+    else:
+        rows = db.fetchall(
+            """
+            SELECT COUNT(*)
+            FROM files f
+            LEFT JOIN file_metrics fm ON fm.file_id = f.id
+            WHERE fm.nima_score IS NULL OR fm.nima_model_version != %s
+            """,
+            (nima_model_version,),
+        )
+    if not rows:
+        return 0
+    return int(rows[0][0])
+
+
 def score_nima(
     db: Database,
     *,
@@ -92,7 +112,20 @@ def score_nima(
     stats = StageStats()
     clip_scorer = load_clip_aesthetic_scorer(clip_model, clip_device)
     pending_updates: list[tuple[int, float, float, float, str]] = []
+    total_candidates = _count_nima_candidates(
+        db, force_rescore_all=force_rescore_all, nima_model_version=nima_model_version
+    )
+    total_batches = (total_candidates + batch_size - 1) // batch_size if total_candidates else 0
+    logger.info(
+        "NIMA stage starting: total_candidates={total} batch_size={batch_size} batches={batches} deferred_apply={deferred}",
+        total=total_candidates,
+        batch_size=batch_size,
+        batches=total_batches,
+        deferred=defer_apply_until_complete,
+    )
+
     last_id = 0
+    batch_index = 0
     while True:
         if force_rescore_all:
             where_clause = "f.id > %s"
@@ -117,8 +150,16 @@ def score_nima(
         if not rows:
             break
 
+        batch_index += 1
         last_id = int(rows[-1][0])
-        for row in tqdm(rows, desc="NIMA"):
+        logger.info(
+            "NIMA batch {batch_index}/{total_batches}: batch_size={batch_size} up_to_file_id={last_id}",
+            batch_index=batch_index,
+            total_batches=(total_batches or "?"),
+            batch_size=len(rows),
+            last_id=last_id,
+        )
+        for row in tqdm(rows, desc=f"NIMA batch {batch_index}"):
             (
                 file_id,
                 source_root,
