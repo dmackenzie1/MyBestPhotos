@@ -7,8 +7,8 @@ import { TimelineView } from "./ui/components/TimelineView";
 import { TopBar } from "./ui/components/TopBar";
 import { getJson } from "./ui/lib/api";
 import { FALLBACK_DETAIL, FALLBACK_ITEMS } from "./ui/lib/fallbackData";
-import { getSelectedTags, reconcileSelection, statusFromItem } from "./ui/lib/utils";
-import type { FacetsResponse, PhotoListResponse, ViewMode } from "./ui/types";
+import { getSelectedTags, reconcileSelection } from "./ui/lib/utils";
+import type { FacetsResponse, PhotoListResponse, StatusSummaryResponse, ViewMode } from "./ui/types";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api/v1";
 
@@ -34,6 +34,7 @@ export default function App() {
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [statusSummary, setStatusSummary] = useState<StatusSummaryResponse>({ all: 0, favorite: 0, hidden: 0, unreviewed: 0 });
 
   const [facets, setFacets] = useState<FacetsResponse>({ camera: [], categories: [], dateBounds: { min: null, max: null } });
   const [stubActive, setStubActive] = useState(false);
@@ -62,6 +63,20 @@ export default function App() {
     params.set("sort", sort);
     return params.toString();
   }, [search, cameraMake, cameraModel, category, dateFrom, dateTo, minScore, maxScore, status, page, sort]);
+
+  const summaryQueryString = useMemo(() => {
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("q", search.trim());
+    if (cameraMake) params.set("cameraMake", cameraMake);
+    if (cameraModel) params.set("cameraModel", cameraModel);
+    if (category) params.set("category", category);
+    if (dateFrom) params.set("dateFrom", `${dateFrom}T00:00:00.000Z`);
+    if (dateTo) params.set("dateTo", `${dateTo}T23:59:59.999Z`);
+    params.set("minPrintScore12x18", String(minScore));
+    params.set("maxPrintScore12x18", String(maxScore));
+    return params.toString();
+  }, [search, cameraMake, cameraModel, category, dateFrom, dateTo, minScore, maxScore]);
+
 
   useEffect(() => {
     setPage(1);
@@ -204,6 +219,12 @@ export default function App() {
         },
       };
     });
+
+    if (!stubActive) {
+      void getJson<StatusSummaryResponse>(`${API_BASE}/photos/status-summary?${summaryQueryString}`)
+        .then((response) => setStatusSummary(response))
+        .catch(() => undefined);
+    }
   }
 
   async function patchLabels(payload: LabelPatch) {
@@ -229,14 +250,27 @@ export default function App() {
     ),
   );
 
-  const statusSummary = useMemo(() => {
-    const summary = { all: 0, favorite: 0, hidden: 0, unreviewed: 0 };
-    for (const item of items) {
-      if (item.rejectFlag !== true) summary.all += 1;
-      summary[statusFromItem(item)] += 1;
+
+
+  useEffect(() => {
+    if (stubActive) {
+      const fallbackSummary = {
+        all: FALLBACK_ITEMS.filter((item) => item.rejectFlag !== true).length,
+        favorite: FALLBACK_ITEMS.filter((item) => item.favoriteFlag === true && item.rejectFlag !== true).length,
+        hidden: FALLBACK_ITEMS.filter((item) => item.rejectFlag === true).length,
+        unreviewed: FALLBACK_ITEMS.filter((item) => !item.keepFlag && !item.favoriteFlag && !item.rejectFlag).length,
+      };
+      setStatusSummary(fallbackSummary);
+      return;
     }
-    return summary;
-  }, [items]);
+
+    void getJson<StatusSummaryResponse>(`${API_BASE}/photos/status-summary?${summaryQueryString}`)
+      .then((response) => setStatusSummary(response))
+      .catch(() => {
+        const fallbackSummary = { all: 0, favorite: 0, hidden: 0, unreviewed: 0 };
+        setStatusSummary(fallbackSummary);
+      });
+  }, [summaryQueryString, stubActive]);
 
   const timelineGroups = useMemo(() => {
     const grouped = new Map<string, PhotoListItem[]>();

@@ -21,9 +21,13 @@ type PhotoGridProps = {
 };
 
 const SORT_OPTIONS = [
-  { value: "aesthetic_desc", label: "Aesthetic" },
   { value: "curation_desc", label: "Curation" },
+  { value: "aesthetic_desc", label: "Aesthetic" },
   { value: "print_12x18_desc", label: "Print Score" },
+  { value: "sharpness_desc", label: "Sharpness" },
+  { value: "exposure_desc", label: "Exposure" },
+  { value: "contrast_desc", label: "Contrast" },
+  { value: "noise_asc", label: "Noise (Low to High)" },
   { value: "date_desc", label: "Date (Newest)" },
   { value: "date_asc", label: "Date (Oldest)" },
 ];
@@ -32,18 +36,22 @@ const SORT_HELP_TEXT: Record<string, string> = {
   aesthetic_desc: "Aesthetic ranks visual appeal predicted by the model.",
   curation_desc: "Curation blends aesthetic, technical quality, and semantic context.",
   print_12x18_desc: "Print Score prioritizes sharpness/detail for 12x18 output.",
+  sharpness_desc: "Sharpness ranks photos with less blur first.",
+  exposure_desc: "Exposure ranks brighter exposures first.",
+  contrast_desc: "Contrast ranks punchier contrast first.",
+  noise_asc: "Noise ranks cleaner photos (lower noise) first.",
   date_desc: "Newest first by photo timestamp.",
   date_asc: "Oldest first by photo timestamp.",
-  filename_asc: "Alphabetical by filename.",
 };
 
 function scoreBadgeForSort(item: PhotoListItem, sort: string): string {
   if (sort === "curation_desc") return item.curationScore?.toFixed(2) ?? "--";
   if (sort === "print_12x18_desc") return item.printScore12x18?.toFixed(2) ?? "--";
+  if (sort === "aesthetic_desc") return item.aestheticScore?.toFixed(2) ?? "--";
   if (sort === "date_desc" || sort === "date_asc") {
     return item.photoTakenAt ? String(new Date(item.photoTakenAt).getFullYear()) : "--";
   }
-  return item.aestheticScore?.toFixed(2) ?? "--";
+  return "Rank";
 }
 
 export function PhotoGrid({
