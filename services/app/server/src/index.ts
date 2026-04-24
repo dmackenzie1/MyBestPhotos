@@ -11,6 +11,7 @@ import {
   listQuerySchema,
   statusSummaryQuerySchema,
 } from "./photoQuery.js";
+import { embedText, vectorLiteral } from "./textVectorizer.js";
 
 const app = express();
 app.use(cors());
@@ -32,6 +33,7 @@ const mockList: PhotoListItem[] = [
     printScore6x8: 0.96,
     curationScore: 0.93,
     aestheticScore: 0.87,
+    wallArtScore: 88,
     descriptionText: "Young girl smiling and hugging a golden retriever outdoors.",
     keepFlag: true,
     rejectFlag: false,
@@ -50,6 +52,7 @@ const mockList: PhotoListItem[] = [
     printScore6x8: 0.9,
     curationScore: 0.87,
     aestheticScore: 0.82,
+    wallArtScore: 79,
     descriptionText: "Family portrait in warm evening light in a backyard.",
     keepFlag: null,
     rejectFlag: null,
@@ -86,6 +89,7 @@ const mockDetail = (id: number): PhotoDetail => {
       semanticRelevanceScore: 0.85,
       curationScore: selected.curationScore,
       aestheticScore: selected.aestheticScore,
+      wallArtScore: selected.wallArtScore,
       printScore6x8: selected.printScore6x8,
       printScore8x10: selected.printScore8x10,
       printScore12x18: selected.printScore12x18,
@@ -126,6 +130,7 @@ type PhotoListRow = {
   curation_score: number | null;
   aesthetic_score: number | null;
   description_text: string | null;
+  wall_art_score: number | null;
   keep_flag: boolean | null;
   reject_flag: boolean | null;
   favorite_flag: boolean | null;
@@ -174,7 +179,8 @@ app.get("/api/v1/health", async (_req, res) => {
     const countRows = await pool.query(
       `SELECT COUNT(*)::int AS total_files,
               (SELECT COUNT(*) FROM file_metrics WHERE nima_score IS NOT NULL)::int AS scored_nima,
-              (SELECT COUNT(*) FROM file_descriptions)::int AS described
+              (SELECT COUNT(*) FROM file_descriptions)::int AS described,
+              (SELECT COUNT(*) FROM file_llm_results)::int AS llm_described
        FROM files`
     );
     if (countRows.rows.length > 0) {
@@ -183,6 +189,7 @@ app.get("/api/v1/health", async (_req, res) => {
         total_files: Number(s.total_files),
         scored_nima: Number(s.scored_nima),
         described: Number(s.described),
+        llm_described: Number(s.llm_described),
       };
     }
   } catch {
@@ -227,6 +234,7 @@ app.get("/api/v1/photos/status-summary", async (req, res) => {
     LEFT JOIN file_metrics fm ON fm.file_id = f.id
     LEFT JOIN file_descriptions fd ON fd.file_id = f.id
     LEFT JOIN file_labels fl ON fl.file_id = f.id
+    LEFT JOIN file_llm_results flm ON flm.file_id = f.id
     ${whereSql}
   `;
 
@@ -263,7 +271,16 @@ app.get("/api/v1/photos", async (req, res) => {
 
   const orderBy = getOrderBySql(query.sort);
 
-  const listParams = [...params, query.pageSize, (query.page - 1) * query.pageSize];
+  const queryEmbedding = query.q ? vectorLiteral(embedText(query.q)) : null;
+  const listParams = queryEmbedding
+    ? [...params, queryEmbedding, query.pageSize, (query.page - 1) * query.pageSize]
+    : [...params, query.pageSize, (query.page - 1) * query.pageSize];
+  const rankSelect = queryEmbedding
+    ? `, (1 - (flm.description_embedding <=> $${params.length + 1}::vector)) AS semantic_rank`
+    : ", NULL::double precision AS semantic_rank";
+  const rankOrder = queryEmbedding
+    ? `ORDER BY semantic_rank DESC NULLS LAST, ${orderBy}`
+    : `ORDER BY ${orderBy}`;
 
   const sql = `
     SELECT
@@ -278,19 +295,22 @@ app.get("/api/v1/photos", async (req, res) => {
       fm.print_score_8x10,
       fm.print_score_6x8,
       fm.curation_score,
-      fm.aesthetic_score,
-      fd.description_text,
+      coalesce(flm.aesthetic_score, fm.aesthetic_score) AS aesthetic_score,
+      coalesce(flm.description_text, fd.description_text) AS description_text,
+      flm.wall_art_score,
       fl.keep_flag,
       fl.reject_flag,
       fl.favorite_flag
+      ${rankSelect}
     FROM files f
     LEFT JOIN file_metrics fm ON fm.file_id = f.id
     LEFT JOIN file_descriptions fd ON fd.file_id = f.id
     LEFT JOIN file_labels fl ON fl.file_id = f.id
+    LEFT JOIN file_llm_results flm ON flm.file_id = f.id
     ${whereSql}
-    ORDER BY ${orderBy}
-    LIMIT $${params.length + 1}
-    OFFSET $${params.length + 2}
+    ${rankOrder}
+    LIMIT $${params.length + (queryEmbedding ? 2 : 1)}
+    OFFSET $${params.length + (queryEmbedding ? 3 : 2)}
   `;
 
   const countSql = `
@@ -299,6 +319,7 @@ app.get("/api/v1/photos", async (req, res) => {
     LEFT JOIN file_metrics fm ON fm.file_id = f.id
     LEFT JOIN file_descriptions fd ON fd.file_id = f.id
     LEFT JOIN file_labels fl ON fl.file_id = f.id
+    LEFT JOIN file_llm_results flm ON flm.file_id = f.id
     ${whereSql}
   `;
 
@@ -319,6 +340,7 @@ app.get("/api/v1/photos", async (req, res) => {
     curationScore: row.curation_score,
     aestheticScore: row.aesthetic_score,
     descriptionText: row.description_text,
+    wallArtScore: row.wall_art_score,
     keepFlag: row.keep_flag,
     rejectFlag: row.reject_flag,
     favoriteFlag: row.favorite_flag,
@@ -350,10 +372,12 @@ app.get("/api/v1/photos/:id", async (req, res) => {
       SELECT
         f.id, f.source_root, f.relative_path, f.filename, f.extension, f.width, f.height,
         f.photo_taken_at, f.photo_taken_at_source, f.camera_make, f.camera_model,
-        fd.description_text, fd.description_json,
+        coalesce(flm.description_text, fd.description_text) AS description_text,
+        coalesce(flm.llm_payload_json, fd.description_json) AS description_json,
         fm.blur_score, fm.brightness_score, fm.contrast_score, fm.entropy_score, fm.noise_score,
         fm.technical_quality_score, fm.semantic_relevance_score, fm.curation_score,
-        fm.aesthetic_score,
+        coalesce(flm.aesthetic_score, fm.aesthetic_score) AS aesthetic_score,
+        flm.wall_art_score,
         fm.print_score_6x8, fm.print_score_8x10, fm.print_score_12x18,
         fl.keep_flag, fl.reject_flag, fl.favorite_flag,
         fl.print_candidate_6x8, fl.print_candidate_8x10, fl.print_candidate_12x18,
@@ -362,6 +386,7 @@ app.get("/api/v1/photos/:id", async (req, res) => {
       LEFT JOIN file_descriptions fd ON fd.file_id = f.id
       LEFT JOIN file_metrics fm ON fm.file_id = f.id
       LEFT JOIN file_labels fl ON fl.file_id = f.id
+      LEFT JOIN file_llm_results flm ON flm.file_id = f.id
       WHERE f.id = $1
     `,
     [id],
@@ -397,6 +422,7 @@ app.get("/api/v1/photos/:id", async (req, res) => {
       semanticRelevanceScore: row.semantic_relevance_score,
       curationScore: row.curation_score,
       aestheticScore: row.aesthetic_score,
+      wallArtScore: row.wall_art_score,
       printScore6x8: row.print_score_6x8,
       printScore8x10: row.print_score_8x10,
       printScore12x18: row.print_score_12x18,
@@ -544,6 +570,9 @@ app.get("/api/v1/facets", async (_req, res) => {
       FROM (
         SELECT jsonb_array_elements_text(coalesce(fd.description_json->'categories', '[]'::jsonb)) AS category
         FROM file_descriptions fd
+        UNION ALL
+        SELECT unnest(coalesce(flm.tags, ARRAY[]::text[])) AS category
+        FROM file_llm_results flm
       ) categories
       GROUP BY category
       ORDER BY count DESC, category ASC

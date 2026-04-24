@@ -15,6 +15,7 @@ from photo_curator.pipeline_v1 import (
     describe_images,
     discover_files,
     run_advanced_runners,
+    run_llm_descriptions,
     score_metrics,
     score_nima,
 )
@@ -352,6 +353,33 @@ def advanced_runner_cmd(
             desc=stats.described_processed,
             run_id=run_id,
         )
+    finally:
+        _close_db(db)
+
+
+@app.command("llm-runner")
+def llm_runner_cmd(
+    lmstudio_base_url: Optional[str] = typer.Option(None, "--lmstudio-base-url"),
+    lmstudio_model: Optional[str] = typer.Option(None, "--lmstudio-model"),
+    lmstudio_timeout_seconds: Optional[float] = typer.Option(None, "--lmstudio-timeout-seconds"),
+    config: Optional[str] = typer.Option(None, "--config"),
+) -> None:
+    db, settings = _init_db(config)
+    try:
+        stats = run_llm_descriptions(
+            db,
+            options=DescriptionOptions(
+                provider="lmstudio",
+                lmstudio_base_url=lmstudio_base_url or settings.lmstudio_base_url,
+                lmstudio_model=lmstudio_model or settings.lmstudio_model,
+                lmstudio_timeout_seconds=(
+                    lmstudio_timeout_seconds
+                    if lmstudio_timeout_seconds is not None
+                    else settings.lmstudio_timeout_seconds
+                ),
+            ),
+        )
+        logger.info("LLM runner complete: processed={processed}", processed=stats.processed)
     finally:
         _close_db(db)
 

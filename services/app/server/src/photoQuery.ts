@@ -68,7 +68,7 @@ export function buildPhotoFilters(query: FilterQuery, includeStatus = true): Sql
   if (query.q) {
     params.push(query.q);
     where.push(
-      `to_tsvector('english', coalesce(fd.description_text, '')) @@ plainto_tsquery('english', $${params.length})`,
+      `to_tsvector('english', coalesce(flm.description_text, fd.description_text, '')) @@ plainto_tsquery('english', $${params.length})`,
     );
   }
   if (query.dateFrom) {
@@ -90,11 +90,11 @@ export function buildPhotoFilters(query: FilterQuery, includeStatus = true): Sql
   if (query.category) {
     params.push(query.category);
     where.push(
-      `EXISTS (
+      `(EXISTS (
         SELECT 1
         FROM jsonb_array_elements_text(coalesce(fd.description_json->'categories', '[]'::jsonb)) AS c(category)
         WHERE c.category = $${params.length}
-      )`,
+      ) OR $${params.length} = ANY(coalesce(flm.tags, ARRAY[]::text[])))`,
     );
   }
   if (typeof query.minPrintScore12x18 === "number") {

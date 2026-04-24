@@ -28,6 +28,6 @@ class AdvancedRunnerStats:
 @dataclass(frozen=True)
 class DescriptionOptions:
     provider: str = "basic"
-    lmstudio_base_url: str = "http://192.168.10.64:1234/v1"
-    lmstudio_model: str = "qwen3.6-35b-a3b"
+    lmstudio_base_url: str = "http://localhost:1234/v1"
+    lmstudio_model: str = "qwen3.5-9b"
     lmstudio_timeout_seconds: float = 60.0

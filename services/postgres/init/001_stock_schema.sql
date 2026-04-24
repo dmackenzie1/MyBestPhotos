@@ -55,6 +55,34 @@ CREATE TABLE IF NOT EXISTS file_descriptions (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS llm_runs (
+  id BIGSERIAL PRIMARY KEY,
+  provider TEXT NOT NULL DEFAULT 'lmstudio',
+  endpoint TEXT,
+  vision_model_name TEXT NOT NULL,
+  embedding_model_name TEXT NOT NULL,
+  prompt_version TEXT NOT NULL,
+  prompt_text TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS file_llm_results (
+  file_id BIGINT PRIMARY KEY REFERENCES files(id) ON DELETE CASCADE,
+  llm_run_id BIGINT REFERENCES llm_runs(id) ON DELETE SET NULL,
+  prompt_version TEXT NOT NULL,
+  vision_model_name TEXT NOT NULL,
+  embedding_model_name TEXT NOT NULL,
+  description_text TEXT NOT NULL,
+  tags TEXT[] NOT NULL DEFAULT '{}',
+  llm_payload_json JSONB,
+  aesthetic_score DOUBLE PRECISION,
+  wall_art_score DOUBLE PRECISION,
+  description_embedding VECTOR(384),
+  processed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS file_labels (
   file_id BIGINT PRIMARY KEY REFERENCES files(id) ON DELETE CASCADE,
   keep_flag BOOLEAN,
@@ -79,6 +107,19 @@ CREATE INDEX IF NOT EXISTS idx_file_metrics_curation_score ON file_metrics(curat
 CREATE INDEX IF NOT EXISTS idx_file_descriptions_tsv
 ON file_descriptions
 USING GIN (to_tsvector('english', COALESCE(description_text, '')));
+
+CREATE INDEX IF NOT EXISTS idx_file_llm_results_tsv
+ON file_llm_results
+USING GIN (to_tsvector('english', COALESCE(description_text, '')));
+
+CREATE INDEX IF NOT EXISTS idx_file_llm_results_tags_gin
+ON file_llm_results USING GIN (tags);
+
+CREATE INDEX IF NOT EXISTS idx_file_llm_results_embedding
+ON file_llm_results USING ivfflat (description_embedding vector_cosine_ops)
+WITH (lists = 100);
+
+CREATE INDEX IF NOT EXISTS idx_llm_runs_created_at ON llm_runs(created_at DESC);
 
 
 CREATE INDEX IF NOT EXISTS idx_file_labels_keep_flag ON file_labels (keep_flag);

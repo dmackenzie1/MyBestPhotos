@@ -21,6 +21,7 @@ export type PhotoListItem = {
   printScore6x8: number | null;
   curationScore: number | null;
   aestheticScore: number | null;
+  wallArtScore: number | null;
   descriptionText: string | null;
   keepFlag: boolean | null;
   rejectFlag: boolean | null;
@@ -51,6 +52,7 @@ export type PhotoDetail = {
     semanticRelevanceScore: number | null;
     curationScore: number | null;
     aestheticScore: number | null;
+    wallArtScore: number | null;
     printScore6x8: number | null;
     printScore8x10: number | null;
     printScore12x18: number | null;
