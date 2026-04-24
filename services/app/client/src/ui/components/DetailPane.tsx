@@ -33,7 +33,7 @@ export function DetailPane({
             <div><span>Taken</span><strong>{detail.photoTakenAt ? new Date(detail.photoTakenAt).toLocaleString() : "Unknown"}</strong></div>
             <div><span>Camera</span><strong>{detail.cameraMake || "Unknown"} {detail.cameraModel || ""}</strong></div>
             <div><span>Resolution</span><strong>{detail.width ?? "--"} × {detail.height ?? "--"}</strong></div>
-            <div><span>Source file</span><strong>{detail.sourceRoot}/{detail.relativePath}</strong></div>
+            <div><span>Source file</span><strong className="source-file">{detail.sourceRoot}/{detail.relativePath}</strong></div>
           </div>
 
           <div className="chip-row">

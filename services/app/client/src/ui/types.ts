@@ -17,3 +17,10 @@ export type FacetsResponse = {
 };
 
 export type DerivedStatus = "favorite" | "hidden" | "unreviewed";
+
+export type StatusSummaryResponse = {
+  all: number;
+  favorite: number;
+  hidden: number;
+  unreviewed: number;
+};

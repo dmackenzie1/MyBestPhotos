@@ -112,6 +112,7 @@ const listQuerySchema = z.object({
     .enum([
       "date_desc", "date_asc",
       "print_12x18_desc", "curation_desc", "aesthetic_desc", "keep_desc", "keep_asc",
+      "sharpness_desc", "exposure_desc", "contrast_desc", "noise_asc",
       "filename_asc"
     ])
     .default("aesthetic_desc"),
@@ -162,7 +163,9 @@ function resolveFilePath(sourceRoot: string, relativePath: string): string {
   return full;
 }
 
-function buildPhotoFilters(query: ListQuery): SqlFilters {
+type FilterQuery = Pick<ListQuery, "q" | "dateFrom" | "dateTo" | "cameraMake" | "cameraModel" | "category" | "minPrintScore12x18" | "maxPrintScore12x18" | "status">;
+
+function buildPhotoFilters(query: FilterQuery, includeStatus = true): SqlFilters {
   const where: string[] = [];
   const params: Array<string | number> = [];
 
@@ -207,11 +210,13 @@ function buildPhotoFilters(query: ListQuery): SqlFilters {
     where.push(`coalesce(fm.print_score_12x18, 0) <= $${params.length}`);
   }
 
-  if (query.status === "all") where.push("coalesce(fl.reject_flag, false) = false");
-  if (query.status === "keep") where.push("fl.keep_flag = true");
-  if (query.status === "favorite") where.push("fl.favorite_flag = true AND coalesce(fl.reject_flag, false) = false");
-  if (query.status === "reject" || query.status === "hidden") where.push("fl.reject_flag = true");
-  if (query.status === "unreviewed") where.push("fl.file_id is null");
+  if (includeStatus) {
+    if (query.status === "all") where.push("coalesce(fl.reject_flag, false) = false");
+    if (query.status === "keep") where.push("fl.keep_flag = true");
+    if (query.status === "favorite") where.push("fl.favorite_flag = true AND coalesce(fl.reject_flag, false) = false");
+    if (query.status === "reject" || query.status === "hidden") where.push("fl.reject_flag = true");
+    if (query.status === "unreviewed") where.push("fl.file_id is null");
+  }
 
   return {
     whereSql: where.length ? `WHERE ${where.join(" AND ")}` : "",
@@ -276,6 +281,59 @@ app.get("/api/v1/health", async (_req, res) => {
   });
 });
 
+
+const statusSummaryQuerySchema = z.object({
+  q: z.string().optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+  cameraMake: z.string().optional(),
+  cameraModel: z.string().optional(),
+  category: z.string().optional(),
+  minPrintScore12x18: z.coerce.number().optional(),
+  maxPrintScore12x18: z.coerce.number().optional(),
+});
+
+app.get("/api/v1/photos/status-summary", async (req, res) => {
+  if (STUB_MODE) {
+    res.json({
+      all: mockList.filter((item) => item.rejectFlag !== true).length,
+      favorite: mockList.filter((item) => item.favoriteFlag === true && item.rejectFlag !== true).length,
+      hidden: mockList.filter((item) => item.rejectFlag === true).length,
+      unreviewed: mockList.filter((item) => !item.keepFlag && !item.favoriteFlag && !item.rejectFlag).length,
+    });
+    return;
+  }
+
+  const parsed = statusSummaryQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  const { whereSql, params } = buildPhotoFilters({ ...parsed.data, status: "all" }, false);
+  const summarySql = `
+    SELECT
+      COUNT(*) FILTER (WHERE coalesce(fl.reject_flag, false) = false)::int AS all_count,
+      COUNT(*) FILTER (WHERE fl.favorite_flag = true AND coalesce(fl.reject_flag, false) = false)::int AS favorite_count,
+      COUNT(*) FILTER (WHERE fl.reject_flag = true)::int AS hidden_count,
+      COUNT(*) FILTER (WHERE fl.file_id IS NULL)::int AS unreviewed_count
+    FROM files f
+    LEFT JOIN file_metrics fm ON fm.file_id = f.id
+    LEFT JOIN file_descriptions fd ON fd.file_id = f.id
+    LEFT JOIN file_labels fl ON fl.file_id = f.id
+    ${whereSql}
+  `;
+
+  const result = await pool.query(summarySql, params);
+  const row = result.rows[0] ?? {};
+  res.json({
+    all: Number(row.all_count ?? 0),
+    favorite: Number(row.favorite_count ?? 0),
+    hidden: Number(row.hidden_count ?? 0),
+    unreviewed: Number(row.unreviewed_count ?? 0),
+  });
+});
+
 app.get("/api/v1/photos", async (req, res) => {
   if (STUB_MODE) {
     res.json({
@@ -310,6 +368,14 @@ app.get("/api/v1/photos", async (req, res) => {
           ? "fm.keep_score DESC NULLS LAST"
         : query.sort === "keep_asc"
           ? "fm.keep_score ASC NULLS FIRST"
+        : query.sort === "sharpness_desc"
+          ? "fm.blur_score ASC NULLS LAST"
+        : query.sort === "exposure_desc"
+          ? "fm.brightness_score DESC NULLS LAST"
+        : query.sort === "contrast_desc"
+          ? "fm.contrast_score DESC NULLS LAST"
+        : query.sort === "noise_asc"
+          ? "fm.noise_score ASC NULLS LAST"
         : query.sort === "filename_asc"
           ? "f.filename ASC"
           : "f.photo_taken_at DESC NULLS LAST";

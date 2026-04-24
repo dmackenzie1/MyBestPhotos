@@ -24,12 +24,15 @@ type TimelineViewProps = {
 };
 
 const SORT_OPTIONS = [
+  { value: "curation_desc", label: "Curation" },
+  { value: "aesthetic_desc", label: "Aesthetic" },
+  { value: "print_12x18_desc", label: "Print Score" },
+  { value: "sharpness_desc", label: "Sharpness" },
+  { value: "exposure_desc", label: "Exposure" },
+  { value: "contrast_desc", label: "Contrast" },
+  { value: "noise_asc", label: "Noise (Low to High)" },
   { value: "date_desc", label: "Date (Newest)" },
   { value: "date_asc", label: "Date (Oldest)" },
-  { value: "aesthetic_desc", label: "Aesthetic" },
-  { value: "curation_desc", label: "Curation" },
-  { value: "print_12x18_desc", label: "Print Score" },
-  { value: "filename_asc", label: "Filename" },
 ];
 
 export function TimelineView({

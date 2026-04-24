@@ -1,8 +1,8 @@
 .detail {
   padding: 7px;
   position: sticky;
-  top: 66px;
-  max-height: calc(100vh - 72px);
+  top: 76px;
+  max-height: calc(100vh - 82px);
   overflow: auto;
 }
 .preview { width: 100%; border-radius: 8px; border: 1px solid #2f4b79; }
@@ -64,4 +64,11 @@ textarea { min-height: 80px; margin-top: 6px; }
   color: #dbeafe;
   padding: 6px 8px;
   cursor: pointer;
+}
+
+.source-file {
+  font-size: 11px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
