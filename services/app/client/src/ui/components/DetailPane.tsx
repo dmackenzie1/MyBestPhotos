@@ -63,6 +63,7 @@ export function DetailPane({
               <button type="button" onClick={() => void onPatchLabels({ rejectFlag: true, keepFlag: false })}>Hide</button>
             )}
             <a className="action-link" href={`${apiBase}/photos/${detail.id}/image?size=full&downloadName=${encodeURIComponent(detail.filename)}`} target="_blank" rel="noreferrer">Open Full</a>
+            <a className="action-link" href={`${apiBase}/photos/${detail.id}/image?size=full&download=1&downloadName=${encodeURIComponent(detail.filename)}`} download={detail.filename}>Download</a>
           </div>
 
           <div className="notes-block">

@@ -124,7 +124,21 @@ export function PhotoGrid({
               ) : (
                 <button type="button" title="Hide from main" onClick={() => void onQuickLabel(item.id, { rejectFlag: true, keepFlag: false })}>－</button>
               )}
-              <a title="Open full image" href={`${apiBase}/photos/${item.id}/image?size=full`} target="_blank" rel="noreferrer">⤢</a>
+              <a
+                title="Open full image"
+                href={`${apiBase}/photos/${item.id}/image?size=full&downloadName=${encodeURIComponent(item.filename)}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                ⤢
+              </a>
+              <a
+                title="Download original"
+                href={`${apiBase}/photos/${item.id}/image?size=full&download=1&downloadName=${encodeURIComponent(item.filename)}`}
+                download={item.filename}
+              >
+                ⤓
+              </a>
             </div>
             <div className="card-body">
               <strong>{item.filename}</strong>
