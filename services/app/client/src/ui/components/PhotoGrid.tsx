@@ -98,7 +98,7 @@ export function PhotoGrid({
         {items.map((item) => (
           <article
             key={item.id}
-            className={`card ${selectedId === item.id ? "selected" : ""}`}
+            className={`card ${selectedId === item.id ? "selected" : ""} ${item.favoriteFlag ? "favorite-frame" : ""}`}
             style={{ "--icon-scale": String(iconScale) } as CSSProperties}
             role="button"
             tabIndex={0}
