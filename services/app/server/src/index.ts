@@ -104,6 +104,7 @@ const listQuerySchema = z.object({
   cameraModel: z.string().optional(),
   category: z.string().optional(),
   minPrintScore12x18: z.coerce.number().optional(),
+  maxPrintScore12x18: z.coerce.number().optional(),
   status: z.enum(["all", "keep", "favorite", "reject", "unreviewed"]).default("all"),
   page: z.coerce.number().min(1).default(1),
   pageSize: z.coerce.number().min(1).max(200).default(40),
@@ -200,6 +201,10 @@ function buildPhotoFilters(query: ListQuery): SqlFilters {
   if (typeof query.minPrintScore12x18 === "number") {
     params.push(query.minPrintScore12x18);
     where.push(`coalesce(fm.print_score_12x18, 0) >= $${params.length}`);
+  }
+  if (typeof query.maxPrintScore12x18 === "number") {
+    params.push(query.maxPrintScore12x18);
+    where.push(`coalesce(fm.print_score_12x18, 0) <= $${params.length}`);
   }
 
   if (query.status === "keep") where.push("fl.keep_flag = true");
