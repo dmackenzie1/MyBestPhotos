@@ -148,19 +148,19 @@ export function FiltersPane(props: FiltersPaneProps) {
           </div>
 
           <div className="topics-wrap">
-            <label>Filters and properties panel</label>
+            <label>Preview size</label>
             <div className="score-block">
-              <label className="slider-label" htmlFor="icon-scale">Icon size</label>
+              <label className="slider-label" htmlFor="icon-scale">Thumbnail width</label>
               <input
                 id="icon-scale"
                 type="range"
-                min={0.8}
-                max={1.35}
+                min={0.75}
+                max={1.7}
                 step={0.05}
                 value={iconScale}
                 onChange={(event) => onIconScaleChange(Number(event.target.value))}
               />
-              <div className="score-val">Scale: {iconScale.toFixed(2)}×</div>
+              <div className="score-val">{Math.round(192 * iconScale)}px</div>
             </div>
           </div>
         </>

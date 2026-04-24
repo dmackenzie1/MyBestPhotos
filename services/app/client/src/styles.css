@@ -17,8 +17,9 @@ button, input, select, textarea { font: inherit; }
 .shell { min-height: 100vh; }
 .banner { background: rgba(47, 126, 247, 0.2); border-bottom: 1px solid #2f7ef7; padding: 4px 8px; font-size: 12px; }
 
-.layout { display: grid; grid-template-columns: 280px 1fr 390px; gap: 6px; padding: 6px; }
-.timeline-layout { grid-template-columns: 280px 1fr 390px; }
+.layout { display: grid; grid-template-columns: 280px minmax(0, 1fr) 390px; gap: 6px; padding: 6px; }
+.timeline-layout { grid-template-columns: 280px minmax(0, 1fr) 390px; }
+.layout.filters-collapsed { grid-template-columns: 52px minmax(0, 1fr) 390px; }
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -30,7 +31,8 @@ button, input, select, textarea { font: inherit; }
 .section-header span { color: var(--soft); font-size: 13px; }
 
 @media (max-width: 1500px) {
-  .layout { grid-template-columns: 250px 1fr 340px; }
+  .layout { grid-template-columns: 250px minmax(0, 1fr) 340px; }
+  .layout.filters-collapsed { grid-template-columns: 52px minmax(0, 1fr) 340px; }
 }
 
 @media (max-width: 1220px) {

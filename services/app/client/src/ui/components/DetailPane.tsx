@@ -34,7 +34,6 @@ export function DetailPane({
             <div><span>Camera</span><strong>{detail.cameraMake || "Unknown"} {detail.cameraModel || ""}</strong></div>
             <div><span>Resolution</span><strong>{detail.width ?? "--"} × {detail.height ?? "--"}</strong></div>
             <div><span>Source file</span><strong>{detail.sourceRoot}/{detail.relativePath}</strong></div>
-            <div><span>Extension</span><strong>{detail.extension || "--"}</strong></div>
           </div>
 
           <div className="chip-row">

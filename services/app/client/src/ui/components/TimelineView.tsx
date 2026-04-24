@@ -47,9 +47,8 @@ export function TimelineView({
   onJumpToBrowse,
 }: TimelineViewProps) {
   return (
-    <section className="timeline panel">
+    <section className="timeline panel" style={{ "--icon-scale": String(iconScale) } as CSSProperties}>
       <div className="section-header">
-        <h2>Timeline</h2>
         <div className="timeline-actions">
           <span>{itemsCount} loaded / {total || itemsCount} matching</span>
           <label className="grid-sort timeline-sort">
@@ -62,7 +61,6 @@ export function TimelineView({
           </label>
         </div>
       </div>
-      <p className="sort-help">Timeline groups by year; sorting changes order inside each group.</p>
       {groups.map((group) => (
         <div key={group.year} className="timeline-group">
           <h3>{group.year} <small>{group.count} photos</small></h3>
@@ -71,7 +69,6 @@ export function TimelineView({
               <button
                 key={item.id}
                 className="timeline-item"
-                style={{ "--icon-scale": String(iconScale) } as CSSProperties}
                 onClick={() => {
                   onSelectPhoto(item.id);
                   onJumpToBrowse();
