@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-24-favorites-pastel-frame-highlight
 
 ## Quick Summary
-- Branch: `2026-04-24-favorites-pastel-frame-highlight`
 - Purpose: Add a subtle, muted highlight border around favorite photo cards so favorites are easier to spot without introducing bright/glowing colors.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: favorites, pastel, frame, highlight
 ## Intent
 - Add a subtle, muted highlight border around favorite photo cards so favorites are easier to spot without introducing bright/glowing colors.
 

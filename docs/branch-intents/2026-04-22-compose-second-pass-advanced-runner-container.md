@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-22-compose-second-pass-advanced-runner-container
 
 ## Quick Summary
-- Branch: `2026-04-22-compose-second-pass-advanced-runner-container`
 - Purpose: Address review feedback by creating a real second-pass containerized runner in Docker Compose, with shared source mounts and GPU-capable advanced pass wiring.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: compose, second, pass, advanced, runner, container
 ## Intent
 - Address review feedback by creating a real second-pass containerized runner in Docker Compose, with shared source mounts and GPU-capable advanced pass wiring.
 

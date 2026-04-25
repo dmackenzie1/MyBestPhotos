@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-23-clip-aesthetic-scoring-primary-schema
 
 ## Quick Summary
-- Branch: `2026-04-23-clip-aesthetic-scoring-primary-schema`
 - Purpose: Replace broken NIMA/heuristic aesthetic behavior with working CLIP-based scoring that auto-downloads weights and produces meaningful spread for ranking.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: clip, aesthetic, scoring, primary, schema
 ## Intent
 - Replace broken NIMA/heuristic aesthetic behavior with working CLIP-based scoring that auto-downloads weights and produces meaningful spread for ranking.
 

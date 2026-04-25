@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-22-fix-docker-build-context-venv-lib64
 
 ## Quick Summary
-- Branch: `2026-04-22-fix-docker-build-context-venv-lib64`
 - Purpose: Fix Docker Compose build-context transfer failures on Windows caused by trying to include `.venv/lib64` in the root build context.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: fix, docker, build, context, venv, lib64
 ## Intent
 - Fix Docker Compose build-context transfer failures on Windows caused by trying to include `.venv/lib64` in the root build context.
 

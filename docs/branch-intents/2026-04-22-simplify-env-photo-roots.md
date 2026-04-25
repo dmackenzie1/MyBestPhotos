@@ -1,10 +1,8 @@
 # Branch Intent: 2026-04-22-simplify-env-photo-roots
 
 ## Quick Summary
-- Branch: `2026-04-22-simplify-env-photo-roots`
 - Purpose: Simplify environment and compose configuration by removing numbered photo root variables (`PHOTO_ROOT_1..3`) in favor of a single `PHOTO_ROOT` mount and cleaner defaults.
-- Scan first: Use this branch when you are working on photo root environment/mount simplification.
-
+- Keywords: simplify, env, photo, roots
 ## Intent
 
 Simplify environment and compose configuration by removing numbered photo root variables (`PHOTO_ROOT_1..3`) in favor of a single `PHOTO_ROOT` mount and cleaner defaults.

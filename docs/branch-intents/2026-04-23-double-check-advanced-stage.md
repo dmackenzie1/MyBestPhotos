@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-23-double-check-advanced-stage
 
 ## Quick Summary
-- Branch: `2026-04-23-double-check-advanced-stage`
 - Purpose: Double-check `src/photo_curator/pipeline_v1/advanced_stage.py` and correct any regressions in the advanced scoring path.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: double, check, advanced, stage
 ## Intent
 - Double-check `src/photo_curator/pipeline_v1/advanced_stage.py` and correct any regressions in the advanced scoring path.
 

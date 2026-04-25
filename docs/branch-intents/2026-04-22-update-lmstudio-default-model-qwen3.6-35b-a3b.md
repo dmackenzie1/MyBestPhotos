@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-22-update-lmstudio-default-model-qwen3.6-35b-a3b
 
 ## Quick Summary
-- Branch: `2026-04-22-update-lmstudio-default-model-qwen3.6-35b-a3b`
 - Purpose: Align repository defaults and documentation with the user’s LM Studio model (`qwen3.6-35b-a3b`) so setup and runtime behavior match out of the box.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: update, lmstudio, default, model, qwen3.6, 35b, a3b
 ## Intent
 - Align repository defaults and documentation with the user’s LM Studio model (`qwen3.6-35b-a3b`) so setup and runtime behavior match out of the box.
 

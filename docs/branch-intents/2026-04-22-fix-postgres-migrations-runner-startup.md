@@ -1,12 +1,8 @@
 # Branch Intent: fix postgres migrations runner startup
 
 ## Quick Summary
-- Branch: `fix postgres migrations runner startup`
 - Purpose: Fix pipeline startup failure where the Python runner writes to `files` before migrations are applied.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: fix, postgres, migrations, runner, startup
 ## Intent
 - Fix pipeline startup failure where the Python runner writes to `files` before migrations are applied.
 

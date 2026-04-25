@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-24-remove-filename-sort-option
 
 ## Quick Summary
-- Branch: `2026-04-24-remove-filename-sort-option`
 - Purpose: Remove the filename sort option from the browse UI sort dropdown so users only see ranking/time-oriented sorts.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: remove, filename, sort, option
 ## Intent
 - Remove the filename sort option from the browse UI sort dropdown so users only see ranking/time-oriented sorts.
 

@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-23-score-improvements-from-real-data
 
 ## Quick Summary
-- Branch: `2026-04-23-score-improvements-from-real-data`
 - Purpose: Update scoring formulas and CLIP model configuration based on real dataset statistics from 17,086 photos.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: score, improvements, from, real, data
 ## Intent
 - Update scoring formulas and CLIP model configuration based on real dataset statistics from 17,086 photos.
 - Create `docs/score-data-analysis.md` with comprehensive score distributions, camera stats, aspect ratios, and implementation priorities for future reference.

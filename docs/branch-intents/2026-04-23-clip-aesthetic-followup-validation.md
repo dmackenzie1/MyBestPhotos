@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-23-clip-aesthetic-followup-validation
 
 ## Quick Summary
-- Branch: `2026-04-23-clip-aesthetic-followup-validation`
 - Purpose: Validate the new CLIP aesthetic scoring path and confirm whether model weights are available/downloadable in this environment.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: clip, aesthetic, followup, validation
 ## Intent
 - Validate the new CLIP aesthetic scoring path and confirm whether model weights are available/downloadable in this environment.
 

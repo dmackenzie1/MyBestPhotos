@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-22-two-stage-ingest-advanced-nima
 
 ## Quick Summary
-- Branch: `2026-04-22-two-stage-ingest-advanced-nima`
 - Purpose: Evolve the runner into a practical two-stage architecture (base ingest + advanced runners) and add a first NIMA-style aesthetic scoring stage without over-engineering.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: two, stage, ingest, advanced, nima
 ## Intent
 - Evolve the runner into a practical two-stage architecture (base ingest + advanced runners) and add a first NIMA-style aesthetic scoring stage without over-engineering.
 

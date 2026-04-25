@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-23-fix-client-fallback-aesthetic-score-build
 
 ## Quick Summary
-- Branch: `2026-04-23-fix-client-fallback-aesthetic-score-build`
 - Purpose: Fix the frontend TypeScript build failure by aligning demo fallback objects with the current shared `PhotoListItem` and `PhotoDetail` metric types.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: fix, client, fallback, aesthetic, score, build
 ## Intent
 - Fix the frontend TypeScript build failure by aligning demo fallback objects with the current shared `PhotoListItem` and `PhotoDetail` metric types.
 

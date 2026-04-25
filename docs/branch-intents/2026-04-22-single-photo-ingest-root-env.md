@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-22-single-photo-ingest-root-env
 
 ## Quick Summary
-- Branch: `2026-04-22-single-photo-ingest-root-env`
 - Purpose: Align environment wiring with current runtime plan: one host photo mount for ingest scanning, with no separate multi-root CSV configuration required.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: single, photo, ingest, root, env
 ## Intent
 - Align environment wiring with current runtime plan: one host photo mount for ingest scanning, with no separate multi-root CSV configuration required.
 

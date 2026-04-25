@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-22-tighten-ui-filters-and-metadata
 
 ## Quick Summary
-- Branch: `2026-04-22-tighten-ui-filters-and-metadata`
 - Purpose: Tighten the app UI spacing and filter controls, add metadata visibility in the detail pane, and align date filters to DB min/max defaults.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: tighten, ui, filters, and, metadata
 ## Intent
 - Tighten the app UI spacing and filter controls, add metadata visibility in the detail pane, and align date filters to DB min/max defaults.
 

@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-24-main-favorites-hidden-actions
 
 ## Quick Summary
-- Branch: `2026-04-24-main-favorites-hidden-actions`
 - Purpose: Simplify browse labeling UX so users work with Main, Favorites, and Hidden only; remove print-size and keep/reject surface from UI; avoid list reload feel when action buttons are pressed.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: main, favorites, hidden, actions
 ## Intent
 - Simplify browse labeling UX so users work with Main, Favorites, and Hidden only; remove print-size and keep/reject surface from UI; avoid list reload feel when action buttons are pressed.
 

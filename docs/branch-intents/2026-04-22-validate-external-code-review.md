@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-22-validate-external-code-review
 
 ## Quick Summary
-- Branch: `2026-04-22-validate-external-code-review`
 - Purpose: Validate whether an externally provided code review is accurate against the current repository state.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: validate, external, code, review
 ## Intent
 - Validate whether an externally provided code review is accurate against the current repository state.
 

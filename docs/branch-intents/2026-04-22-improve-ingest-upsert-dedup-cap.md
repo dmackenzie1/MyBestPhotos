@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-22-improve-ingest-upsert-dedup-cap
 
 ## Quick Summary
-- Branch: `2026-04-22-improve-ingest-upsert-dedup-cap`
 - Purpose: Make ingest safer for iterative local runs by sampling a manageable file subset each run and preventing unlimited duplicate file records while still allowing updates to existing paths.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: improve, ingest, upsert, dedup, cap
 ## Intent
 - Make ingest safer for iterative local runs by sampling a manageable file subset each run and preventing unlimited duplicate file records while still allowing updates to existing paths.
 
