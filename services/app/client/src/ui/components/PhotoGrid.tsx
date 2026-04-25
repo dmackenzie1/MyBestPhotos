@@ -27,6 +27,7 @@ const SORT_OPTIONS = [
   { value: "exposure_desc", label: "Exposure" },
   { value: "contrast_desc", label: "Contrast" },
   { value: "noise_asc", label: "Noise (Low to High)" },
+  { value: "random", label: "Random" },
   { value: "date_desc", label: "Date (Newest)" },
   { value: "date_asc", label: "Date (Oldest)" },
 ];
@@ -38,6 +39,7 @@ const SORT_HELP_TEXT: Record<string, string> = {
   exposure_desc: "Exposure ranks brighter exposures first.",
   contrast_desc: "Contrast ranks punchier contrast first.",
   noise_asc: "Noise ranks cleaner photos (lower noise) first.",
+  random: "Random shuffles results each load for variety.",
   date_desc: "Newest first by photo timestamp.",
   date_asc: "Oldest first by photo timestamp.",
 };
