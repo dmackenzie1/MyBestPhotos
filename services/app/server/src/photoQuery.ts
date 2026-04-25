@@ -22,6 +22,7 @@ export const listQuerySchema = z.object({
       "exposure_desc",
       "contrast_desc",
       "noise_asc",
+      "random",
       "filename_asc",
     ])
     .default("aesthetic_desc"),
@@ -113,6 +114,7 @@ const ORDER_BY_SQL: Record<ListQuery["sort"], string> = {
   exposure_desc: "fm.brightness_score DESC NULLS LAST",
   contrast_desc: "fm.contrast_score DESC NULLS LAST",
   noise_asc: "fm.noise_score ASC NULLS LAST",
+  random: "RANDOM()",
   filename_asc: "f.filename ASC",
 };
 

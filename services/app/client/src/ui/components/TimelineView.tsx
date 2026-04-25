@@ -30,6 +30,7 @@ const SORT_OPTIONS = [
   { value: "exposure_desc", label: "Exposure" },
   { value: "contrast_desc", label: "Contrast" },
   { value: "noise_asc", label: "Noise (Low to High)" },
+  { value: "random", label: "Random" },
   { value: "date_desc", label: "Date (Newest)" },
   { value: "date_asc", label: "Date (Oldest)" },
 ];
