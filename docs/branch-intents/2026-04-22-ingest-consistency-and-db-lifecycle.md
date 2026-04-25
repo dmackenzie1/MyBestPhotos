@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-22-ingest-consistency-and-db-lifecycle
 
+## Quick Summary
+- Branch: `2026-04-22-ingest-consistency-and-db-lifecycle`
+- Purpose: Address high-signal pipeline hygiene issues: duplicate file discovery logic, missing DB pool lifecycle cleanup, and LM Studio timeout CLI override.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Address high-signal pipeline hygiene issues: duplicate file discovery logic, missing DB pool lifecycle cleanup, and LM Studio timeout CLI override.
 

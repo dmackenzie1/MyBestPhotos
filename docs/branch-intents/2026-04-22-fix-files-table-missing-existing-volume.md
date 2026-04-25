@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-22-fix-files-table-missing-existing-volume
 
+## Quick Summary
+- Branch: `2026-04-22-fix-files-table-missing-existing-volume`
+- Purpose: Fix compose startup failures where `python-runner` inserts into `files` before schema exists on an already-initialized Postgres volume.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Fix compose startup failures where `python-runner` inserts into `files` before schema exists on an already-initialized Postgres volume.
 

@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-22-fix-exif-pipeline-pool-indexes
 
+## Quick Summary
+- Branch: `2026-04-22-fix-exif-pipeline-pool-indexes`
+- Purpose: Address the review findings around EXIF JSON bloat, oversized `pipeline_v1.py`, DB pool error handling, redundant NIMA metric recomputation, brittle category extraction, and missing label indexes.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Address the review findings around EXIF JSON bloat, oversized `pipeline_v1.py`, DB pool error handling, redundant NIMA metric recomputation, brittle category extraction, and missing label indexes.
 

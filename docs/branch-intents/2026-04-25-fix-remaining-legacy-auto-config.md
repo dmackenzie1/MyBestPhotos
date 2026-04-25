@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-25-fix-remaining-legacy-auto-config
 
+## Quick Summary
+- Branch: `2026-04-25-fix-remaining-legacy-auto-config`
+- Purpose: Fix the remaining main issue (legacy-only behavior in `select_top` / `score_technical`) by adding schema auto-detection and v1-compatible execution paths.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Fix the remaining main issue (legacy-only behavior in `select_top` / `score_technical`) by adding schema auto-detection and v1-compatible execution paths.
 

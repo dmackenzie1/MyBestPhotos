@@ -1,5 +1,12 @@
 # Branch Intent: fix python runner libgl opencv headless
 
+## Quick Summary
+- Branch: `fix python runner libgl opencv headless`
+- Purpose: Fix Python runner startup failure caused by missing `libGL.so.1` when importing OpenCV inside the `photo-curator` CLI in Docker.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Fix Python runner startup failure caused by missing `libGL.so.1` when importing OpenCV inside the `photo-curator` CLI in Docker.
 

@@ -147,17 +147,24 @@ If the instructions in a specific task conflict with this file:
 
 ---
 
-## 10. Branch Intent Discipline (Mandatory)
+## 10. Branch Intent Discipline
 
 1. **Always read prior branch intents first.**
    - Before attempting a fix, review relevant files under `docs/branch-intents/` for prior error patterns and failed approaches.
+   - First scan `# Branch Intent` and `## Quick Summary` headers to triage relevance quickly.
 
-2. **Always write/update a branch intent for the current task.**
-   - Every Codex task must record what was attempted, exact error message text, outcomes (including failures), and next-step ideas.
+2. **Write/update a branch intent for substantive work.**
+   - Substantive tasks must record what was attempted, exact error message text, outcomes (including failures), and next-step ideas.
+   - Typos or obvious one-line changes can skip branch-intent updates.
 
-3. **Do not hide failed attempts.**
+3. **One file per branch.**
+   - Keep one branch-intent file per branch and append updates there instead of creating new intent files for each commit.
+
+4. **Do not hide failed attempts.**
    - Failed experiments are required documentation so future branches avoid repeating the same rabbit holes.
 
-4. **Use the repo template.**
+5. **Use the repo template.**
    - Follow `docs/branch-intents/TEMPLATE.md` to keep records consistent and searchable.
 
+6. **Use simple names.**
+   - Keep branch names and merge request titles short, plain, and easy to scan.

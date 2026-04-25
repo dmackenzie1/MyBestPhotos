@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-24-ui-timeline-filters-modernization
 
+## Quick Summary
+- Branch: `2026-04-24-ui-timeline-filters-modernization`
+- Purpose: Improve browse/timeline usability and polish: shared filters in timeline mode, modernized filter controls, clearer sort guidance, less harsh text contrast, icon sizing control, and full-image filename preservation for save/open actions.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Improve browse/timeline usability and polish: shared filters in timeline mode, modernized filter controls, clearer sort guidance, less harsh text contrast, icon sizing control, and full-image filename preservation for save/open actions.
 

@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-24-favorites-download-original-filename
 
+## Quick Summary
+- Branch: `2026-04-24-favorites-download-original-filename`
+- Purpose: Add an explicit per-photo download action (especially useful in Favorites) that downloads the original image using the original filename.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Add an explicit per-photo download action (especially useful in Favorites) that downloads the original image using the original filename.
 

@@ -1,4 +1,9 @@
-# Branch Intent — 2026-04-22 — Fix app client `ImportMeta.env` typing
+# Branch Intent: 2026-04-22-fix-client-importmeta-env
+
+## Quick Summary
+- Branch: `2026-04-22-fix-client-importmeta-env`
+- Purpose: Resolve persistent TypeScript build failures in the app client where `import.meta.env` is reported as missing on `ImportMeta` during workspace Docker/client builds.
+- Scan first: Use this branch when you are working on TypeScript/Vite environment typing failures.
 
 ## Intent
 Resolve persistent TypeScript build failures in the app client where `import.meta.env` is reported as missing on `ImportMeta` during workspace Docker/client builds.

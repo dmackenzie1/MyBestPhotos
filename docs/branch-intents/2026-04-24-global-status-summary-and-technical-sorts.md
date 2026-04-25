@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-24-global-status-summary-and-technical-sorts
 
+## Quick Summary
+- Branch: `2026-04-24-global-status-summary-and-technical-sorts`
+- Purpose: Make Favorites/Hidden counts global (not tied to currently loaded page), add technical sort options, and tighten right-pane/readability + suggested topic chips in the browse UI.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Make Favorites/Hidden counts global (not tied to currently loaded page), add technical sort options, and tighten right-pane/readability + suggested topic chips in the browse UI.
 

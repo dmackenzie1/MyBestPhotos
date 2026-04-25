@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-24-fix-advanced-runner-batch-size-wrapper
 
+## Quick Summary
+- Branch: `2026-04-24-fix-advanced-runner-batch-size-wrapper`
+- Purpose: Fix `advanced-runner` CLI failure where `run_advanced_runners()` rejects `batch_size` and related advanced-scoring kwargs.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Fix `advanced-runner` CLI failure where `run_advanced_runners()` rejects `batch_size` and related advanced-scoring kwargs.
 

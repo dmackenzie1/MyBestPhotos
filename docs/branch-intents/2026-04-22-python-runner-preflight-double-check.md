@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-22-python-runner-preflight-double-check
 
+## Quick Summary
+- Branch: `2026-04-22-python-runner-preflight-double-check`
+- Purpose: Do a broad reliability double-check of Python runner pathing, network assumptions, and configuration readiness.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Do a broad reliability double-check of Python runner pathing, network assumptions, and configuration readiness.
 - Add a lightweight, runnable preflight check + unit tests so operators can validate setup before attempting full pipeline runs.

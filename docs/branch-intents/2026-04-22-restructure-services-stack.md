@@ -1,5 +1,12 @@
 # Branch Intent: restructure services stack
 
+## Quick Summary
+- Branch: `restructure services stack`
+- Purpose: Restructure the project around `services/app`, `services/nginx`, and `services/postgres` while improving UI polish and enabling API stub mode for rapid iteration.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 Restructure the project around `services/app`, `services/nginx`, and `services/postgres` while improving UI polish and enabling API stub mode for rapid iteration.
 

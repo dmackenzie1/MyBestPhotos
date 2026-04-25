@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-22-fix-postgres-migrations-shell-host
 
+## Quick Summary
+- Branch: `2026-04-22-fix-postgres-migrations-shell-host`
+- Purpose: Fix compose startup so `postgres-migrations` actually applies SQL before `python-runner` inserts into `files`.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Fix compose startup so `postgres-migrations` actually applies SQL before `python-runner` inserts into `files`.
 

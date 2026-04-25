@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-22-planning-ingest-browse-cleanups
 
+## Quick Summary
+- Branch: `2026-04-22-planning-ingest-browse-cleanups`
+- Purpose: Plan and implement high-value, low-risk product cleanup items across ingest and browsing UX: configurable ingest limiting, safer photo list scaling, search reset behavior, and non-broken timeline/map placeholders.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Plan and implement high-value, low-risk product cleanup items across ingest and browsing UX: configurable ingest limiting, safer photo list scaling, search reset behavior, and non-broken timeline/map placeholders.
 

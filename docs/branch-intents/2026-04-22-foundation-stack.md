@@ -1,5 +1,12 @@
 # Branch Intent: foundation stack
 
+## Quick Summary
+- Branch: `foundation stack`
+- Purpose: Create a simple, runnable end-to-end stack for ingest/search/review:
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 Create a simple, runnable end-to-end stack for ingest/search/review:
 Postgres + Python runner + Node API + React web + nginx.
