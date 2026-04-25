@@ -50,7 +50,7 @@ The Python runner scans that mounted path at:
 Optional LM Studio settings (for vision-based descriptions):
 - `PHOTO_CURATOR_DESCRIPTION_PROVIDER=lmstudio`
 - `PHOTO_CURATOR_LMSTUDIO_BASE_URL=http://192.168.10.64:1234/v1` (or your LAN host URL)
-- `PHOTO_CURATOR_LMSTUDIO_MODEL=qwen3.5-9b`
+- `PHOTO_CURATOR_LMSTUDIO_MODEL=qwen2.5-vl-7b-instruct`
 - `PHOTO_CURATOR_LMSTUDIO_TIMEOUT_SECONDS=60`
 
 Optional ingest throttles (useful for test runs on large libraries):
@@ -132,13 +132,13 @@ Inside the runner, the CLI now supports two explicit passes:
 # canonical file ingest (stable file truth + deterministic base metrics)
 uv run --project . photo-curator base-ingest
 
-# advanced enrichment (NIMA-style aesthetic scoring + descriptions)
+# advanced enrichment (CLIP aesthetic scoring + descriptions)
 uv run --project . photo-curator advanced-runner
 
 # LLM descriptions + semantic vectors (LM Studio OpenAI-compatible endpoint)
 uv run --project . photo-curator llm-runner
 
-# standalone NIMA backfill
+# standalone CLIP aesthetic backfill
 uv run --project . photo-curator score-clip-aesthetic --batch-size 200
 
 # full rescore of every image, but keep old scores visible until the pass completes
@@ -170,11 +170,11 @@ For long-running local processing, use this sequence:
 - If descriptions need regeneration, run:
   ```bash
   docker compose run --rm python-runner \
-    sh -lc "uv run --project . photo-curator describe --description-provider lmstudio --model-name qwen3.5-9b"
+    sh -lc "uv run --project . photo-curator describe --description-provider lmstudio --model-name qwen2.5-vl-7b-instruct"
 
   # GPU/prod overlay variant
   docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm python-runner \
-    sh -lc "uv run --project . photo-curator describe --description-provider lmstudio --model-name qwen3.5-9b"
+    sh -lc "uv run --project . photo-curator describe --description-provider lmstudio --model-name qwen2.5-vl-7b-instruct"
   ```
 - `pgdata` volume preserves DB state across container restarts.
 - For a full advanced-score refresh without row-by-row score churn in the UI/API, run:
@@ -266,8 +266,7 @@ If LM Studio is unavailable, the runner logs a warning and falls back per-image 
 - **Score distribution logging**: After each run, the pipeline logs min/p25/median/p75/p90/stddev for every score field. Look for `stddev < 0.05` warnings — they indicate compressed scores that may not be discriminative enough.
 - **Run tracking in database**: Each pipeline run creates a record in `pipeline_runs` with full distribution stats. Query it via `psql` or the `/api/v1/health` endpoint.
 - **Diagnostic queries**: Run `scripts/diagnose_scores.sql` for score distributions, NULL analysis, clustering checks, and run comparison. See `docs/continuous-improvement.md`.
-- CLIP-based aesthetic scoring is treated as advanced, rerunnable enrichment and stored in `file_metrics` (`nima_score`, `aesthetic_score`, `keep_score`, `nima_model_version`).
-- Note: `nima_score` is a legacy column name; it currently stores CLIP-based aesthetic output, not VGG-16 NIMA model output.
+- CLIP-based aesthetic scoring is treated as advanced, rerunnable enrichment and stored in `file_metrics` (`clip_aesthetic_score`, `aesthetic_score`, `keep_score`, `clip_model_version`).
 - WebSocket live progress is not yet implemented; recommended next step is an `/api/v1/jobs` + WS stream for in-flight pipeline status events.
 
 ## Required process rule

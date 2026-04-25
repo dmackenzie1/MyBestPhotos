@@ -7,7 +7,9 @@ _VISION_MODEL_PATTERNS = (
     r"llava",
     r"moondream",
     r"bakllava",
+    r"qwen3\.5[-_]vl",
     r"qwen2\.5[-_]vl",
+    r"qwen3[-_]vl",
     r"qwen2[-_]vl",
     r"vision",
 )
@@ -43,5 +45,5 @@ class AdvancedRunnerStats:
 class DescriptionOptions:
     provider: str = "basic"
     lmstudio_base_url: str = "http://localhost:1234/v1"
-    lmstudio_model: str = "qwen3.5-9b"
+    lmstudio_model: str = "qwen2.5-vl-7b-instruct"
     lmstudio_timeout_seconds: float = 60.0

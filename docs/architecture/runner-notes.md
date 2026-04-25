@@ -50,11 +50,11 @@ OpenAI-compatible `chat/completions` endpoint and stores returned captions in
 
 ## CLIP aesthetic scoring note
 
-- `nima_score` is treated as advanced derived metadata, not raw file truth.
-- `nima_score` is a legacy column name and currently stores CLIP-based aesthetic output.
-- The VGG-16 NIMA model is not used in the active advanced runner path.
-- The runner processes rows missing `nima_score` first (or all rows with `--refresh-all`)
-  and records `nima_model_version` + `advanced_metadata_updated_at` for future backfills.
+- `clip_aesthetic_score` is treated as advanced derived metadata, not raw file truth.
+- `clip_aesthetic_score` stores CLIP-based aesthetic output (formerly called `nima_score`).
+
+- The runner processes rows missing `clip_aesthetic_score` first (or all rows with `--refresh-all`)
+  and records `clip_model_version` + `advanced_metadata_updated_at` for future backfills.
 
 ## GPU note
 If adding PyTorch model inference later, pin CUDA/ROCm builds explicitly in docs and image tags.

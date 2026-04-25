@@ -124,9 +124,9 @@ app.get("/api/v1/health", async (_req, res) => {
   let pipelineInfo: Record<string, unknown> | null = null;
   try {
     const runRows = await pool.query(
-      `SELECT id, run_id, started_at, completed_at, status, nima_model_version,
-              total_files_ingested, total_metrics_scored, total_nima_scored, notes
-       FROM pipeline_runs ORDER BY id DESC LIMIT 1`
+      `SELECT id, run_id, started_at, completed_at, status, clip_model_version,
+               total_files_ingested, total_metrics_scored, total_clip_aesthetic_scored, notes
+        FROM pipeline_runs ORDER BY id DESC LIMIT 1`
     );
     if (runRows.rows.length > 0) {
       const r = runRows.rows[0];
@@ -135,10 +135,10 @@ app.get("/api/v1/health", async (_req, res) => {
         started_at: r.started_at?.toString(),
         completed_at: r.completed_at?.toString(),
         status: r.status,
-        clip_aesthetic_model_version: r.nima_model_version,
+        clip_aesthetic_model_version: r.clip_model_version,
         total_files_ingested: Number(r.total_files_ingested),
         total_metrics_scored: Number(r.total_metrics_scored),
-        total_clip_aesthetic_scored: Number(r.total_nima_scored),
+        total_clip_aesthetic_scored: Number(r.total_clip_aesthetic_scored),
         notes: r.notes,
       };
     }
@@ -150,7 +150,7 @@ app.get("/api/v1/health", async (_req, res) => {
   try {
     const countRows = await pool.query(
       `SELECT COUNT(*)::int AS total_files,
-              (SELECT COUNT(*) FROM file_metrics WHERE nima_score IS NOT NULL)::int AS scored_clip_aesthetic,
+               (SELECT COUNT(*) FROM file_metrics WHERE clip_aesthetic_score IS NOT NULL)::int AS scored_clip_aesthetic,
               (SELECT COUNT(*) FROM file_descriptions)::int AS described,
               (SELECT COUNT(*) FROM file_llm_results)::int AS llm_described
        FROM files`

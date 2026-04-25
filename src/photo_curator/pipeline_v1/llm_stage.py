@@ -17,7 +17,7 @@ from photo_curator.text_vectorizer import embed_text, vector_literal
 PROMPT_VERSION = "llm_photo_v1"
 EMBEDDING_MODEL = "hash-embed-v1"
 
-_VISION_MODEL_PATTERNS_STR = ("llava", "moondream", "bakllava", "qwen2.5-vl", "qwen2-vl", "vision")
+_VISION_MODEL_PATTERNS_STR = ("llava", "moondream", "bakllava", "qwen3.5-vl", "qwen2.5-vl", "qwen3-vl", "qwen2-vl", "vision")
 _LMSTUDIO_MAX_RETRIES = 3
 _LMSTUDIO_RETRY_BASE_SECONDS = 0.75
 
@@ -67,7 +67,7 @@ def _call_lmstudio(path: Path, options: DescriptionOptions) -> dict[str, object]
         logger.warning(
             "Model '{model}' does not appear to be vision-capable (patterns: {patterns}). "
             "Vision payloads will likely be rejected by LM Studio with HTTP 400. "
-            "Load a model like qwen2.5-vl-7b-instruct or llava for image support.",
+            "Load a model like qwen3-vl-4b or llava for image support.",
             model=options.lmstudio_model,
             patterns=_VISION_MODEL_PATTERNS_STR,
         )

@@ -34,10 +34,10 @@ CREATE TABLE IF NOT EXISTS file_metrics (
   technical_quality_score DOUBLE PRECISION,
   semantic_relevance_score DOUBLE PRECISION,
   curation_score DOUBLE PRECISION,
-  nima_score DOUBLE PRECISION,
-  aesthetic_score DOUBLE PRECISION,
-  keep_score DOUBLE PRECISION,
-  nima_model_version TEXT,
+   clip_aesthetic_score DOUBLE PRECISION,
+   aesthetic_score DOUBLE PRECISION,
+   keep_score DOUBLE PRECISION,
+   clip_model_version TEXT,
   advanced_metadata_updated_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -92,7 +92,7 @@ CREATE INDEX IF NOT EXISTS idx_files_taken_at ON files(photo_taken_at);
 CREATE INDEX IF NOT EXISTS idx_files_camera_make ON files(camera_make);
 CREATE INDEX IF NOT EXISTS idx_files_camera_model ON files(camera_model);
 CREATE INDEX IF NOT EXISTS idx_file_metrics_curation_score ON file_metrics(curation_score);
-CREATE INDEX IF NOT EXISTS idx_file_metrics_nima_score ON file_metrics(nima_score);
+CREATE INDEX IF NOT EXISTS idx_file_metrics_clip_aesthetic_score ON file_metrics(clip_aesthetic_score);
 CREATE INDEX IF NOT EXISTS idx_file_metrics_aesthetic_score ON file_metrics(aesthetic_score);
 CREATE INDEX IF NOT EXISTS idx_file_metrics_keep_score ON file_metrics(keep_score);
 
@@ -123,14 +123,14 @@ CREATE TABLE IF NOT EXISTS pipeline_runs (
   started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   completed_at TIMESTAMPTZ,
   status TEXT NOT NULL DEFAULT 'running',
-  nima_model_version TEXT,
-  description_provider TEXT,
-  description_model_name TEXT,
-  ingest_limit INTEGER,
-  ingest_strategy TEXT,
-  total_files_ingested INTEGER DEFAULT 0,
-  total_metrics_scored INTEGER DEFAULT 0,
-  total_nima_scored INTEGER DEFAULT 0,
+   clip_model_version TEXT,
+   description_provider TEXT,
+   description_model_name TEXT,
+   ingest_limit INTEGER,
+   ingest_strategy TEXT,
+   total_files_ingested INTEGER DEFAULT 0,
+   total_metrics_scored INTEGER DEFAULT 0,
+   total_clip_aesthetic_scored INTEGER DEFAULT 0,
   total_described INTEGER DEFAULT 0,
   total_skipped INTEGER DEFAULT 0,
   total_failed INTEGER DEFAULT 0,
@@ -176,13 +176,13 @@ CREATE TABLE IF NOT EXISTS pipeline_runs (
   technical_quality_p75 DOUBLE PRECISION,
   technical_quality_p90 DOUBLE PRECISION,
   technical_quality_stddev DOUBLE PRECISION,
-  nima_min DOUBLE PRECISION,
-  nima_max DOUBLE PRECISION,
-  nima_median DOUBLE PRECISION,
-  nima_p25 DOUBLE PRECISION,
-  nima_p75 DOUBLE PRECISION,
-  nima_p90 DOUBLE PRECISION,
-  nima_stddev DOUBLE PRECISION,
+   clip_aesthetic_min DOUBLE PRECISION,
+   clip_aesthetic_max DOUBLE PRECISION,
+   clip_aesthetic_median DOUBLE PRECISION,
+   clip_aesthetic_p25 DOUBLE PRECISION,
+   clip_aesthetic_p75 DOUBLE PRECISION,
+   clip_aesthetic_p90 DOUBLE PRECISION,
+   clip_aesthetic_stddev DOUBLE PRECISION,
   aesthetic_min DOUBLE PRECISION,
   aesthetic_max DOUBLE PRECISION,
   aesthetic_median DOUBLE PRECISION,

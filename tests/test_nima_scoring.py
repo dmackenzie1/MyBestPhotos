@@ -7,20 +7,20 @@ from photo_curator.pipeline_v1.scoring import compute_clip_aesthetic
 
 class ClipAestheticScoringTests(unittest.TestCase):
     def test_outputs_stay_in_unit_interval(self) -> None:
-        nima_score, aesthetic_score, keep_score = compute_clip_aesthetic(
+        clip_aesthetic_score, aesthetic_score, keep_score = compute_clip_aesthetic(
             clip_score=0.7,
             composition_balance_score=0.8,
             blur_score=0.2,
             technical_quality_score=0.75,
         )
-        self.assertGreaterEqual(nima_score, 0.0)
-        self.assertLessEqual(nima_score, 1.0)
+        self.assertGreaterEqual(clip_aesthetic_score, 0.0)
+        self.assertLessEqual(clip_aesthetic_score, 1.0)
         self.assertGreaterEqual(aesthetic_score, 0.0)
         self.assertLessEqual(aesthetic_score, 1.0)
         self.assertGreaterEqual(keep_score, 0.0)
         self.assertLessEqual(keep_score, 1.0)
 
-    def test_higher_inputs_raise_nima_score(self) -> None:
+    def test_higher_inputs_raise_clip_score(self) -> None:
         low, _, _ = compute_clip_aesthetic(
             clip_score=0.2,
             composition_balance_score=0.2,

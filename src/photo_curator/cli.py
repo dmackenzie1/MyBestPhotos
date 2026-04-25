@@ -6,7 +6,6 @@ from typing import Optional
 import typer
 from loguru import logger
 
-from photo_curator.aesthetics import score_file_aesthetic
 from photo_curator.config import Settings, ensure_dirs, load_settings
 from photo_curator.db import Database
 from photo_curator.pipeline_run import PipelineRun, write_run_artifact
@@ -81,7 +80,7 @@ def score_metrics_cmd(
     db, settings = _init_db(config)
     run_tracker = PipelineRun(db)
     try:
-        run_tracker.start(nima_model_version="nima_style_v0")
+        run_tracker.start(clip_model_version="clip_aesthetic_v1")
 
         metrics_stats = score_metrics(db, max_size=max_size)
         run_tracker.update_stage(metrics_scored=metrics_stats.processed)
@@ -141,7 +140,7 @@ def pipeline_cmd(
 
         # Start tracking this run
         run_tracker.start(
-            nima_model_version="nima_style_v0",
+            clip_model_version="clip_aesthetic_v1",
             description_provider=(description_provider or settings.description_provider)
             .strip()
             .lower(),
@@ -225,7 +224,7 @@ def base_ingest_cmd(
         target_extensions = extensions or settings.extensions
 
         run_tracker.start(
-            nima_model_version="nima_style_v0",
+            clip_model_version="clip_aesthetic_v1",
             description_provider=settings.description_provider,
             ingest_limit=settings.ingest_limit,
             ingest_strategy=settings.ingest_selection_strategy,
@@ -270,7 +269,7 @@ def score_clip_aesthetic_cmd(
     db, settings = _init_db(config)
     run_tracker = PipelineRun(db)
     try:
-        run_tracker.start(nima_model_version="nima_style_v0")
+        run_tracker.start(clip_model_version="clip_aesthetic_v1")
 
         stats = score_clip_aesthetic(
             db,
@@ -315,7 +314,7 @@ def advanced_runner_cmd(
     run_tracker = PipelineRun(db)
     try:
         run_tracker.start(
-            nima_model_version="nima_style_v0",
+            clip_model_version="clip_aesthetic_v1",
             description_provider=(description_provider or settings.description_provider)
             .strip()
             .lower(),
@@ -381,29 +380,6 @@ def llm_runner_cmd(
             ),
         )
         logger.info("LLM runner complete: processed={processed}", processed=stats.processed)
-    finally:
-        _close_db(db)
-
-
-@app.command("score-aesthetic")
-def score_aesthetic_cmd(
-    batch_size: int = typer.Option(32, "--batch-size"),
-    config: Optional[str] = typer.Option(None, "--config"),
-) -> None:
-    db, settings = _init_db(config)
-    try:
-        stats = score_file_aesthetic(
-            db,
-            model_name=settings.clip_model,
-            device=settings.embedding_device,
-            batch_size=batch_size,
-            only_missing=True,
-        )
-        logger.info(
-            "Aesthetic rescoring complete: processed={processed} failed={failed}",
-            processed=stats.processed,
-            failed=stats.failed,
-        )
     finally:
         _close_db(db)
 

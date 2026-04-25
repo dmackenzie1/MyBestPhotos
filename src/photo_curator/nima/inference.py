@@ -292,15 +292,15 @@ def heuristic_score(image_np: np.ndarray) -> tuple[float, float]:
     max_distance = float(np.hypot(width, height))
     composition_balance_score = max(0.0, min(1.0, 1.0 - (min_distance / (max_distance + 1e-6))))
 
-    nima_spread, _aesthetic_spread, _keep_spread = compute_clip_aesthetic(
+    clip_aesthetic_score, _aesthetic_spread, _keep_spread = compute_clip_aesthetic(
         technical_quality_score,
         composition_balance_score,
         blur_score,
         technical_quality_score,
     )
 
-    # Return mean and std matching NIMA output format
-    return (nima_spread, 0.1 + (1.0 - nima_spread) * 0.05)
+    # Return mean and std matching CLIP aesthetic output format
+    return (clip_aesthetic_score, 0.1 + (1.0 - clip_aesthetic_score) * 0.05)
 
 
 def assess_quality(image_np: np.ndarray) -> tuple[float, float]:

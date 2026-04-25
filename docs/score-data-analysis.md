@@ -64,7 +64,7 @@ Dominant aspect ratios in the dataset:
 
 | Field | Min | P25 | Median | P75 | Max | Stddev | Notes |
 |-------|-----|-----|--------|-----|-----|--------|-------|
-| nima_score | 0.5210 | 0.5529 | 0.5555 | 0.5595 | 0.8017 | **0.0683** | **Critically compressed** — ViT-B-32 text-prompt differential produces nearly identical outputs (p25=0.553, p75=0.560) |
+| clip_aesthetic_score | 0.5210 | 0.5529 | 0.5555 | 0.5595 | 0.8017 | **0.0683** | **Critically compressed** — CLIP ViT-B-32 text-prompt differential produces nearly identical outputs (p25=0.553, p75=0.560) |
 | aesthetic_score | 0.5187 | 0.5476 | 0.5912 | 0.7166 | 0.8785 | **0.0913** | Compressed — power curve (0.75 exponent) pulls high scores down; primary ranking signal is weak |
 | keep_score | 0.3542 | 0.5264 | 0.5803 | 0.6968 | 0.8421 | **0.1000** | Moderate spread but unused in any ranking or filtering |
 | curation_score | 0.2093 | 0.3653 | 0.4128 | 0.4841 | 0.6731 | **0.0754** | **Critically compressed** — primary sort field; top 10% all below 0.53, gap between #1 and #10 is only ~0.06 |
@@ -93,7 +93,7 @@ Dominant aspect ratios in the dataset:
 
 ## Identified Problems and Fixes
 
-### Problem 1: nima_score critically compressed (stddev=0.068)
+### Problem 1: clip_aesthetic_score critically compressed (stddev=0.068)
 - **Root cause:** ViT-B-32 with text-prompt differential scoring produces nearly identical outputs for all photos
 - **Fix:** Switch to `ViT-H-14` with LAION-Aesthetic v2 pretrained weights (dedicated aesthetic model, not CLIP text-matching). Add temperature scaling (t=0.1) and percentile normalization for better spread.
 

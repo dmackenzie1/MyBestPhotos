@@ -3,7 +3,7 @@ from __future__ import annotations
 # Tuned weights based on analysis documented in docs/score-data-analysis.md.
 CLIP_AESTHETIC_WEIGHT = 0.85
 COMPOSITION_BALANCE_WEIGHT = 0.15
-AESTHETIC_NIMA_WEIGHT = 0.82
+AESTHETIC_CLIP_WEIGHT = 0.82
 AESTHETIC_BLUR_RESISTANCE_WEIGHT = 0.18
 AESTHETIC_POWER_CURVE = 0.9
 KEEP_TECHNICAL_WEIGHT = 0.45
@@ -32,17 +32,17 @@ def compute_clip_aesthetic(
     blur_score: float,
     technical_quality_score: float,
 ) -> tuple[float, float, float]:
-    nima_spread = _clamp01(
+    clip_aesthetic_score = _clamp01(
         (CLIP_AESTHETIC_WEIGHT * clip_score)
         + (COMPOSITION_BALANCE_WEIGHT * composition_balance_score)
     )
     blur_resistance = 1.0 - blur_score
-    aesthetic_raw = (AESTHETIC_NIMA_WEIGHT * nima_spread) + (
+    aesthetic_raw = (AESTHETIC_CLIP_WEIGHT * clip_aesthetic_score) + (
         AESTHETIC_BLUR_RESISTANCE_WEIGHT * blur_resistance
     )
     aesthetic_spread = _clamp01(aesthetic_raw**AESTHETIC_POWER_CURVE)
     keep_spread = compute_keep_score(technical_quality_score, aesthetic_spread)
-    return nima_spread, aesthetic_spread, keep_spread
+    return clip_aesthetic_score, aesthetic_spread, keep_spread
 
 
 def compute_curation_score(

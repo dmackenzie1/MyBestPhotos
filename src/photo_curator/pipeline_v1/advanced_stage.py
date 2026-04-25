@@ -86,7 +86,7 @@ def _count_clip_candidates(
             SELECT COUNT(*)
             FROM files f
             LEFT JOIN file_metrics fm ON fm.file_id = f.id
-            WHERE fm.nima_score IS NULL OR fm.nima_model_version != %s
+            WHERE fm.clip_aesthetic_score IS NULL OR fm.clip_model_version != %s
             """,
             (clip_model_version,),
         )
@@ -129,7 +129,7 @@ def score_clip_aesthetic(
             where_clause = "f.id > %s"
             where_params: tuple[object, ...] = (last_id,)
         else:
-            where_clause = "(fm.nima_score IS NULL OR fm.nima_model_version != %s) AND f.id > %s"
+            where_clause = "(fm.clip_aesthetic_score IS NULL OR fm.clip_model_version != %s) AND f.id > %s"
             where_params = (clip_model_version, last_id)
 
         rows = db.fetchall(
@@ -200,13 +200,13 @@ def score_clip_aesthetic(
             clip_score = max(
                 0.0, min(1.0, float(clip_scorer.score_pil_images([Image.fromarray(rgb_image)])[0]))
             )
-            nima_spread, aesthetic_spread, keep_spread = compute_clip_aesthetic(
+            clip_aesthetic_score, aesthetic_spread, keep_spread = compute_clip_aesthetic(
                 clip_score, composition_balance_score, blur_score, technical_quality_score
             )
 
             update_payload = (
                 file_id,
-                nima_spread,
+                clip_aesthetic_score,
                 aesthetic_spread,
                 keep_spread,
                 clip_model_version,
@@ -217,14 +217,14 @@ def score_clip_aesthetic(
                 db.execute(
                     """
                 INSERT INTO file_metrics (
-                  file_id, nima_score, aesthetic_score, keep_score,
-                  nima_model_version, advanced_metadata_updated_at
+                  file_id, clip_aesthetic_score, aesthetic_score, keep_score,
+                  clip_model_version, advanced_metadata_updated_at
                 ) VALUES (%s, %s, %s, %s, %s, now())
                 ON CONFLICT (file_id) DO UPDATE SET
-                  nima_score = EXCLUDED.nima_score,
+                  clip_aesthetic_score = EXCLUDED.clip_aesthetic_score,
                   aesthetic_score = EXCLUDED.aesthetic_score,
                   keep_score = EXCLUDED.keep_score,
-                  nima_model_version = EXCLUDED.nima_model_version,
+                  clip_model_version = EXCLUDED.clip_model_version,
                   advanced_metadata_updated_at = now(),
                   updated_at = now()
                 """,
@@ -240,14 +240,14 @@ def score_clip_aesthetic(
             db.execute(
                 """
             INSERT INTO file_metrics (
-              file_id, nima_score, aesthetic_score, keep_score,
-              nima_model_version, advanced_metadata_updated_at
+              file_id, clip_aesthetic_score, aesthetic_score, keep_score,
+              clip_model_version, advanced_metadata_updated_at
             ) VALUES (%s, %s, %s, %s, %s, now())
             ON CONFLICT (file_id) DO UPDATE SET
-              nima_score = EXCLUDED.nima_score,
+              clip_aesthetic_score = EXCLUDED.clip_aesthetic_score,
               aesthetic_score = EXCLUDED.aesthetic_score,
               keep_score = EXCLUDED.keep_score,
-              nima_model_version = EXCLUDED.nima_model_version,
+              clip_model_version = EXCLUDED.clip_model_version,
               advanced_metadata_updated_at = now(),
               updated_at = now()
             """,
@@ -299,9 +299,9 @@ def run_advanced_runners(
 
 
 def _log_advanced_distribution(db: Database) -> None:
-    """Log score distributions for advanced scores (CLIP-based nima_score, aesthetic, keep, curation, semantic_relevance)."""
+    """Log score distributions for advanced scores (clip_aesthetic_score, aesthetic, keep, curation, semantic_relevance)."""
     fields = [
-        ("nima_score", "CLIP-based NIMA Score"),
+        ("clip_aesthetic_score", "CLIP Aesthetic Score"),
         ("aesthetic_score", "Aesthetic Score"),
         ("keep_score", "Keep Score"),
         ("curation_score", "Curation Score"),
@@ -339,7 +339,7 @@ def _log_advanced_distribution(db: Database) -> None:
 
     # Check for NULL counts in advanced fields
     null_fields = [
-        ("nima_score", "CLIP-based NIMA"),
+        ("clip_aesthetic_score", "CLIP Aesthetic"),
         ("aesthetic_score", "Aesthetic"),
         ("keep_score", "Keep"),
         ("curation_score", "Curation"),

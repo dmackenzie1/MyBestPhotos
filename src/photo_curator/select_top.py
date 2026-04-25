@@ -73,7 +73,7 @@ def _v1_rows(
           fm.blur_score,
           fm.contrast_score,
           NULL::double precision AS exposure_clip_hi,
-          COALESCE(fm.aesthetic_score, fm.nima_score) AS aesthetic_score,
+           COALESCE(fm.aesthetic_score, fm.clip_aesthetic_score) AS aesthetic_score,
           flr.description_embedding
         FROM files f
         LEFT JOIN file_metrics fm ON fm.file_id = f.id

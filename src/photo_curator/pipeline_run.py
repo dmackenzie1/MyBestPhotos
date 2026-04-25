@@ -31,7 +31,7 @@ class PipelineRunStats:
     """Aggregated stats for a pipeline run."""
 
     run_id: str = ""
-    nima_model_version: str = "nima_style_v0"
+    clip_model_version: str = "clip_aesthetic_v1"
     description_provider: str = "basic"
     description_model_name: str = "basic-caption-v1"
     ingest_limit: int = 0
@@ -92,7 +92,7 @@ def _score_field_name(field: str) -> tuple[str, str]:
         "entropy": ("entropy", "Entropy"),
         "noise": ("noise", "Noise"),
         "technical_quality": ("technical_quality", "Technical Quality"),
-        "nima": ("nima", "NIMA Score"),
+        "clip_aesthetic": ("clip_aesthetic", "CLIP Aesthetic Score"),
         "aesthetic": ("aesthetic", "Aesthetic Score"),
         "keep": ("keep", "Keep Score"),
         "curation": ("curation", "Curation Score"),
@@ -137,7 +137,7 @@ class PipelineRun:
 
     def start(
         self,
-        nima_model_version: str = "nima_style_v0",
+        clip_model_version: str = "clip_aesthetic_v1",
         description_provider: str = "basic",
         description_model_name: str = "basic-caption-v1",
         ingest_limit: int = 0,
@@ -145,7 +145,7 @@ class PipelineRun:
     ) -> None:
         """Create a new pipeline run record in the database."""
         self.stats = PipelineRunStats(
-            nima_model_version=nima_model_version,
+            clip_model_version=clip_model_version,
             description_provider=description_provider,
             description_model_name=description_model_name,
             ingest_limit=ingest_limit,
@@ -160,13 +160,13 @@ class PipelineRun:
 
         self.db.execute(
             """
-            INSERT INTO pipeline_runs (run_id, status, nima_model_version,
+            INSERT INTO pipeline_runs (run_id, status, clip_model_version,
                 description_provider, description_model_name, ingest_limit, ingest_strategy)
             VALUES (%s, 'running', %s, %s, %s, %s, %s)
             """,
             (
                 self._run_id,
-                self.stats.nima_model_version,
+                self.stats.clip_model_version,
                 self.stats.description_provider,
                 self.stats.description_model_name,
                 self.stats.ingest_limit,
@@ -209,7 +209,7 @@ class PipelineRun:
             "entropy_score",
             "noise_score",
             "technical_quality_score",
-            "nima_score",
+            "clip_aesthetic_score",
             "aesthetic_score",
             "keep_score",
             "curation_score",
@@ -223,7 +223,7 @@ class PipelineRun:
             "entropy_score": "entropy",
             "noise_score": "noise",
             "technical_quality_score": "technical_quality",
-            "nima_score": "nima",
+            "clip_aesthetic_score": "clip_aesthetic",
             "aesthetic_score": "aesthetic",
             "keep_score": "keep",
             "curation_score": "curation",
@@ -278,7 +278,7 @@ class PipelineRun:
         for count_field in [
             ("total_files_ingested", self.stats.total_files_ingested),
             ("total_metrics_scored", self.stats.total_metrics_scored),
-            ("total_nima_scored", self.stats.total_clip_aesthetic_scored),
+            ("total_clip_aesthetic_scored", self.stats.total_clip_aesthetic_scored),
             ("total_described", self.stats.total_described),
             ("total_skipped", self.stats.total_skipped),
             ("total_failed", self.stats.total_failed),
@@ -299,7 +299,7 @@ class PipelineRun:
         # Count files with NULL scores for each field
         null_counts = {}
         for col in [
-            "nima_score",
+            "clip_aesthetic_score",
             "aesthetic_score",
             "keep_score",
             "curation_score",
@@ -310,8 +310,8 @@ class PipelineRun:
                 null_counts[col] = int(row[0][0])
 
         if null_counts:
-            notes_parts.append(
-                f"NULL_SCORES: nima={null_counts.get('nima_score', 0)} aesthetic={null_counts.get('aesthetic_score', 0)} "
+        notes_parts.append(
+            f"NULL_SCORES: clip_aesthetic={null_counts.get('clip_aesthetic_score', 0)} aesthetic={null_counts.get('aesthetic_score', 0)} "
                 f"keep={null_counts.get('keep_score', 0)} curation={null_counts.get('curation_score', 0)} "
                 f"semantic_relevance={null_counts.get('semantic_relevance_score', 0)}"
             )
@@ -343,7 +343,7 @@ class PipelineRun:
         for count_field in [
             ("total_files_ingested", self.stats.total_files_ingested),
             ("total_metrics_scored", self.stats.total_metrics_scored),
-            ("total_nima_scored", self.stats.total_clip_aesthetic_scored),
+            ("total_clip_aesthetic_scored", self.stats.total_clip_aesthetic_scored),
             ("total_described", self.stats.total_described),
             ("total_skipped", self.stats.total_skipped),
             ("total_failed", self.stats.total_failed),
@@ -370,9 +370,9 @@ def get_latest_run(db: Database) -> dict[str, Any] | None:
     """Fetch the most recent pipeline run record."""
     rows = db.fetchall(
         """
-        SELECT id, run_id, started_at, completed_at, status, nima_model_version,
+        SELECT id, run_id, started_at, completed_at, status, clip_model_version,
                description_provider, total_files_ingested, total_metrics_scored,
-               total_nima_scored, total_described, total_skipped, total_failed,
+               total_clip_aesthetic_scored, total_described, total_skipped, total_failed,
                notes
         FROM pipeline_runs
         ORDER BY id DESC LIMIT 1
@@ -388,7 +388,7 @@ def get_latest_run(db: Database) -> dict[str, Any] | None:
         "started_at": row[2],
         "completed_at": row[3],
         "status": str(row[4]) if row[4] else None,
-        "nima_model_version": str(row[5]) if row[5] else None,
+        "clip_model_version": str(row[5]) if row[5] else None,
         "description_provider": str(row[6]) if row[6] else None,
         "total_files_ingested": int(row[7]) if row[7] else 0,
         "total_metrics_scored": int(row[8]) if row[8] else 0,
@@ -406,12 +406,12 @@ def get_run_comparison(db: Database, n_runs: int = 5) -> list[dict[str, Any]]:
         with conn.cursor() as cur:
             cur.execute(
                 f"""
-                SELECT id, run_id, started_at, completed_at, status, nima_model_version,
-                       total_files_ingested, total_metrics_scored, total_nima_scored,
+                SELECT id, run_id, started_at, completed_at, status, clip_model_version,
+                       total_files_ingested, total_metrics_scored, total_clip_aesthetic_scored,
                        blur_min, blur_max, blur_median, blur_p25, blur_p75, blur_stddev,
                        technical_quality_min, technical_quality_max, technical_quality_median,
                        technical_quality_p25, technical_quality_p75, technical_quality_stddev,
-                       nima_min, nima_max, nima_median, nima_p25, nima_p75, nima_stddev,
+                       clip_aesthetic_min, clip_aesthetic_max, clip_aesthetic_median, clip_aesthetic_p25, clip_aesthetic_p75, clip_aesthetic_stddev,
                        aesthetic_min, aesthetic_max, aesthetic_median, aesthetic_p25, aesthetic_p75, aesthetic_stddev,
                        curation_min, curation_max, curation_median, curation_p25, curation_p75, curation_stddev,
                        semantic_relevance_min, semantic_relevance_max, semantic_relevance_median,
@@ -442,12 +442,12 @@ def get_run_comparison(db: Database, n_runs: int = 5) -> list[dict[str, Any]]:
         "technical_quality_p25",
         "technical_quality_p75",
         "technical_quality_stddev",
-        "nima_min",
-        "nima_max",
-        "nima_median",
-        "nima_p25",
-        "nima_p75",
-        "nima_stddev",
+        "clip_aesthetic_min",
+        "clip_aesthetic_max",
+        "clip_aesthetic_median",
+        "clip_aesthetic_p25",
+        "clip_aesthetic_p75",
+        "clip_aesthetic_stddev",
         "aesthetic_min",
         "aesthetic_max",
         "aesthetic_median",
@@ -481,9 +481,9 @@ def get_run_comparison(db: Database, n_runs: int = 5) -> list[dict[str, Any]]:
                 result[key] = int(value) if value is not None else 0
             elif key in numeric_float_fields:
                 result[key] = float(value) if value is not None else None
-            elif key == "total_nima_scored":
+            elif key == "total_clip_aesthetic_scored":
                 result["total_clip_aesthetic_scored"] = int(value) if value is not None else 0
-            elif key in {"run_id", "status", "nima_model_version", "notes"}:
+            elif key in {"run_id", "status", "clip_model_version", "notes"}:
                 result[key] = str(value) if value is not None else None
             else:
                 result[key] = value
@@ -512,7 +512,7 @@ def write_run_artifact(
                noise_min, noise_max, noise_median, noise_p25, noise_p75, noise_stddev,
                technical_quality_min, technical_quality_max, technical_quality_median,
                technical_quality_p25, technical_quality_p75, technical_quality_stddev,
-               nima_min, nima_max, nima_median, nima_p25, nima_p75, nima_stddev,
+                clip_aesthetic_min, clip_aesthetic_max, clip_aesthetic_median, clip_aesthetic_p25, clip_aesthetic_p75, clip_aesthetic_stddev,
                aesthetic_min, aesthetic_max, aesthetic_median, aesthetic_p25, aesthetic_p75, aesthetic_stddev,
                keep_min, keep_max, keep_median, keep_p25, keep_p75, keep_stddev,
                curation_min, curation_max, curation_median, curation_p25, curation_p75, curation_stddev,
@@ -533,7 +533,7 @@ def write_run_artifact(
         "started_at": stats["started_at"].isoformat() if stats["started_at"] else None,
         "completed_at": stats["completed_at"].isoformat() if stats["completed_at"] else None,
         "status": stats["status"],
-        "nima_model_version": stats["nima_model_version"],
+        "clip_model_version": stats["clip_model_version"],
         "description_provider": stats["description_provider"],
         "total_files_ingested": stats["total_files_ingested"],
         "total_metrics_scored": stats["total_metrics_scored"],
@@ -548,7 +548,7 @@ def write_run_artifact(
             "entropy": _row_to_dist(row, 18),
             "noise": _row_to_dist(row, 24),
             "technical_quality": _row_to_dist(row, 30),
-            "nima": _row_to_dist(row, 36),
+            "clip_aesthetic": _row_to_dist(row, 36),
             "aesthetic": _row_to_dist(row, 42),
             "keep": _row_to_dist(row, 48),
             "curation": _row_to_dist(row, 54),

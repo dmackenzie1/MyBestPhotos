@@ -26,7 +26,7 @@ Metrics score distribution (processed=1500)
 ================================================================================
 Advanced score distribution
 --------------------------------------------------------------------------------
-  NIMA Score                n=1450   min=0.3456  p25=0.4567  median=0.5678  p75=0.6789  p90=0.7890  max=0.8901  stddev=0.1234
+   CLIP Aesthetic Score        n=1450   min=0.3456  p25=0.4567  median=0.5678  p75=0.6789  p90=0.7890  max=0.8901  stddev=0.1234
   Aesthetic Score           n=1450   min=0.3789  p25=0.4890  median=0.6012  p75=0.7123  p90=0.8234  max=0.9345  stddev=0.1345
   ...
 ```
@@ -97,8 +97,8 @@ Files in `reports/run_*_*.json` contain full score distributions for each run. C
 | `entropy_score` | 0-1 (higher = more complex histogram) | Information content / histogram complexity |
 | `noise_score` | 0-1 (higher = less noise) | Noise proxy from Gaussian blur difference |
 | `technical_quality_score` | 0-1 | Weighted combination of above technical metrics |
-| `nima_score` | 0-1 | CLIP-based aesthetic signal (legacy column name) |
-| `aesthetic_score` | 0-1 | Derived from CLIP-based `nima_score` + blur resistance |
+| `clip_aesthetic_score` | 0-1 | CLIP-based aesthetic signal (formerly `nima_score`) |
+| `aesthetic_score` | 0-1 | Derived from CLIP-based `clip_aesthetic_score` + blur resistance |
 | `keep_score` | 0-1 | Combined technical quality + aesthetics for ranking |
 | `curation_score` | 0-1 | Final rank helper: 70% technical + 30% semantic relevance |
 | `semantic_relevance_score` | 0-1 | Description richness + category bonus |

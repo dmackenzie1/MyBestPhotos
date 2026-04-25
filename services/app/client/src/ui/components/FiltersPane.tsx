@@ -1,22 +1,6 @@
 import type { FacetsResponse } from "../types";
 import "../styles/filters-pane.css";
 
-const SUGGESTED_TOPICS = [
-  "beach",
-  "vacations",
-  "skiing",
-  "snow",
-  "vehicles",
-  "transportation",
-  "boating",
-  "kids",
-  "teen portraits",
-  "pets",
-  "group shots",
-  "portraits",
-  "landscapes",
-];
-
 type FiltersPaneProps = {
   isCollapsed: boolean;
   isHovered: boolean;
@@ -145,22 +129,6 @@ export function FiltersPane(props: FiltersPaneProps) {
             </div>
           </div>
 
-
-          <div className="topics-wrap">
-            <label>Suggested topics</label>
-            <div className="topics">
-              {SUGGESTED_TOPICS.map((topic) => (
-                <button
-                  type="button"
-                  key={topic}
-                  className={`topic-chip ${category === topic ? "active" : ""}`}
-                  onClick={() => onCategoryChange(category === topic ? "" : topic)}
-                >
-                  <span>{topic}</span>
-                </button>
-              ))}
-            </div>
-          </div>
 
           <div className="topics-wrap">
             <label>Preview size</label>
