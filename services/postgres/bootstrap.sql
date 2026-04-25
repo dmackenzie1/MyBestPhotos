@@ -228,6 +228,19 @@ CREATE TABLE IF NOT EXISTS pipeline_runs (
   notes TEXT
 );
 
+ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS clip_model_version TEXT;
+ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS description_provider TEXT;
+ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS description_model_name TEXT;
+ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS ingest_limit INTEGER;
+ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS ingest_strategy TEXT;
+ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS total_files_ingested INTEGER DEFAULT 0;
+ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS total_metrics_scored INTEGER DEFAULT 0;
+ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS total_clip_aesthetic_scored INTEGER DEFAULT 0;
+ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS total_described INTEGER DEFAULT 0;
+ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS total_skipped INTEGER DEFAULT 0;
+ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS total_failed INTEGER DEFAULT 0;
+ALTER TABLE pipeline_runs ADD COLUMN IF NOT EXISTS notes TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_pipeline_runs_started_at ON pipeline_runs(started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_pipeline_runs_status ON pipeline_runs(status);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_pipeline_runs_run_id ON pipeline_runs(run_id);

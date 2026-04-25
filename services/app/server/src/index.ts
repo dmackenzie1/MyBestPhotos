@@ -124,9 +124,12 @@ app.get("/api/v1/health", async (_req, res) => {
   let pipelineInfo: Record<string, unknown> | null = null;
   try {
     const runRows = await pool.query(
-      `SELECT id, run_id, started_at, completed_at, status, clip_model_version,
-               total_files_ingested, total_metrics_scored, total_clip_aesthetic_scored, notes
-        FROM pipeline_runs ORDER BY id DESC LIMIT 1`
+      `SELECT p.id, p.run_id, p.started_at, p.completed_at, p.status,
+              (to_jsonb(p)->>'clip_model_version') AS clip_model_version,
+              p.total_files_ingested, p.total_metrics_scored, p.total_clip_aesthetic_scored, p.notes
+       FROM pipeline_runs p
+       ORDER BY p.id DESC
+       LIMIT 1`
     );
     if (runRows.rows.length > 0) {
       const r = runRows.rows[0];

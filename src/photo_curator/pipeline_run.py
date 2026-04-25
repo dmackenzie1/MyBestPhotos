@@ -310,8 +310,8 @@ class PipelineRun:
                 null_counts[col] = int(row[0][0])
 
         if null_counts:
-        notes_parts.append(
-            f"NULL_SCORES: clip_aesthetic={null_counts.get('clip_aesthetic_score', 0)} aesthetic={null_counts.get('aesthetic_score', 0)} "
+            notes_parts.append(
+                f"NULL_SCORES: clip_aesthetic={null_counts.get('clip_aesthetic_score', 0)} aesthetic={null_counts.get('aesthetic_score', 0)} "
                 f"keep={null_counts.get('keep_score', 0)} curation={null_counts.get('curation_score', 0)} "
                 f"semantic_relevance={null_counts.get('semantic_relevance_score', 0)}"
             )
