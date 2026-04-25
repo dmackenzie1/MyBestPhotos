@@ -8,6 +8,13 @@ This branch is ready for local pipeline runs with:
 - configurable ingest roots,
 - optional LM Studio image descriptions for richer captions.
 
+## Documentation map (why there are two README files)
+
+- `README.md` (this file): project overview, setup/runbook, and operational workflow.
+- `docs/README.md`: docs index and process-policy quick links.
+
+They are intentionally separate so the main runbook stays focused while `docs/README.md` remains a concise navigator.
+
 ## Repository layout
 
 ```text
@@ -275,6 +282,7 @@ Every merge must include a branch intent document under:
 - `docs/branch-intents/`
 
 Include intent, scope, architecture decisions, what went right, what went wrong, validation, and follow-ups.
+Use descriptive branch names (not placeholders like `work`/`tmp`) and ensure any temporary artifacts use descriptive names and are removed before merge unless intentionally documented.
 
 ## References
 

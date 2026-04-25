@@ -3,6 +3,7 @@
 ## Quick Summary
 - Purpose: <one sentence on what this branch fixes>
 - Keywords: <service/feature/error tags for fast scanning>
+- Branch name rationale: <why this name clearly describes intent; avoid placeholders like work/tmp>
 ## Intent
 - What user problem this branch is solving.
 
@@ -44,6 +45,11 @@
 ## Validation (mandatory)
 - Commands run:
 - Observed results:
+
+## Temp files and artifacts
+- Temp files created during this branch (if any):
+- Why they were needed:
+- Removed before merge? (yes/no + reason):
 
 ## Follow-up
 - Next branch goals:

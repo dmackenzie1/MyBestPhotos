@@ -1,6 +1,7 @@
 # Documentation Index
 
 This index is intentionally short: it points to the stable architecture docs and the required branch-intent workflow.
+It complements (does not replace) the root `README.md`, which remains the primary setup/runbook document.
 
 ## Core architecture docs
 - `docs/architecture/stack-overview.md`
@@ -45,3 +46,8 @@ Branch-intent docs are required for meaningful work, but we now use a lightweigh
 
 6. **Simple titles**
    - Keep branch-intent titles, branch names, and merge-request titles short, plain, and easy to scan.
+   - Avoid generic names (`work`, `tmp`, `misc`, `fix`) with no context; include the feature/bug context in the name.
+
+7. **Temporary files and notes**
+   - If temp files are needed during debugging, name them with intent + date/tag (for example `tmp-exif-null-audit-2026-04-25.txt`).
+   - Remove temp files before merge unless they are intentionally kept and documented in README/docs.

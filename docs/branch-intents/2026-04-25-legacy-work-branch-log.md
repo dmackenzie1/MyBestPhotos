@@ -1,4 +1,4 @@
-# Branch Intent: work
+# Branch Intent: work (legacy name)
 
 ## Quick Summary
 - Purpose: Refresh documentation for branch-intent governance so tiny typo edits can skip intents while substantive work keeps one consolidated branch intent per branch.
@@ -80,7 +80,7 @@
 ## Update: 2026-04-25 Python runner startup regression
 
 ## Quick Summary
-- Branch: `work`
+- Branch: `work` (legacy)
 - Purpose: Fix `python-runner` exiting immediately by restoring its missing compose command/wiring.
 - Scan first: Use this update when logs show bare `uv` help output for `python-runner`.
 
@@ -158,7 +158,7 @@
 ## Update: 2026-04-25 random browse sort option
 
 ## Quick Summary
-- Branch: `work`
+- Branch: `work` (legacy)
 - Purpose: Add a user-facing random sort option in browse/timeline and wire backend query handling.
 - Scan first: Use this update when sort dropdown requests include “random”.
 

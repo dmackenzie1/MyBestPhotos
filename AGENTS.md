@@ -41,6 +41,8 @@ This repository has no nested AGENTS yet; this file applies to all paths unless 
 - When required, record: exact error text, what was tried, why it was tried, what failed, and what to try next.
 - Use `docs/branch-intents/TEMPLATE.md` as the baseline structure.
 - Keep branch names and merge-request titles simple and easy to scan.
+- Do not use placeholder branch names like `work`, `fix`, or `tmp`; branch names must include a concise purpose (example: `fix-ingest-date-fallback`).
+- Temporary files/checkpoints must include purpose + date or task tag (example: `tmp-score-diff-2026-04-25.json`) and should be removed before merge unless intentionally documented.
 
 ## File-scope note
 Files under `services/web/` have additional guidance in `services/web/AGENTS.md`.

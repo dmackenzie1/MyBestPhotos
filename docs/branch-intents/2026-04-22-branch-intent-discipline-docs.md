@@ -1,4 +1,4 @@
-# Branch Intent: work
+# Branch Intent: work (legacy name)
 
 ## Quick Summary
 - Purpose: Clean up and condense process documentation while preserving existing guidance.
