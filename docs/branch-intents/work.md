@@ -76,3 +76,81 @@
   - Add optional lint/check script to enforce one-file-per-branch naming and required summary headers.
 - What to try next if unresolved:
   - Add a CI docs check that flags new branch-intent files missing `## Quick Summary`.
+
+---
+
+## Update: 2026-04-25 Python runner startup regression
+
+## Quick Summary
+- Branch: `work`
+- Purpose: Fix `python-runner` exiting immediately by restoring its missing compose command/wiring.
+- Scan first: Use this update when logs show bare `uv` help output for `python-runner`.
+
+## Intent
+- Restore the expected base-ingest one-shot behavior for `python-runner` in `docker-compose.yml`.
+
+## Scope
+- In scope:
+  - `docker-compose.yml` updates for `python-runner` command + runtime wiring.
+  - Branch-intent log update for this same branch file.
+- Out of scope:
+  - Changes to advanced/LLM runner behavior.
+  - Python pipeline code refactors.
+
+## Prior intent review (mandatory)
+- Related branch-intent docs reviewed:
+  - `docs/branch-intents/2026-04-22-fix-uv-entrypoint-spawn.md`
+  - `docs/branch-intents/2026-04-22-python-runner-preflight-double-check.md`
+  - `docs/branch-intents/2026-04-22-python-runner-startup-gpu-cache.md`
+- Relevant lessons pulled forward:
+  - Keep runner fixes minimal and explicit in compose.
+  - Prefer health-gated startup and deterministic one-shot commands.
+- Rabbit holes to avoid this time:
+  - Broader compose/service graph redesign.
+
+## Architecture decisions
+- Decision:
+  - Re-add `python-runner` service wiring (`depends_on`, volumes, `uv sync` + `base-ingest` command).
+- Why:
+  - Missing `command` made container run plain `uv`, which only prints help and exits.
+- Tradeoff:
+  - Runner startup does an explicit `uv sync` each run; slower cold start but robust for dependency drift.
+
+## Error log (mandatory)
+- Exact error message(s):
+  - `An extremely fast Python package manager.`
+  - `Usage: uv [OPTIONS] <COMMAND>`
+- Where seen (command/log/file):
+  - User-provided `python-runner` container logs.
+- Frequency or reproducibility notes:
+  - Reproduces whenever `python-runner` has no compose `command`.
+
+## Attempts made (mandatory)
+- Attempt 1:
+  - Change made:
+    - Inspected `docker-compose.yml` service block and confirmed `python-runner` ended after environment variables with no `command`.
+  - Why this was tried:
+    - The log signature matched a default `uv` invocation.
+  - Result:
+    - Root cause confirmed.
+- Attempt 2:
+  - Change made:
+    - Restored `python-runner` dependencies, mounts, uv cache mount, and command:
+      - `uv sync --project . && uv run --project . photo-curator base-ingest`.
+  - Why this was tried:
+    - Re-establish intended ingest behavior used elsewhere in docs/runbook.
+  - Result:
+    - Compose config now resolves with a concrete runner command.
+
+## What went right (mandatory)
+- Root cause was isolated quickly and fixed with a small compose-only patch.
+
+## What went wrong (mandatory)
+- End-to-end container execution cannot be fully validated in this environment without launching Docker services.
+
+## Validation (mandatory)
+- Commands run:
+  - `docker compose config`
+  - `docker compose config | sed -n '/python-runner:/,/python-advanced-runner:/p'`
+- Observed results:
+  - Compose renders `python-runner.command` as `uv sync --project . && uv run --project . photo-curator base-ingest`.
