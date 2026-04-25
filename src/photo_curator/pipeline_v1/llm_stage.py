@@ -10,11 +10,13 @@ from loguru import logger
 from tqdm import tqdm
 
 from photo_curator.db import Database
-from photo_curator.pipeline_v1.models import DescriptionOptions, StageStats
+from photo_curator.pipeline_v1.models import DescriptionOptions, StageStats, is_vision_model
 from photo_curator.text_vectorizer import embed_text, vector_literal
 
 PROMPT_VERSION = "llm_photo_v1"
 EMBEDDING_MODEL = "hash-embed-v1"
+
+_VISION_MODEL_PATTERNS_STR = ("llava", "moondream", "bakllava", "qwen2.5-vl", "qwen2-vl", "vision")
 
 
 def _safe_float(value: object) -> float | None:
@@ -58,6 +60,15 @@ def _call_lmstudio(path: Path, options: DescriptionOptions) -> dict[str, object]
         "temperature": 0.1,
         "response_format": {"type": "json_object"},
     }
+    if not is_vision_model(options.lmstudio_model):
+        logger.warning(
+            "Model '{model}' does not appear to be vision-capable (patterns: {patterns}). "
+            "Vision payloads will likely be rejected by LM Studio with HTTP 400. "
+            "Load a model like qwen2.5-vl-7b-instruct or llava for image support.",
+            model=options.lmstudio_model,
+            patterns=_VISION_MODEL_PATTERNS_STR,
+        )
+
     endpoint = f"{options.lmstudio_base_url.rstrip('/')}/chat/completions"
     req = request.Request(
         endpoint,
@@ -82,7 +93,21 @@ def _call_lmstudio(path: Path, options: DescriptionOptions) -> dict[str, object]
         IndexError,
         json.JSONDecodeError,
     ) as exc:
-        logger.warning("LLM call failed for {path}: {error}", path=path, error=exc)
+        if isinstance(exc, error.HTTPError):
+            body = None
+            try:
+                body = exc.read().decode("utf-8", errors="replace")
+            except Exception:
+                pass
+            logger.warning(
+                "LLM call failed for {path}: HTTP {code} {reason}: {body}",
+                path=path,
+                code=exc.code,
+                reason=exc.reason,
+                body=body or "(no body)",
+            )
+        else:
+            logger.warning("LLM call failed for {path}: {error}", path=path, error=exc)
     return None
 
 

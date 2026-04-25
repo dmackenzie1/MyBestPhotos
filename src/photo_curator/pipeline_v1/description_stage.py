@@ -11,7 +11,9 @@ from loguru import logger
 from tqdm import tqdm
 
 from photo_curator.db import Database
-from photo_curator.pipeline_v1.models import DescriptionOptions, StageStats
+from photo_curator.pipeline_v1.models import DescriptionOptions, StageStats, is_vision_model
+
+_VISION_MODEL_PATTERNS_STR = ("llava", "moondream", "bakllava", "qwen2.5-vl", "qwen2-vl", "vision")
 
 _CATEGORY_PATTERNS: dict[str, tuple[str, ...]] = {
     "people": (r"\b(person|people|portrait|family|child|children|man|woman|crowd|group)\b",),
@@ -70,6 +72,15 @@ def _describe_with_lmstudio(
         "temperature": 0.1,
     }
     body = json.dumps(payload).encode("utf-8")
+    if not is_vision_model(options.lmstudio_model):
+        logger.warning(
+            "Model '{model}' does not appear to be vision-capable (patterns: {patterns}). "
+            "Vision payloads will likely be rejected by LM Studio with HTTP 400. "
+            "Load a model like qwen2.5-vl-7b-instruct or llava for image support.",
+            model=options.lmstudio_model,
+            patterns=_VISION_MODEL_PATTERNS_STR,
+        )
+
     endpoint = f"{options.lmstudio_base_url.rstrip('/')}/chat/completions"
     req = request.Request(
         endpoint,
@@ -82,7 +93,21 @@ def _describe_with_lmstudio(
         with request.urlopen(req, timeout=options.lmstudio_timeout_seconds) as response:
             response_body = response.read()
     except (TimeoutError, error.URLError, error.HTTPError) as exc:
-        logger.warning("LM Studio request failed for {path}: {error}", path=path, error=exc)
+        if isinstance(exc, error.HTTPError):
+            body = None
+            try:
+                body = exc.read().decode("utf-8", errors="replace")
+            except Exception:
+                pass
+            logger.warning(
+                "LM Studio request failed for {path}: HTTP {code} {reason}: {body}",
+                path=path,
+                code=exc.code,
+                reason=exc.reason,
+                body=body or "(no body)",
+            )
+        else:
+            logger.warning("LM Studio request failed for {path}: {error}", path=path, error=exc)
         return None
 
     try:

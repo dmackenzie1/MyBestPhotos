@@ -1,6 +1,20 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
+
+_VISION_MODEL_PATTERNS = (
+    r"llava",
+    r"moondream",
+    r"bakllava",
+    r"qwen2\.5[-_]vl",
+    r"qwen2[-_]vl",
+    r"vision",
+)
+
+
+def is_vision_model(model_name: str) -> bool:
+    return any(re.search(pat, model_name, re.IGNORECASE) for pat in _VISION_MODEL_PATTERNS)
 
 
 @dataclass
