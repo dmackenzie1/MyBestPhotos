@@ -1,10 +1,8 @@
 # Branch Intent: work
 
 ## Quick Summary
-- Branch: `work`
 - Purpose: Refresh documentation for branch-intent governance so tiny typo edits can skip intents while substantive work keeps one consolidated branch intent per branch.
-- Scan first: Use this branch when adjusting documentation/process rules for branch-intent usage.
-
+- Keywords: docs, process, branch-intents
 ## Intent
 - Align docs with a practical branch-intent policy: summary-first scanning, one file per branch, and typo/one-line exemptions.
 

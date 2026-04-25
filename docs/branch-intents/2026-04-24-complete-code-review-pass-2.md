@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-24-complete-code-review-pass-2
 
 ## Quick Summary
-- Branch: `2026-04-24-complete-code-review-pass-2`
 - Purpose: Execute a focused, high-value subset of the requested full code review by reducing backend route complexity, removing duplicated query-shaping logic, and tightening file/path validation without changing API behavior.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: complete, code, review, pass, 2
 ## Intent
 - Execute a focused, high-value subset of the requested full code review by reducing backend route complexity, removing duplicated query-shaping logic, and tightening file/path validation without changing API behavior.
 

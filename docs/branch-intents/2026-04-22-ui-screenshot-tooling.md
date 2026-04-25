@@ -1,12 +1,8 @@
 # Branch Intent: ui screenshot tooling
 
 ## Quick Summary
-- Branch: `ui screenshot tooling`
 - Purpose: Add a repeatable way to capture a UI screenshot artifact from the running local stack.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: ui, screenshot, tooling
 ## Intent
 - Add a repeatable way to capture a UI screenshot artifact from the running local stack.
 - Keep process compliance by including a branch intent document for this branch.

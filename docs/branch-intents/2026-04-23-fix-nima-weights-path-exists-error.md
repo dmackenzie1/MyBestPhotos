@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-23-fix-nima-weights-path-exists-error
 
 ## Quick Summary
-- Branch: `2026-04-23-fix-nima-weights-path-exists-error`
 - Purpose: Fix advanced runner failure occurring during NIMA model weight path checks/download so `photo-curator advanced-runner` can continue instead of crashing at `_ensure_weights`.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: fix, nima, weights, path, exists, error
 ## Intent
 - Fix advanced runner failure occurring during NIMA model weight path checks/download so `photo-curator advanced-runner` can continue instead of crashing at `_ensure_weights`.
 

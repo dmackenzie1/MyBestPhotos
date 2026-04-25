@@ -1,12 +1,8 @@
 # Branch Intent: work
 
 ## Quick Summary
-- Branch: `work`
 - Purpose: Clean up and condense process documentation while preserving existing guidance.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: branch, intent, discipline, docs
 ## Intent
 - Clean up and condense process documentation while preserving existing guidance.
 - Make branch-intent usage explicit and mandatory for every Codex task, including failed attempts.

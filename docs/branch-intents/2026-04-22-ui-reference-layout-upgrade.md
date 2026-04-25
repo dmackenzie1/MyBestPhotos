@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-22-ui-reference-layout-upgrade
 
 ## Quick Summary
-- Branch: `2026-04-22-ui-reference-layout-upgrade`
 - Purpose: Move the client UI closer to the provided photo-management reference by strengthening browse ergonomics (details pane richness, filter affordances, timeline mode, settings mode, and endless scrolling behavior).
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: ui, reference, layout, upgrade
 ## Intent
 - Move the client UI closer to the provided photo-management reference by strengthening browse ergonomics (details pane richness, filter affordances, timeline mode, settings mode, and endless scrolling behavior).
 
