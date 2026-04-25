@@ -16,7 +16,7 @@ from photo_curator.pipeline_v1.models import StageStats
 
 def _compute_metrics(
     image: np.ndarray,
-) -> tuple[float, float, float, float, float, float, float, float, float]:
+) -> tuple[float, float, float, float, float, float]:
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     lap_var = float(cv2.Laplacian(gray, cv2.CV_64F).var())
@@ -26,8 +26,8 @@ def _compute_metrics(
     # Real data shows most photos are darker than the old target of 0.65 (median=0.37).
     # Use gamma-corrected brightness with optimal range 0.55-0.75 to better match
     # human perception (logarithmic, not linear) and the actual dataset distribution.
-    brightness_gamma = brightness ** 0.45
-    brightness_optimal_center = 0.65 ** 0.45
+    brightness_gamma = brightness**0.45
+    brightness_optimal_center = 0.65**0.45
     brightness_deviation = abs(brightness_gamma - brightness_optimal_center)
     brightness_score = max(0.0, min(1.0, 1.0 - (brightness_deviation / 0.30)))
 
@@ -62,37 +62,6 @@ def _compute_metrics(
         ),
     )
 
-    # Print scores now account for aspect-ratio mismatch with each print size.
-    # Real data: 77.3% of photos are 4:3 (1.33), matching 6x8 print exactly.
-    # Only ~2.2% natively match 12x18 (1.5:1). Aspect ratio penalty is multiplicative.
-    h, w = gray.shape[:2]
-    image_aspect = w / max(h, 1)
-
-    # Print size target aspect ratios and base multipliers
-    print_configs = [
-        (6.0 / 8.0, 1.0),   # 6x8: ratio=0.75 (stored as width/height for portrait match)
-        (8.0 / 10.0, 0.95), # 8x10: ratio=0.80
-        (12.0 / 18.0, 0.90),# 12x18: ratio=0.67
-    ]
-
-    print_scores = []
-    for target_ratio, base_mult in print_configs:
-        # Print sizes can be used in either orientation (portrait or landscape).
-        # Compare the image aspect against both orientations of the print and take
-        # the better match. A 4:3 photo should get a perfect match for 6x8 portrait
-        # regardless of whether the photo itself is landscape or portrait.
-        # ratio_match: how close to 1.0, where 1.0 = perfect aspect match.
-        ratio_match_orientation_1 = min(image_aspect / target_ratio, target_ratio / max(image_aspect, 1e-6))
-        ratio_match_orientation_2 = min(image_aspect * target_ratio, 1.0 / max(image_aspect * target_ratio, 1e-6))
-        best_ratio_match = max(ratio_match_orientation_1, ratio_match_orientation_2)
-        # Penalty: multiplicative factor that reduces score for aspect mismatch.
-        # At perfect match (ratio=1.0): penalty=1.0 (no reduction).
-        # At worst case (ratio=0): penalty=0.3 (floor to prevent total collapse).
-        ratio_penalty = max(0.3, 2.0 * best_ratio_match - 1.0)
-
-        print_score = technical_quality_score * base_mult * ratio_penalty
-        print_scores.append(max(0.0, min(1.0, print_score)))
-
     return (
         blur_score,
         brightness_score,
@@ -100,9 +69,6 @@ def _compute_metrics(
         entropy,
         noise_score,
         technical_quality_score,
-        print_scores[0],  # print_6x8
-        print_scores[1],  # print_8x10
-        print_scores[2],  # print_12x18
     )
 
 
@@ -126,9 +92,6 @@ def score_metrics(db: Database, max_size: int = 1024) -> StageStats:
             entropy_score,
             noise_score,
             technical_quality_score,
-            print_6x8,
-            print_8x10,
-            print_12x18,
         ) = _compute_metrics(image)
 
         try:
@@ -136,8 +99,8 @@ def score_metrics(db: Database, max_size: int = 1024) -> StageStats:
                 """
                 INSERT INTO file_metrics (
                   file_id, blur_score, brightness_score, contrast_score, entropy_score, noise_score,
-                  technical_quality_score, print_score_6x8, print_score_8x10, print_score_12x18
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                  technical_quality_score
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (file_id) DO UPDATE SET
                   blur_score = EXCLUDED.blur_score,
                   brightness_score = EXCLUDED.brightness_score,
@@ -145,9 +108,6 @@ def score_metrics(db: Database, max_size: int = 1024) -> StageStats:
                   entropy_score = EXCLUDED.entropy_score,
                   noise_score = EXCLUDED.noise_score,
                   technical_quality_score = EXCLUDED.technical_quality_score,
-                  print_score_6x8 = EXCLUDED.print_score_6x8,
-                  print_score_8x10 = EXCLUDED.print_score_8x10,
-                  print_score_12x18 = EXCLUDED.print_score_12x18,
                   updated_at = now()
                 """,
                 (
@@ -158,9 +118,6 @@ def score_metrics(db: Database, max_size: int = 1024) -> StageStats:
                     entropy_score,
                     noise_score,
                     technical_quality_score,
-                    print_6x8,
-                    print_8x10,
-                    print_12x18,
                 ),
             )
             logger.info(
@@ -244,4 +201,6 @@ def _log_metrics_distribution(db: Database, processed_count: int) -> None:
             null_counts[name] = int(row[0][0])
 
     if null_counts:
-        logger.info("  NULL counts: {nulls}", nulls=", ".join(f"{n}={c}" for n, c in null_counts.items()))
+        logger.info(
+            "  NULL counts: {nulls}", nulls=", ".join(f"{n}={c}" for n, c in null_counts.items())
+        )

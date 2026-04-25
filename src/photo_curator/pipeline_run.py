@@ -15,6 +15,7 @@ from photo_curator.db import Database
 @dataclass
 class ScoreDistribution:
     """Computed distribution stats for a single score field."""
+
     min_val: float = 0.0
     max_val: float = 1.0
     median: float = 0.5
@@ -28,6 +29,7 @@ class ScoreDistribution:
 @dataclass
 class PipelineRunStats:
     """Aggregated stats for a pipeline run."""
+
     run_id: str = ""
     nima_model_version: str = "nima_style_v0"
     description_provider: str = "basic"
@@ -37,7 +39,7 @@ class PipelineRunStats:
 
     total_files_ingested: int = 0
     total_metrics_scored: int = 0
-    total_nima_scored: int = 0
+    total_clip_aesthetic_scored: int = 0
     total_described: int = 0
     total_skipped: int = 0
     total_failed: int = 0
@@ -152,6 +154,7 @@ class PipelineRun:
 
         # Generate run_id before inserting (DB default also generates one, but we want it in stats)
         import uuid
+
         self._run_id = str(uuid.uuid4())
         self.stats.run_id = self._run_id
 
@@ -177,7 +180,7 @@ class PipelineRun:
         self,
         files_ingested: int | None = None,
         metrics_scored: int | None = None,
-        nima_scored: int | None = None,
+        clip_aesthetic_scored: int | None = None,
         described: int | None = None,
         skipped: int | None = None,
         failed: int | None = None,
@@ -187,8 +190,8 @@ class PipelineRun:
             self.stats.total_files_ingested += files_ingested
         if metrics_scored is not None:
             self.stats.total_metrics_scored += metrics_scored
-        if nima_scored is not None:
-            self.stats.total_nima_scored += nima_scored
+        if clip_aesthetic_scored is not None:
+            self.stats.total_clip_aesthetic_scored += clip_aesthetic_scored
         if described is not None:
             self.stats.total_described += described
         if skipped is not None:
@@ -228,9 +231,7 @@ class PipelineRun:
         }
 
         for col in fields:
-            rows = self.db.fetchall(
-                f"SELECT {col} FROM file_metrics WHERE {col} IS NOT NULL"
-            )
+            rows = self.db.fetchall(f"SELECT {col} FROM file_metrics WHERE {col} IS NOT NULL")
             values = [float(r[0]) for r in rows if r[0] is not None]
             dist = _compute_distribution(values)
             self.stats.score_distributions[field_names[col]] = dist
@@ -277,7 +278,7 @@ class PipelineRun:
         for count_field in [
             ("total_files_ingested", self.stats.total_files_ingested),
             ("total_metrics_scored", self.stats.total_metrics_scored),
-            ("total_nima_scored", self.stats.total_nima_scored),
+            ("total_nima_scored", self.stats.total_clip_aesthetic_scored),
             ("total_described", self.stats.total_described),
             ("total_skipped", self.stats.total_skipped),
             ("total_failed", self.stats.total_failed),
@@ -297,7 +298,13 @@ class PipelineRun:
 
         # Count files with NULL scores for each field
         null_counts = {}
-        for col in ["nima_score", "aesthetic_score", "keep_score", "curation_score", "semantic_relevance_score"]:
+        for col in [
+            "nima_score",
+            "aesthetic_score",
+            "keep_score",
+            "curation_score",
+            "semantic_relevance_score",
+        ]:
             row = self.db.fetchall(f"SELECT COUNT(*) FROM file_metrics WHERE {col} IS NULL")
             if row:
                 null_counts[col] = int(row[0][0])
@@ -336,7 +343,7 @@ class PipelineRun:
         for count_field in [
             ("total_files_ingested", self.stats.total_files_ingested),
             ("total_metrics_scored", self.stats.total_metrics_scored),
-            ("total_nima_scored", self.stats.total_nima_scored),
+            ("total_nima_scored", self.stats.total_clip_aesthetic_scored),
             ("total_described", self.stats.total_described),
             ("total_skipped", self.stats.total_skipped),
             ("total_failed", self.stats.total_failed),
@@ -353,7 +360,9 @@ class PipelineRun:
         params.append(self.run_id)
         self.db.execute(sql, tuple(params))
 
-        logger.info("Pipeline run completed: {run_id} (status={status})", run_id=self.run_id, status=status)
+        logger.info(
+            "Pipeline run completed: {run_id} (status={status})", run_id=self.run_id, status=status
+        )
         return self.run_id
 
 
@@ -383,7 +392,7 @@ def get_latest_run(db: Database) -> dict[str, Any] | None:
         "description_provider": str(row[6]) if row[6] else None,
         "total_files_ingested": int(row[7]) if row[7] else 0,
         "total_metrics_scored": int(row[8]) if row[8] else 0,
-        "total_nima_scored": int(row[9]) if row[9] else 0,
+        "total_clip_aesthetic_scored": int(row[9]) if row[9] else 0,
         "total_described": int(row[10]) if row[10] else 0,
         "total_skipped": int(row[11]) if row[11] else 0,
         "total_failed": int(row[12]) if row[12] else 0,
@@ -393,82 +402,92 @@ def get_latest_run(db: Database) -> dict[str, Any] | None:
 
 def get_run_comparison(db: Database, n_runs: int = 5) -> list[dict[str, Any]]:
     """Fetch the last N completed runs for comparison."""
-    rows = db.fetchall(
-        f"""
-        SELECT id, run_id, started_at, completed_at, status, nima_model_version,
-               total_files_ingested, total_metrics_scored, total_nima_scored,
-               blur_min, blur_max, blur_median, blur_p25, blur_p75, blur_stddev,
-               technical_quality_min, technical_quality_max, technical_quality_median,
-               technical_quality_p25, technical_quality_p75, technical_quality_stddev,
-               nima_min, nima_max, nima_median, nima_p25, nima_p75, nima_stddev,
-               aesthetic_min, aesthetic_max, aesthetic_median, aesthetic_p25, aesthetic_p75, aesthetic_stddev,
-               curation_min, curation_max, curation_median, curation_p25, curation_p75, curation_stddev,
-               semantic_relevance_min, semantic_relevance_max, semantic_relevance_median,
-               semantic_relevance_p25, semantic_relevance_p75, semantic_relevance_stddev,
-               keep_min, keep_max, keep_median, keep_p25, keep_p75, keep_stddev,
-               notes
-        FROM pipeline_runs
-        WHERE status = 'completed' AND completed_at IS NOT NULL
-        ORDER BY id DESC LIMIT {n_runs}
-        """
-    )
+    with db.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""
+                SELECT id, run_id, started_at, completed_at, status, nima_model_version,
+                       total_files_ingested, total_metrics_scored, total_nima_scored,
+                       blur_min, blur_max, blur_median, blur_p25, blur_p75, blur_stddev,
+                       technical_quality_min, technical_quality_max, technical_quality_median,
+                       technical_quality_p25, technical_quality_p75, technical_quality_stddev,
+                       nima_min, nima_max, nima_median, nima_p25, nima_p75, nima_stddev,
+                       aesthetic_min, aesthetic_max, aesthetic_median, aesthetic_p25, aesthetic_p75, aesthetic_stddev,
+                       curation_min, curation_max, curation_median, curation_p25, curation_p75, curation_stddev,
+                       semantic_relevance_min, semantic_relevance_max, semantic_relevance_median,
+                       semantic_relevance_p25, semantic_relevance_p75, semantic_relevance_stddev,
+                       keep_min, keep_max, keep_median, keep_p25, keep_p75, keep_stddev,
+                       notes
+                FROM pipeline_runs
+                WHERE status = 'completed' AND completed_at IS NOT NULL
+                ORDER BY id DESC LIMIT {n_runs}
+                """
+            )
+            rows = cur.fetchall()
+            description = cur.description or ()
+            col_names = [col.name if hasattr(col, "name") else col[0] for col in description]
 
     results = []
+    numeric_int_fields = {"id", "total_files_ingested", "total_metrics_scored"}
+    numeric_float_fields = {
+        "blur_min",
+        "blur_max",
+        "blur_median",
+        "blur_p25",
+        "blur_p75",
+        "blur_stddev",
+        "technical_quality_min",
+        "technical_quality_max",
+        "technical_quality_median",
+        "technical_quality_p25",
+        "technical_quality_p75",
+        "technical_quality_stddev",
+        "nima_min",
+        "nima_max",
+        "nima_median",
+        "nima_p25",
+        "nima_p75",
+        "nima_stddev",
+        "aesthetic_min",
+        "aesthetic_max",
+        "aesthetic_median",
+        "aesthetic_p25",
+        "aesthetic_p75",
+        "aesthetic_stddev",
+        "curation_min",
+        "curation_max",
+        "curation_median",
+        "curation_p25",
+        "curation_p75",
+        "curation_stddev",
+        "semantic_relevance_min",
+        "semantic_relevance_max",
+        "semantic_relevance_median",
+        "semantic_relevance_p25",
+        "semantic_relevance_p75",
+        "semantic_relevance_stddev",
+        "keep_min",
+        "keep_max",
+        "keep_median",
+        "keep_p25",
+        "keep_p75",
+        "keep_stddev",
+    }
     for row in rows:
-        results.append({
-            "id": int(row[0]),
-            "run_id": str(row[1]),
-            "started_at": row[2],
-            "completed_at": row[3],
-            "status": str(row[4]) if row[4] else None,
-            "nima_model_version": str(row[5]) if row[5] else None,
-            "total_files_ingested": int(row[6]) if row[6] else 0,
-            "total_metrics_scored": int(row[7]) if row[7] else 0,
-            "total_nima_scored": int(row[8]) if row[8] else 0,
-            "blur_min": float(row[9]) if row[9] is not None else None,
-            "blur_max": float(row[10]) if row[10] is not None else None,
-            "blur_median": float(row[11]) if row[11] is not None else None,
-            "blur_p25": float(row[12]) if row[12] is not None else None,
-            "blur_p75": float(row[13]) if row[13] is not None else None,
-            "blur_stddev": float(row[14]) if row[14] is not None else None,
-            "technical_quality_min": float(row[15]) if row[15] is not None else None,
-            "technical_quality_max": float(row[16]) if row[16] is not None else None,
-            "technical_quality_median": float(row[17]) if row[17] is not None else None,
-            "technical_quality_p25": float(row[18]) if row[18] is not None else None,
-            "technical_quality_p75": float(row[19]) if row[19] is not None else None,
-            "technical_quality_stddev": float(row[20]) if row[20] is not None else None,
-            "nima_min": float(row[21]) if row[21] is not None else None,
-            "nima_max": float(row[22]) if row[22] is not None else None,
-            "nima_median": float(row[23]) if row[23] is not None else None,
-            "nima_p25": float(row[24]) if row[24] is not None else None,
-            "nima_p75": float(row[25]) if row[25] is not None else None,
-            "nima_stddev": float(row[26]) if row[26] is not None else None,
-            "aesthetic_min": float(row[27]) if row[27] is not None else None,
-            "aesthetic_max": float(row[28]) if row[28] is not None else None,
-            "aesthetic_median": float(row[29]) if row[29] is not None else None,
-            "aesthetic_p25": float(row[30]) if row[30] is not None else None,
-            "aesthetic_p75": float(row[31]) if row[31] is not None else None,
-            "aesthetic_stddev": float(row[32]) if row[32] is not None else None,
-            "curation_min": float(row[33]) if row[33] is not None else None,
-            "curation_max": float(row[34]) if row[34] is not None else None,
-            "curation_median": float(row[35]) if row[35] is not None else None,
-            "curation_p25": float(row[36]) if row[36] is not None else None,
-            "curation_p75": float(row[37]) if row[37] is not None else None,
-            "curation_stddev": float(row[38]) if row[38] is not None else None,
-            "semantic_relevance_min": float(row[39]) if row[39] is not None else None,
-            "semantic_relevance_max": float(row[40]) if row[40] is not None else None,
-            "semantic_relevance_median": float(row[41]) if row[41] is not None else None,
-            "semantic_relevance_p25": float(row[42]) if row[42] is not None else None,
-            "semantic_relevance_p75": float(row[43]) if row[43] is not None else None,
-            "semantic_relevance_stddev": float(row[44]) if row[44] is not None else None,
-            "keep_min": float(row[45]) if row[45] is not None else None,
-            "keep_max": float(row[46]) if row[46] is not None else None,
-            "keep_median": float(row[47]) if row[47] is not None else None,
-            "keep_p25": float(row[48]) if row[48] is not None else None,
-            "keep_p75": float(row[49]) if row[49] is not None else None,
-            "keep_stddev": float(row[50]) if row[50] is not None else None,
-            "notes": str(row[51]) if row[51] else None,
-        })
+        mapped = dict(zip(col_names, row, strict=False))
+        result: dict[str, Any] = {}
+        for key, value in mapped.items():
+            if key in numeric_int_fields:
+                result[key] = int(value) if value is not None else 0
+            elif key in numeric_float_fields:
+                result[key] = float(value) if value is not None else None
+            elif key == "total_nima_scored":
+                result["total_clip_aesthetic_scored"] = int(value) if value is not None else 0
+            elif key in {"run_id", "status", "nima_model_version", "notes"}:
+                result[key] = str(value) if value is not None else None
+            else:
+                result[key] = value
+        results.append(result)
 
     return results
 
@@ -518,7 +537,7 @@ def write_run_artifact(
         "description_provider": stats["description_provider"],
         "total_files_ingested": stats["total_files_ingested"],
         "total_metrics_scored": stats["total_metrics_scored"],
-        "total_nima_scored": stats["total_nima_scored"],
+        "total_clip_aesthetic_scored": stats["total_clip_aesthetic_scored"],
         "total_described": stats["total_described"],
         "total_skipped": stats["total_skipped"],
         "total_failed": stats["total_failed"],
@@ -545,6 +564,7 @@ def write_run_artifact(
     artifact_path = artifact_dir / f"run_{timestamp}_{run_id[:8]}.json"
 
     import json
+
     with artifact_path.open("w", encoding="utf-8") as f:
         json.dump(artifact, f, indent=2, default=str)
 
@@ -554,7 +574,7 @@ def write_run_artifact(
 
 def _row_to_dist(row: tuple[Any, ...], offset: int) -> dict[str, float | None]:
     """Extract a distribution dict from a DB row starting at the given column offset."""
-    vals = [float(v) if v is not None else None for v in row[offset:offset + 6]]
+    vals = [float(v) if v is not None else None for v in row[offset : offset + 6]]
     return {
         "min": vals[0],
         "max": vals[1],

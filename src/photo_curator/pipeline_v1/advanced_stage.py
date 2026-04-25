@@ -16,6 +16,7 @@ from photo_curator.pipeline_v1.common import _load_image
 from photo_curator.pipeline_v1.description_stage import describe_images
 from photo_curator.pipeline_v1.metrics_stage import _compute_metrics
 from photo_curator.pipeline_v1.models import AdvancedRunnerStats, DescriptionOptions, StageStats
+from photo_curator.pipeline_v1.scoring import compute_clip_aesthetic
 
 
 def _composition_balance_score(gray) -> float:
@@ -64,9 +65,6 @@ def _resolve_or_compute_metrics(
         computed_entropy_score,
         _noise_score,
         computed_technical_quality_score,
-        _print_6x8,
-        _print_8x10,
-        _print_12x18,
     ) = _compute_metrics(image)
     return (
         computed_blur_score,
@@ -77,8 +75,8 @@ def _resolve_or_compute_metrics(
     )
 
 
-def _count_nima_candidates(
-    db: Database, *, force_rescore_all: bool, nima_model_version: str
+def _count_clip_candidates(
+    db: Database, *, force_rescore_all: bool, clip_model_version: str
 ) -> int:
     if force_rescore_all:
         rows = db.fetchall("SELECT COUNT(*) FROM files")
@@ -90,14 +88,14 @@ def _count_nima_candidates(
             LEFT JOIN file_metrics fm ON fm.file_id = f.id
             WHERE fm.nima_score IS NULL OR fm.nima_model_version != %s
             """,
-            (nima_model_version,),
+            (clip_model_version,),
         )
     if not rows:
         return 0
     return int(rows[0][0])
 
 
-def score_nima(
+def score_clip_aesthetic(
     db: Database,
     *,
     max_size: int = 1024,
@@ -107,17 +105,17 @@ def score_nima(
     force_rescore_all: bool = False,
     defer_apply_until_complete: bool = False,
 ) -> StageStats:
-    nima_model_version = "nima_real_v1"
+    clip_model_version = "clip_aesthetic_v1"
 
     stats = StageStats()
     clip_scorer = load_clip_aesthetic_scorer(clip_model, clip_device)
     pending_updates: list[tuple[int, float, float, float, str]] = []
-    total_candidates = _count_nima_candidates(
-        db, force_rescore_all=force_rescore_all, nima_model_version=nima_model_version
+    total_candidates = _count_clip_candidates(
+        db, force_rescore_all=force_rescore_all, clip_model_version=clip_model_version
     )
     total_batches = (total_candidates + batch_size - 1) // batch_size if total_candidates else 0
     logger.info(
-        "NIMA stage starting: total_candidates={total} batch_size={batch_size} batches={batches} deferred_apply={deferred}",
+        "CLIP aesthetic stage starting: total_candidates={total} batch_size={batch_size} batches={batches} deferred_apply={deferred}",
         total=total_candidates,
         batch_size=batch_size,
         batches=total_batches,
@@ -132,7 +130,7 @@ def score_nima(
             where_params: tuple[object, ...] = (last_id,)
         else:
             where_clause = "(fm.nima_score IS NULL OR fm.nima_model_version != %s) AND f.id > %s"
-            where_params = (nima_model_version, last_id)
+            where_params = (clip_model_version, last_id)
 
         rows = db.fetchall(
             f"""
@@ -153,13 +151,13 @@ def score_nima(
         batch_index += 1
         last_id = int(rows[-1][0])
         logger.info(
-            "NIMA batch {batch_index}/{total_batches}: batch_size={batch_size} up_to_file_id={last_id}",
+            "CLIP aesthetic batch {batch_index}/{total_batches}: batch_size={batch_size} up_to_file_id={last_id}",
             batch_index=batch_index,
             total_batches=(total_batches or "?"),
             batch_size=len(rows),
             last_id=last_id,
         )
-        for row in tqdm(rows, desc=f"NIMA batch {batch_index}"):
+        for row in tqdm(rows, desc=f"CLIP batch {batch_index}"):
             (
                 file_id,
                 source_root,
@@ -173,7 +171,9 @@ def score_nima(
             path = Path(source_root) / Path(relative_path)
             image = _load_image(path, max_size=max_size)
             if image is None:
-                logger.warning("Could not load image for NIMA score, skipping: {path}", path=path)
+                logger.warning(
+                    "Could not load image for CLIP aesthetic score, skipping: {path}", path=path
+                )
                 continue
 
             (
@@ -197,33 +197,19 @@ def score_nima(
 
             # Use CLIP aesthetics as the primary advanced-stage quality signal.
             rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            clip_score = clip_scorer.score_pil_images([Image.fromarray(rgb_image)])[0]
-            nima_mean = max(0.0, min(1.0, float(clip_score)))
-
-            # Blend primary score with composition balance signal.
-            # Composition balance provides supplementary structural guidance.
-            nima_spread = max(0.0, min(1.0, 0.85 * nima_mean + 0.15 * composition_balance_score))
-
-            # Aesthetic score: NIMA primary + blur resistance (sharp photos look more aesthetic).
-            # Real data shows blur_score median=0.81 (most photos are in-focus), so blur_resistance
-            # is typically low. Use a gentler power curve (0.9) to preserve spread instead of 0.75
-            # which compressed the top-end too aggressively (e.g., 0.9 -> 0.84).
-            blur_resistance = 1.0 - blur_score
-            aesthetic_raw = (0.82 * nima_spread) + (0.18 * blur_resistance)
-            aesthetic_spread = max(0.0, min(1.0, aesthetic_raw**0.9))
-
-            # Keep score: combined technical quality + aesthetics for ranking workflows.
-            # Real data shows keep_score median=0.58 with stddev=0.10 — moderate spread.
-            # Increase aesthetic weight since CLIP-based scores are more discriminative than tech quality.
-            keep_raw = (0.45 * technical_quality_score) + (0.55 * aesthetic_spread)
-            keep_spread = max(0.0, min(1.0, keep_raw**0.9))
+            clip_score = max(
+                0.0, min(1.0, float(clip_scorer.score_pil_images([Image.fromarray(rgb_image)])[0]))
+            )
+            nima_spread, aesthetic_spread, keep_spread = compute_clip_aesthetic(
+                clip_score, composition_balance_score, blur_score, technical_quality_score
+            )
 
             update_payload = (
                 file_id,
                 nima_spread,
                 aesthetic_spread,
                 keep_spread,
-                nima_model_version,
+                clip_model_version,
             )
             if defer_apply_until_complete:
                 pending_updates.append(update_payload)
@@ -247,8 +233,10 @@ def score_nima(
             stats.processed += 1
 
     if defer_apply_until_complete and pending_updates:
-        logger.info("Applying deferred NIMA updates: count={count}", count=len(pending_updates))
-        for update_payload in tqdm(pending_updates, desc="Apply NIMA updates"):
+        logger.info(
+            "Applying deferred CLIP aesthetic updates: count={count}", count=len(pending_updates)
+        )
+        for update_payload in tqdm(pending_updates, desc="Apply CLIP updates"):
             db.execute(
                 """
             INSERT INTO file_metrics (
@@ -267,7 +255,7 @@ def score_nima(
             )
 
     logger.info(
-        "NIMA stage complete: processed={processed}",
+        "CLIP aesthetic stage complete: processed={processed}",
         processed=stats.processed,
     )
     return stats
@@ -285,7 +273,7 @@ def run_advanced_runners(
     force_rescore_all: bool = False,
     defer_apply_until_complete: bool = False,
 ) -> AdvancedRunnerStats:
-    nima_stats = score_nima(
+    clip_stats = score_clip_aesthetic(
         db,
         batch_size=batch_size,
         clip_model=clip_model,
@@ -305,15 +293,15 @@ def run_advanced_runners(
     _log_advanced_distribution(db)
 
     return AdvancedRunnerStats(
-        nima_processed=nima_stats.processed,
+        clip_processed=clip_stats.processed,
         described_processed=describe_stats.processed,
     )
 
 
 def _log_advanced_distribution(db: Database) -> None:
-    """Log score distributions for advanced scores (NIMA, aesthetic, keep, curation, semantic_relevance)."""
+    """Log score distributions for advanced scores (CLIP-based nima_score, aesthetic, keep, curation, semantic_relevance)."""
     fields = [
-        ("nima_score", "NIMA Score"),
+        ("nima_score", "CLIP-based NIMA Score"),
         ("aesthetic_score", "Aesthetic Score"),
         ("keep_score", "Keep Score"),
         ("curation_score", "Curation Score"),
@@ -351,7 +339,7 @@ def _log_advanced_distribution(db: Database) -> None:
 
     # Check for NULL counts in advanced fields
     null_fields = [
-        ("nima_score", "NIMA"),
+        ("nima_score", "CLIP-based NIMA"),
         ("aesthetic_score", "Aesthetic"),
         ("keep_score", "Keep"),
         ("curation_score", "Curation"),

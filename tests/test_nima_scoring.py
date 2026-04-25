@@ -2,18 +2,16 @@ from __future__ import annotations
 
 import unittest
 
-from photo_curator.pipeline_v1 import _compute_nima_style_score
+from photo_curator.pipeline_v1.scoring import compute_clip_aesthetic
 
 
-class NimaScoringTests(unittest.TestCase):
-    def test_nima_outputs_stay_in_unit_interval(self) -> None:
-        nima_score, aesthetic_score, keep_score = _compute_nima_style_score(
-            blur_score=0.2,
-            brightness_score=0.7,
-            contrast_score=0.6,
-            entropy_score=0.5,
-            technical_quality_score=0.75,
+class ClipAestheticScoringTests(unittest.TestCase):
+    def test_outputs_stay_in_unit_interval(self) -> None:
+        nima_score, aesthetic_score, keep_score = compute_clip_aesthetic(
+            clip_score=0.7,
             composition_balance_score=0.8,
+            blur_score=0.2,
+            technical_quality_score=0.75,
         )
         self.assertGreaterEqual(nima_score, 0.0)
         self.assertLessEqual(nima_score, 1.0)
@@ -23,21 +21,17 @@ class NimaScoringTests(unittest.TestCase):
         self.assertLessEqual(keep_score, 1.0)
 
     def test_higher_inputs_raise_nima_score(self) -> None:
-        low, _, _ = _compute_nima_style_score(
-            blur_score=0.7,
-            brightness_score=0.3,
-            contrast_score=0.2,
-            entropy_score=0.2,
-            technical_quality_score=0.2,
+        low, _, _ = compute_clip_aesthetic(
+            clip_score=0.2,
             composition_balance_score=0.2,
+            blur_score=0.7,
+            technical_quality_score=0.2,
         )
-        high, _, _ = _compute_nima_style_score(
-            blur_score=0.1,
-            brightness_score=0.8,
-            contrast_score=0.8,
-            entropy_score=0.8,
-            technical_quality_score=0.8,
+        high, _, _ = compute_clip_aesthetic(
+            clip_score=0.8,
             composition_balance_score=0.8,
+            blur_score=0.1,
+            technical_quality_score=0.8,
         )
         self.assertGreater(high, low)
 

@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from photo_curator.db import Database
 from photo_curator.pipeline_v1.models import DescriptionOptions, StageStats, is_vision_model
+from photo_curator.pipeline_v1.scoring import compute_curation_score
 
 _VISION_MODEL_PATTERNS_STR = ("llava", "moondream", "bakllava", "qwen2.5-vl", "qwen2-vl", "vision")
 
@@ -143,7 +144,7 @@ def describe_images(
     rows = db.fetchall(
         """
         SELECT f.id, f.filename, f.source_root, f.relative_path, f.camera_make, f.camera_model, f.photo_taken_at,
-               m.print_score_12x18, m.blur_score, m.brightness_score, m.contrast_score,
+               m.blur_score, m.brightness_score, m.contrast_score,
                m.technical_quality_score, m.aesthetic_score, m.keep_score
         FROM files f
         LEFT JOIN file_metrics m ON m.file_id = f.id
@@ -161,7 +162,6 @@ def describe_images(
             camera_make,
             camera_model,
             photo_taken_at,
-            print_12x18,
             blur_score,
             brightness_score,
             contrast_score,
@@ -171,10 +171,10 @@ def describe_images(
         ) = row
 
         quality_hint = "good"
-        if print_12x18 is not None:
-            if print_12x18 >= 0.85:
+        if technical_quality_score is not None:
+            if technical_quality_score >= 0.8:
                 quality_hint = "excellent"
-            elif print_12x18 < 0.6:
+            elif technical_quality_score < 0.5:
                 quality_hint = "fair"
 
         basic_description_text = (
@@ -234,25 +234,10 @@ def describe_images(
         # Clamp to [0, 1]
         semantic_relevance_score = max(0.0, min(1.0, semantic_relevance_score))
 
-        # Curation score formula updated based on real dataset analysis:
-        # - aesthetic_score added (was missing; primary ranking signal was weak)
-        # - keep_score added (was computed but unused in any ranking)
-        # - DSLR camera brand bonus removed (real data shows phone photos have higher
-        #   aesthetic scores than DSLR; curation should reflect photo quality, not gear)
-        # Weights: 40% aesthetic + 30% keep + 20% tech_quality + 10% semantic
         _aesthetic = aesthetic_score if aesthetic_score is not None else 0.5
         _keep = keep_score if keep_score is not None else 0.5
-        _tech = technical_quality_score if technical_quality_score is not None else (print_12x18 or 0.0)
-        curation_score = max(
-            0.0,
-            min(
-                1.0,
-                (0.4 * _aesthetic)
-                + (0.3 * _keep)
-                + (0.2 * _tech)
-                + (0.1 * semantic_relevance_score),
-            ),
-        )
+        _tech = technical_quality_score if technical_quality_score is not None else 0.0
+        curation_score = compute_curation_score(_aesthetic, _keep, _tech, semantic_relevance_score)
 
         try:
             db.execute(
@@ -278,7 +263,6 @@ def describe_images(
             "camera_make": camera_make,
             "camera_model": camera_model,
             "scores": {
-                "print_12x18": print_12x18,
                 "technical_quality": technical_quality_score,
                 "semantic_relevance": semantic_relevance_score,
                 "curation": curation_score,

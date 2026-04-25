@@ -16,8 +16,9 @@ This project now tracks three interpretable score layers in `file_metrics`:
 
 4. **nima_score / aesthetic_score / keep_score**
    - Advanced-runner outputs intended to represent aesthetics/photogenic quality.
-   - `nima_score` is currently a NIMA-style proxy (`nima_style_v0`) using deterministic image signals.
-   - `aesthetic_score` and `keep_score` are derived from `nima_score` + technical quality for ranking workflows.
+   - `nima_score` is a legacy column name that currently stores CLIP-based aesthetic output.
+   - The actual VGG-16 NIMA model is not used in the active advanced runner path.
+   - `aesthetic_score` and `keep_score` are derived from this CLIP-based signal + technical quality for ranking workflows.
 
 ## Base vs advanced ownership
 

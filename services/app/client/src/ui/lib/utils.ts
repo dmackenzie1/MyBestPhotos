@@ -13,7 +13,6 @@ export function formatMetric(value: number | null | undefined): string {
 }
 
 export function statusFromItem(item: PhotoListItem): DerivedStatus {
-  if (item.rejectFlag) return "hidden";
   if (item.favoriteFlag) return "favorite";
   return "unreviewed";
 }

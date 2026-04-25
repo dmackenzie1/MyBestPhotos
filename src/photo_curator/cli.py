@@ -16,8 +16,8 @@ from photo_curator.pipeline_v1 import (
     discover_files,
     run_advanced_runners,
     run_llm_descriptions,
+    score_clip_aesthetic,
     score_metrics,
-    score_nima,
 )
 from photo_curator.utils.logging import configure_logging
 
@@ -177,7 +177,8 @@ def pipeline_cmd(
             clip_device=settings.embedding_device,
         )
         run_tracker.update_stage(
-            nima_scored=advanced_stats.nima_processed, described=advanced_stats.described_processed
+            clip_aesthetic_scored=advanced_stats.clip_processed,
+            described=advanced_stats.described_processed,
         )
 
         # Complete the run with score distributions stored in DB + artifact file
@@ -201,7 +202,7 @@ def pipeline_cmd(
                 proc_fail=discover_stats.failed_processing,
             )
         logger.info("  Metrics scored: {count}", count=metrics_stats.processed)
-        logger.info("  NIMA scores generated: {nima}", nima=advanced_stats.nima_processed)
+        logger.info("  CLIP aesthetic scores generated: {clip}", clip=advanced_stats.clip_processed)
         logger.info("  Descriptions generated: {desc}", desc=advanced_stats.described_processed)
         logger.info("=" * 60)
 
@@ -253,8 +254,8 @@ def base_ingest_cmd(
         _close_db(db)
 
 
-@app.command("score-nima")
-def score_nima_cmd(
+@app.command("score-clip-aesthetic")
+def score_clip_aesthetic_cmd(
     batch_size: int = typer.Option(500, "--batch-size", min=1),
     force_rescore_all: bool = typer.Option(
         False, "--force-rescore-all", help="Rescore every image instead of only stale/missing rows."
@@ -271,7 +272,7 @@ def score_nima_cmd(
     try:
         run_tracker.start(nima_model_version="nima_style_v0")
 
-        stats = score_nima(
+        stats = score_clip_aesthetic(
             db,
             batch_size=batch_size,
             clip_model=settings.clip_model,
@@ -279,13 +280,13 @@ def score_nima_cmd(
             force_rescore_all=force_rescore_all,
             defer_apply_until_complete=defer_apply_until_complete,
         )
-        run_tracker.update_stage(nima_scored=stats.processed)
+        run_tracker.update_stage(clip_aesthetic_scored=stats.processed)
 
         run_id = run_tracker.complete()
         write_run_artifact(db, run_id, report_dir=settings.report_dir)
 
         logger.info(
-            "NIMA runner complete: processed={processed} (run: {run_id})",
+            "CLIP aesthetic runner complete: processed={processed} (run: {run_id})",
             processed=stats.processed,
             run_id=run_id,
         )
@@ -341,15 +342,15 @@ def advanced_runner_cmd(
             defer_apply_until_complete=defer_apply_until_complete,
         )
         run_tracker.update_stage(
-            nima_scored=stats.nima_processed, described=stats.described_processed
+            clip_aesthetic_scored=stats.clip_processed, described=stats.described_processed
         )
 
         run_id = run_tracker.complete()
         write_run_artifact(db, run_id, report_dir=settings.report_dir)
 
         logger.info(
-            "Advanced runner complete: nima={nima} descriptions={desc} (run: {run_id})",
-            nima=stats.nima_processed,
+            "Advanced runner complete: clip={clip} descriptions={desc} (run: {run_id})",
+            clip=stats.clip_processed,
             desc=stats.described_processed,
             run_id=run_id,
         )

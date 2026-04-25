@@ -26,7 +26,6 @@ type TimelineViewProps = {
 const SORT_OPTIONS = [
   { value: "curation_desc", label: "Curation" },
   { value: "aesthetic_desc", label: "Aesthetic" },
-  { value: "print_12x18_desc", label: "Print Score" },
   { value: "sharpness_desc", label: "Sharpness" },
   { value: "exposure_desc", label: "Exposure" },
   { value: "contrast_desc", label: "Contrast" },

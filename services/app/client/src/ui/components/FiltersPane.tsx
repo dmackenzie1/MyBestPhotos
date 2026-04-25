@@ -10,11 +10,11 @@ const SUGGESTED_TOPICS = [
   "transportation",
   "boating",
   "kids",
-  "teenage boys",
-  "allie",
+  "teen portraits",
+  "pets",
   "group shots",
-  "women",
-  "male",
+  "portraits",
+  "landscapes",
 ];
 
 type FiltersPaneProps = {
@@ -28,8 +28,6 @@ type FiltersPaneProps = {
   dateTo: string;
   dateMin: string;
   dateMax: string;
-  minScore: number;
-  maxScore: number;
   facets: FacetsResponse;
   cameraMakeOptions: string[];
   cameraModelOptions: string[];
@@ -40,8 +38,6 @@ type FiltersPaneProps = {
   onCameraModelChange: (value: string) => void;
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
-  onMinScoreChange: (value: number) => void;
-  onMaxScoreChange: (value: number) => void;
   onIconScaleChange: (value: number) => void;
   onReset: () => void;
   onToggleCollapsed: () => void;
@@ -61,7 +57,6 @@ export function FiltersPane(props: FiltersPaneProps) {
     dateTo,
     dateMin,
     dateMax,
-    minScore,
     facets,
     cameraMakeOptions,
     cameraModelOptions,
@@ -72,9 +67,6 @@ export function FiltersPane(props: FiltersPaneProps) {
     onCameraModelChange,
     onDateFromChange,
     onDateToChange,
-    onMinScoreChange,
-    maxScore,
-    onMaxScoreChange,
     onIconScaleChange,
     onReset,
     onToggleCollapsed,
@@ -89,8 +81,8 @@ export function FiltersPane(props: FiltersPaneProps) {
       <div className="section-header">
         <h3>{isOpen ? "Filters" : "F"}</h3>
         <div className="filter-actions">
-          {isOpen && <button type="button" className="icon-btn" title="Reset filters" onClick={onReset}>↺</button>}
-          <button type="button" className="icon-btn" title={isCollapsed ? "Expand filters" : "Collapse filters"} onClick={onToggleCollapsed}>{isCollapsed ? "⟫" : "⟪"}</button>
+          {isOpen && <button type="button" className="icon-btn" aria-label="Reset filters" title="Reset filters" onClick={onReset}>↺</button>}
+          <button type="button" className="icon-btn" aria-label={isCollapsed ? "Expand filters" : "Collapse filters"} title={isCollapsed ? "Expand filters" : "Collapse filters"} onClick={onToggleCollapsed}>{isCollapsed ? "⟫" : "⟪"}</button>
         </div>
       </div>
       {!isOpen ? null : (
@@ -99,7 +91,6 @@ export function FiltersPane(props: FiltersPaneProps) {
           <select value={status} onChange={(event) => onStatusChange(event.target.value)}>
             <option value="all">Main</option>
             <option value="favorite">Favorite</option>
-            <option value="hidden">Hidden</option>
             <option value="unreviewed">Unreviewed</option>
           </select>
 
@@ -136,15 +127,6 @@ export function FiltersPane(props: FiltersPaneProps) {
             max={dateMax || undefined}
             onChange={(event) => onDateToChange(event.target.value)}
           />
-
-          <label>Print Score (12x18) Range</label>
-          <div className="score-block">
-            <div className="range-row">
-              <input type="range" min={0} max={1} step={0.01} value={minScore} onChange={(event) => onMinScoreChange(Number(event.target.value))} />
-              <input type="range" min={0} max={1} step={0.01} value={maxScore} onChange={(event) => onMaxScoreChange(Number(event.target.value))} />
-            </div>
-            <div className="score-val">Range: {minScore.toFixed(2)} to {maxScore.toFixed(2)}</div>
-          </div>
 
           <div className="topics-wrap">
             <label>Topics / categories</label>

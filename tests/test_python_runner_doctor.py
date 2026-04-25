@@ -32,7 +32,9 @@ class EvaluateEnvTests(unittest.TestCase):
 
             old_env = os.environ.copy()
             try:
-                os.environ["PHOTO_CURATOR_DB_DSN"] = "postgresql://user:pass@localhost:5432/photo_curator"
+                os.environ["PHOTO_CURATOR_DB_DSN"] = (
+                    "postgresql://user:pass@localhost:5432/photo_curator"
+                )
                 os.environ["PHOTO_CURATOR_DEFAULT_ROOTS"] = str(photo_root)
                 os.environ["PHOTO_CURATOR_CACHE_DIR"] = str(cache)
                 os.environ["PHOTO_CURATOR_THUMBS_DIR"] = str(thumbs)

@@ -39,7 +39,6 @@ export function DetailPane({
           <div className="chip-row">
             <span className="chip">Aesthetic {formatMetric(detail.metrics.aestheticScore)}</span>
             <span className="chip">Wall Art {formatMetric(detail.metrics.wallArtScore)}</span>
-            <span className="chip">Print 12x18 {formatMetric(detail.metrics.printScore12x18)}</span>
             <span className="chip">Curation {formatMetric(detail.metrics.curationScore)}</span>
             <span className="chip">Sharpness {formatMetric(1 - (detail.metrics.blurScore ?? 0))}</span>
             <span className="chip">Exposure {formatMetric(detail.metrics.brightnessScore)}</span>
@@ -57,11 +56,6 @@ export function DetailPane({
             <button type="button" onClick={() => void onPatchLabels({ favoriteFlag: !(detail.labels.favoriteFlag ?? false) })}>
               {detail.labels.favoriteFlag ? "Unfavorite" : "Favorite"}
             </button>
-            {detail.labels.rejectFlag ? (
-              <button type="button" onClick={() => void onPatchLabels({ rejectFlag: false })}>Show in Main</button>
-            ) : (
-              <button type="button" onClick={() => void onPatchLabels({ rejectFlag: true, keepFlag: false })}>Hide</button>
-            )}
             <a className="action-link" href={`${apiBase}/photos/${detail.id}/image?size=full&downloadName=${encodeURIComponent(detail.filename)}`} target="_blank" rel="noreferrer">Open Full</a>
             <a className="action-link" href={`${apiBase}/photos/${detail.id}/image?size=full&download=1&downloadName=${encodeURIComponent(detail.filename)}`} download={detail.filename}>Download</a>
           </div>

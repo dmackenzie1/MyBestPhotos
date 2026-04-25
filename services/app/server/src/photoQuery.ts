@@ -7,16 +7,13 @@ export const listQuerySchema = z.object({
   cameraMake: z.string().optional(),
   cameraModel: z.string().optional(),
   category: z.string().optional(),
-  minPrintScore12x18: z.coerce.number().optional(),
-  maxPrintScore12x18: z.coerce.number().optional(),
-  status: z.enum(["all", "keep", "favorite", "reject", "hidden", "unreviewed"]).default("all"),
+  status: z.enum(["all", "favorite", "unreviewed"]).default("all"),
   page: z.coerce.number().min(1).default(1),
   pageSize: z.coerce.number().min(1).max(200).default(40),
   sort: z
     .enum([
       "date_desc",
       "date_asc",
-      "print_12x18_desc",
       "curation_desc",
       "aesthetic_desc",
       "keep_desc",
@@ -37,8 +34,6 @@ export const statusSummaryQuerySchema = z.object({
   cameraMake: z.string().optional(),
   cameraModel: z.string().optional(),
   category: z.string().optional(),
-  minPrintScore12x18: z.coerce.number().optional(),
-  maxPrintScore12x18: z.coerce.number().optional(),
 });
 
 export type ListQuery = z.infer<typeof listQuerySchema>;
@@ -56,8 +51,6 @@ type FilterQuery = Pick<
   | "cameraMake"
   | "cameraModel"
   | "category"
-  | "minPrintScore12x18"
-  | "maxPrintScore12x18"
   | "status"
 >;
 
@@ -97,22 +90,9 @@ export function buildPhotoFilters(query: FilterQuery, includeStatus = true): Sql
       ) OR $${params.length} = ANY(coalesce(flm.tags, ARRAY[]::text[])))`,
     );
   }
-  if (typeof query.minPrintScore12x18 === "number") {
-    params.push(query.minPrintScore12x18);
-    where.push(`coalesce(fm.print_score_12x18, 0) >= $${params.length}`);
-  }
-  if (typeof query.maxPrintScore12x18 === "number") {
-    params.push(query.maxPrintScore12x18);
-    where.push(`coalesce(fm.print_score_12x18, 0) <= $${params.length}`);
-  }
-
   if (includeStatus) {
-    if (query.status === "all") where.push("coalesce(fl.reject_flag, false) = false");
-    if (query.status === "keep") where.push("fl.keep_flag = true");
-    if (query.status === "favorite") {
-      where.push("fl.favorite_flag = true AND coalesce(fl.reject_flag, false) = false");
-    }
-    if (query.status === "reject" || query.status === "hidden") where.push("fl.reject_flag = true");
+    if (query.status === "all") where.push("TRUE");
+    if (query.status === "favorite") where.push("fl.favorite_flag = true");
     if (query.status === "unreviewed") where.push("fl.file_id is null");
   }
 
@@ -125,7 +105,6 @@ export function buildPhotoFilters(query: FilterQuery, includeStatus = true): Sql
 const ORDER_BY_SQL: Record<ListQuery["sort"], string> = {
   date_asc: "f.photo_taken_at ASC NULLS LAST",
   date_desc: "f.photo_taken_at DESC NULLS LAST",
-  print_12x18_desc: "fm.print_score_12x18 DESC NULLS LAST",
   curation_desc: "fm.curation_score DESC NULLS LAST",
   aesthetic_desc: "fm.aesthetic_score DESC NULLS LAST",
   keep_desc: "fm.keep_score DESC NULLS LAST",
