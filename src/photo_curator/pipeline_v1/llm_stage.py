@@ -17,9 +17,45 @@ from photo_curator.text_vectorizer import embed_text, vector_literal
 PROMPT_VERSION = "llm_photo_v1"
 EMBEDDING_MODEL = "hash-embed-v1"
 
-_VISION_MODEL_PATTERNS_STR = ("llava", "moondream", "bakllava", "qwen3.5-vl", "qwen2.5-vl", "qwen3-vl", "qwen2-vl", "vision")
+_VISION_MODEL_PATTERNS_STR = (
+    "llava",
+    "moondream",
+    "bakllava",
+    "qwen3.5-vl",
+    "qwen2.5-vl",
+    "qwen3-vl",
+    "qwen2-vl",
+    "vision",
+)
 _LMSTUDIO_MAX_RETRIES = 3
 _LMSTUDIO_RETRY_BASE_SECONDS = 0.75
+_LMSTUDIO_RESPONSE_FORMAT_TYPE = "text"
+
+
+def _chat_completions_endpoint(base_url: str) -> str:
+    trimmed = base_url.rstrip("/")
+    if trimmed.endswith("/v1"):
+        return f"{trimmed}/chat/completions"
+    return f"{trimmed}/v1/chat/completions"
+
+
+def _extract_content_text(content: object) -> str | None:
+    if isinstance(content, str):
+        cleaned = content.strip()
+        return cleaned or None
+    if isinstance(content, list):
+        pieces: list[str] = []
+        for item in content:
+            if not isinstance(item, dict):
+                continue
+            if item.get("type") != "text":
+                continue
+            text_value = item.get("text")
+            if isinstance(text_value, str) and text_value.strip():
+                pieces.append(text_value.strip())
+        if pieces:
+            return "\n".join(pieces)
+    return None
 
 
 def _safe_float(value: object) -> float | None:
@@ -61,7 +97,7 @@ def _call_lmstudio(path: Path, options: DescriptionOptions) -> dict[str, object]
             }
         ],
         "temperature": 0.1,
-        "response_format": {"type": "json_object"},
+        "response_format": {"type": _LMSTUDIO_RESPONSE_FORMAT_TYPE},
     }
     if not is_vision_model(options.lmstudio_model):
         logger.warning(
@@ -72,7 +108,7 @@ def _call_lmstudio(path: Path, options: DescriptionOptions) -> dict[str, object]
             patterns=_VISION_MODEL_PATTERNS_STR,
         )
 
-    endpoint = f"{options.lmstudio_base_url.rstrip('/')}/chat/completions"
+    endpoint = _chat_completions_endpoint(options.lmstudio_base_url)
     req = request.Request(
         endpoint,
         data=json.dumps(payload).encode("utf-8"),
@@ -83,8 +119,8 @@ def _call_lmstudio(path: Path, options: DescriptionOptions) -> dict[str, object]
         try:
             with request.urlopen(req, timeout=options.lmstudio_timeout_seconds) as response:
                 raw = json.loads(response.read().decode("utf-8"))
-            content = raw["choices"][0]["message"]["content"]
-            if not isinstance(content, str):
+            content = _extract_content_text(raw["choices"][0]["message"]["content"])
+            if not content:
                 return None
             parsed = json.loads(content)
             if isinstance(parsed, dict):
@@ -165,6 +201,13 @@ def run_llm_descriptions(
         """
     )
     stats = StageStats()
+    logger.info(
+        "Starting LLM stage: provider=lmstudio endpoint={endpoint} model={model} timeout={timeout}s response_format={response_format}",
+        endpoint=_chat_completions_endpoint(options.lmstudio_base_url),
+        model=options.lmstudio_model,
+        timeout=options.lmstudio_timeout_seconds,
+        response_format=_LMSTUDIO_RESPONSE_FORMAT_TYPE,
+    )
     for file_id, source_root, relative_path in tqdm(rows, desc="LLM descriptions"):
         path = Path(source_root) / str(relative_path)
         if not path.exists():
