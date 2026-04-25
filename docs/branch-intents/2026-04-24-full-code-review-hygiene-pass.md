@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-24-full-code-review-hygiene-pass
 
 ## Quick Summary
-- Branch: `2026-04-24-full-code-review-hygiene-pass`
 - Purpose: Perform a repo-wide hygiene pass focused on dead code removal, naming/readability polish, and low-risk correctness cleanups without changing user-facing behavior.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: full, code, review, hygiene, pass
 ## Intent
 - Perform a repo-wide hygiene pass focused on dead code removal, naming/readability polish, and low-risk correctness cleanups without changing user-facing behavior.
 

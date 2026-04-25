@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-24-full-pass-deferred-advanced-rescore
 
 ## Quick Summary
-- Branch: `2026-04-24-full-pass-deferred-advanced-rescore`
 - Purpose: Let users rerun advanced scoring for every image while keeping currently visible scores untouched until the full scoring pass is done.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: full, pass, deferred, advanced, rescore
 ## Intent
 - Let users rerun advanced scoring for every image while keeping currently visible scores untouched until the full scoring pass is done.
 

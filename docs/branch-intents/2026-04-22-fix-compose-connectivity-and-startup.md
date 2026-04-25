@@ -1,12 +1,8 @@
 # Branch Intent: fix compose connectivity and startup
 
 ## Quick Summary
-- Branch: `fix compose connectivity and startup`
 - Purpose: Restore end-to-end local reachability for NGINX/UI/API by fixing app-server startup and tightening compose dependency readiness.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: fix, compose, connectivity, and, startup
 ## Intent
 - Restore end-to-end local reachability for NGINX/UI/API by fixing app-server startup and tightening compose dependency readiness.
 

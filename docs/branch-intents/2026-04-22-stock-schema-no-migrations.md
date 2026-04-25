@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-22-stock-schema-no-migrations
 
 ## Quick Summary
-- Branch: `2026-04-22-stock-schema-no-migrations`
 - Purpose: Remove migration orchestration and use a single stock schema bootstrap for fresh local environments.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: stock, schema, no, migrations
 ## Intent
 - Remove migration orchestration and use a single stock schema bootstrap for fresh local environments.
 

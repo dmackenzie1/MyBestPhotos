@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-22-fix-uv-entrypoint-spawn
 
 ## Quick Summary
-- Branch: `2026-04-22-fix-uv-entrypoint-spawn`
 - Purpose: Fix Python runner startup failure where `uv run` cannot spawn the `photo-curator` CLI entry point.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: fix, uv, entrypoint, spawn
 ## Intent
 - Fix Python runner startup failure where `uv run` cannot spawn the `photo-curator` CLI entry point.
 

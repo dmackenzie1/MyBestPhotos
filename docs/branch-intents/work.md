@@ -1,10 +1,8 @@
 # Branch Intent: work
 
 ## Quick Summary
-- Branch: `work`
 - Purpose: Refresh documentation for branch-intent governance so tiny typo edits can skip intents while substantive work keeps one consolidated branch intent per branch.
-- Scan first: Use this branch when adjusting documentation/process rules for branch-intent usage.
-
+- Keywords: docs, process, branch-intents
 ## Intent
 - Align docs with a practical branch-intent policy: summary-first scanning, one file per branch, and typo/one-line exemptions.
 
@@ -202,6 +200,48 @@
   - User-provided python-runner logs for `photo_curator.pipeline_v1.llm_stage:_call_lmstudio`.
 - Frequency or reproducibility notes:
   - Repeats for each photo with retries (attempts 1-3).
+## Update: 2026-04-25 random browse sort option
+
+## Quick Summary
+- Branch: `work`
+- Purpose: Add a user-facing random sort option in browse/timeline and wire backend query handling.
+- Scan first: Use this update when sort dropdown requests include “random”.
+
+## Intent
+- Add a straightforward `random` sort mode without changing existing default sort behavior.
+
+## Scope
+- In scope:
+  - Add `random` in client sort dropdowns.
+  - Accept `random` in server query validation and SQL order mapping.
+- Out of scope:
+  - Reworking pagination semantics for randomized ordering.
+  - Changing default sort choice.
+
+## Prior intent review (mandatory)
+- Related branch-intent docs reviewed:
+  - `docs/branch-intents/2026-04-24-remove-filename-sort-option.md`
+  - `docs/branch-intents/2026-04-24-ui-browse-pane-iteration.md`
+- Relevant lessons pulled forward:
+  - Keep the patch focused to sort-option surfaces and avoid unrelated UI/server refactors.
+- Rabbit holes to avoid this time:
+  - No broad query/pagination redesign.
+
+## Architecture decisions
+- Decision:
+  - Implement `random` as `ORDER BY RANDOM()` in the server order-by map and expose it in both sort selectors.
+- Why:
+  - Minimal, direct implementation that matches the request (“just do random on there”).
+- Tradeoff:
+  - Randomized ordering can reshuffle between pages/requests, so pagination order is non-deterministic by design.
+
+## Error log (mandatory)
+- Exact error message(s):
+  - None encountered.
+- Where seen (command/log/file):
+  - N/A.
+- Frequency or reproducibility notes:
+  - N/A.
 
 ## Attempts made (mandatory)
 - Attempt 1:
@@ -244,3 +284,29 @@
   - If needed, add optional `json_schema` mode behind a config flag for stricter server-side structure.
 - What to try next if unresolved:
   - Capture one raw LM Studio response body in debug logs when parse fails to detect model-side non-JSON output patterns.
+    - Added `random` to client `SORT_OPTIONS` in browse grid and timeline views.
+  - Why this was tried:
+    - Ensures users can select random in all existing UI sort controls.
+  - Result:
+    - UI now presents Random sort.
+- Attempt 2:
+  - Change made:
+    - Added `random` to `listQuerySchema.sort` enum and `ORDER_BY_SQL` map.
+  - Why this was tried:
+    - Allows API requests with `sort=random` to validate and execute.
+  - Result:
+    - Backend supports random ordering.
+
+## What went right (mandatory)
+- Change remained low-drama and localized to sort option definitions + order map.
+
+## What went wrong (mandatory)
+- No issues encountered in this pass.
+
+## Validation (mandatory)
+- Commands run:
+  - `npm run -w services/app/client build`
+  - `npm run -w services/app/server build`
+- Observed results:
+  - Client build failed in this environment due to missing `react-router-dom` type/module resolution in `services/app/client`.
+  - Server build completed successfully.

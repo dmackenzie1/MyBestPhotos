@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-22-audit-ingest-browse-search-scoring
 
 ## Quick Summary
-- Branch: `2026-04-22-audit-ingest-browse-search-scoring`
 - Purpose: Audit ingest, browse, search, filters, placeholders, and scoring implementation; close remaining gaps with low-risk fixes.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: audit, ingest, browse, search, scoring
 ## Intent
 - Audit ingest, browse, search, filters, placeholders, and scoring implementation; close remaining gaps with low-risk fixes.
 

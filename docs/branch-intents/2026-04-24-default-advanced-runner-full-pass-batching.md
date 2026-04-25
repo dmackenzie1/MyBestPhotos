@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-24-default-advanced-runner-full-pass-batching
 
 ## Quick Summary
-- Branch: `2026-04-24-default-advanced-runner-full-pass-batching`
 - Purpose: Make `python-advanced-runner` perform a full advanced-score pass by default in Docker Compose, with clear batching progress and reduced unnecessary external API calls.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: default, advanced, runner, full, pass, batching
 ## Intent
 - Make `python-advanced-runner` perform a full advanced-score pass by default in Docker Compose, with clear batching progress and reduced unnecessary external API calls.
 

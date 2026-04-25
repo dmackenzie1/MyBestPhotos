@@ -1,12 +1,8 @@
 # Branch Intent: 2026-04-22-postgres-debug-cli-access
 
 ## Quick Summary
-- Branch: `2026-04-22-postgres-debug-cli-access`
 - Purpose: Support temporary debugging workflows by making Postgres host CLI access explicit and documenting exactly how AI agents/operators should inspect data.
-- Scan first: Use this branch when you are working on the same feature area or error pattern.
-
-
-
+- Keywords: postgres, debug, cli, access
 ## Intent
 - Support temporary debugging workflows by making Postgres host CLI access explicit and documenting exactly how AI agents/operators should inspect data.
 
