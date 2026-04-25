@@ -97,8 +97,8 @@ Files in `reports/run_*_*.json` contain full score distributions for each run. C
 | `entropy_score` | 0-1 (higher = more complex histogram) | Information content / histogram complexity |
 | `noise_score` | 0-1 (higher = less noise) | Noise proxy from Gaussian blur difference |
 | `technical_quality_score` | 0-1 | Weighted combination of above technical metrics |
-| `nima_score` | 0-1 | Heuristic aesthetic score (nima_style_v0) |
-| `aesthetic_score` | 0-1 | Derived from nima_score + blur resistance |
+| `nima_score` | 0-1 | CLIP-based aesthetic signal (legacy column name) |
+| `aesthetic_score` | 0-1 | Derived from CLIP-based `nima_score` + blur resistance |
 | `keep_score` | 0-1 | Combined technical quality + aesthetics for ranking |
 | `curation_score` | 0-1 | Final rank helper: 70% technical + 30% semantic relevance |
 | `semantic_relevance_score` | 0-1 | Description richness + category bonus |
@@ -114,7 +114,7 @@ This typically means the normalization bounds in `_safe_norm()` are too wide for
 The advanced runner only processes files missing these scores. If you see many NULLs after a run:
 1. Check `docker compose logs python-advanced-runner` for errors
 2. Verify `/photos/library` is mounted correctly in the container
-3. Run `score-nima --refresh-all` to force re-scoring
+3. Run `score-clip-aesthetic --force-rescore-all` to force re-scoring
 
 ### Low semantic_relevance_score across all files:
 

@@ -35,7 +35,7 @@ class StageStats:
 
 @dataclass
 class AdvancedRunnerStats:
-    nima_processed: int = 0
+    clip_processed: int = 0
     described_processed: int = 0
 
 

@@ -21,6 +21,8 @@ import torchvision.models as models
 import torchvision.transforms as transforms
 from PIL import Image
 
+from photo_curator.pipeline_v1.scoring import compute_clip_aesthetic
+
 try:
     import cv2  # noqa: F401
 except ImportError:
@@ -242,7 +244,7 @@ def get_model(weights_path: Optional[Path] = None) -> object:
 def heuristic_score(image_np: np.ndarray) -> tuple[float, float]:
     """Heuristic aesthetic score when NIMA weights are unavailable.
 
-    Uses the same formula as scoring_math._compute_nima_style_score but takes a raw image
+    Uses the shared CLIP-aesthetic scoring math but takes a raw image
     and returns (mean_normalized_to_0_1, std) matching assess_quality's output signature.
 
     This is a drop-in replacement for assess_quality() — same function signature, same return type.
@@ -259,9 +261,6 @@ def heuristic_score(image_np: np.ndarray) -> tuple[float, float]:
     laplacian = cv2.Laplacian(gray, cv2.CV_64F)
     blur_score = float(laplacian.var()) / (width * height + 1e-6)
 
-    # Brightness score: mean intensity normalized to [0, 1]
-    brightness_score = float(gray.mean()) / 255.0
-
     # Contrast score: std of intensity normalized to [0, 1]
     contrast_score = float(gray.std()) / 255.0
 
@@ -271,7 +270,9 @@ def heuristic_score(image_np: np.ndarray) -> tuple[float, float]:
     entropy_score = float(-np.sum(hist * np.log2(hist + 1e-6))) / 8.0
 
     # Technical quality: weighted combination of blur, contrast, brightness
-    technical_quality_score = max(0.0, min(1.0, (1.0 - blur_score) * 0.4 + contrast_score * 0.3 + entropy_score * 0.3))
+    technical_quality_score = max(
+        0.0, min(1.0, (1.0 - blur_score) * 0.4 + contrast_score * 0.3 + entropy_score * 0.3)
+    )
 
     # Composition balance via gradient-based saliency centering
     grad_x = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
@@ -291,9 +292,12 @@ def heuristic_score(image_np: np.ndarray) -> tuple[float, float]:
     max_distance = float(np.hypot(width, height))
     composition_balance_score = max(0.0, min(1.0, 1.0 - (min_distance / (max_distance + 1e-6))))
 
-    # Same formula as scoring_math._compute_nima_style_score
-    nima_base = (0.35 * technical_quality_score) + (0.20 * contrast_score) + (0.15 * brightness_score) + (0.15 * entropy_score) + (0.15 * composition_balance_score)
-    nima_spread = max(0.0, min(1.0, nima_base ** 0.7))
+    nima_spread, _aesthetic_spread, _keep_spread = compute_clip_aesthetic(
+        technical_quality_score,
+        composition_balance_score,
+        blur_score,
+        technical_quality_score,
+    )
 
     # Return mean and std matching NIMA output format
     return (nima_spread, 0.1 + (1.0 - nima_spread) * 0.05)
@@ -379,9 +383,8 @@ def assess_quality_batch(images: list[np.ndarray]) -> list[tuple[float, float]]:
 
         indices = torch.arange(1, 11, dtype=distributions.dtype, device=distributions.device)
         means = torch.sum(indices * dists.T, dim=1) / 10.0  # normalize to [0, 1]
-        stds = torch.sqrt(
-            torch.sum(dists * (indices.unsqueeze(0) - indices.unsqueeze(0)) ** 2, dim=1)
-        )
+        centered = indices.unsqueeze(0) - (means * 10.0).unsqueeze(1)
+        stds = torch.sqrt(torch.sum(dists * centered**2, dim=1))
 
         for j in range(len(batch_images)):
             results.append((float(means[j].cpu().numpy()), float(stds[j].cpu().numpy())))

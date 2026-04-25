@@ -5,22 +5,31 @@ import { FiltersPane } from "./ui/components/FiltersPane";
 import { PhotoGrid } from "./ui/components/PhotoGrid";
 import { TimelineView } from "./ui/components/TimelineView";
 import { TopBar } from "./ui/components/TopBar";
+import { APP_ROUTE_CONFIG, APP_ROUTES } from "./routes";
 import { getJson } from "./ui/lib/api";
 import { FALLBACK_DETAIL, FALLBACK_ITEMS } from "./ui/lib/fallbackData";
 import { getSelectedTags, reconcileSelection } from "./ui/lib/utils";
 import type { FacetsResponse, PhotoListResponse, StatusSummaryResponse, ViewMode } from "./ui/types";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api/v1";
 
 export default function App() {
-  const [viewMode, setViewMode] = useState<ViewMode>("browse");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const viewMode: ViewMode = location.pathname === APP_ROUTES.timeline ? "timeline" : "browse";
+
+  useEffect(() => {
+    const isKnownRoute = APP_ROUTE_CONFIG.some((route) => route.path === location.pathname);
+    if (!isKnownRoute) {
+      navigate(APP_ROUTES.browse, { replace: true });
+    }
+  }, [location.pathname, navigate]);
   const [items, setItems] = useState<PhotoListItem[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [detail, setDetail] = useState<PhotoDetail | null>(null);
 
   const [search, setSearch] = useState("");
-  const [minScore, setMinScore] = useState(0.6);
-  const [maxScore, setMaxScore] = useState(1);
   const [status, setStatus] = useState("all");
   const [cameraMake, setCameraMake] = useState("");
   const [cameraModel, setCameraModel] = useState("");
@@ -34,7 +43,11 @@ export default function App() {
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [statusSummary, setStatusSummary] = useState<StatusSummaryResponse>({ all: 0, favorite: 0, hidden: 0, unreviewed: 0 });
+  const [statusSummary, setStatusSummary] = useState<StatusSummaryResponse>({
+    all: 0,
+    favorite: 0,
+    unreviewed: 0,
+  });
 
   const [facets, setFacets] = useState<FacetsResponse>({ camera: [], categories: [], dateBounds: { min: null, max: null } });
   const [stubActive, setStubActive] = useState(false);
@@ -55,14 +68,12 @@ export default function App() {
     if (category) params.set("category", category);
     if (dateFrom) params.set("dateFrom", `${dateFrom}T00:00:00.000Z`);
     if (dateTo) params.set("dateTo", `${dateTo}T23:59:59.999Z`);
-    params.set("minPrintScore12x18", String(minScore));
-    params.set("maxPrintScore12x18", String(maxScore));
     params.set("status", status);
     params.set("page", String(page));
     params.set("pageSize", String(pageSize));
     params.set("sort", sort);
     return params.toString();
-  }, [search, cameraMake, cameraModel, category, dateFrom, dateTo, minScore, maxScore, status, page, sort]);
+  }, [search, cameraMake, cameraModel, category, dateFrom, dateTo, status, page, sort]);
 
   const summaryQueryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -72,15 +83,13 @@ export default function App() {
     if (category) params.set("category", category);
     if (dateFrom) params.set("dateFrom", `${dateFrom}T00:00:00.000Z`);
     if (dateTo) params.set("dateTo", `${dateTo}T23:59:59.999Z`);
-    params.set("minPrintScore12x18", String(minScore));
-    params.set("maxPrintScore12x18", String(maxScore));
     return params.toString();
-  }, [search, cameraMake, cameraModel, category, dateFrom, dateTo, minScore, maxScore]);
+  }, [search, cameraMake, cameraModel, category, dateFrom, dateTo]);
 
 
   useEffect(() => {
     setPage(1);
-  }, [search, cameraMake, cameraModel, category, dateFrom, dateTo, minScore, maxScore, status, sort]);
+  }, [search, cameraMake, cameraModel, category, dateFrom, dateTo, status, sort]);
 
   useEffect(() => {
     if (stubActive) return;
@@ -190,18 +199,13 @@ export default function App() {
         .map((item) => (item.id === photoId
           ? {
               ...item,
-              keepFlag: payload.keepFlag === undefined ? item.keepFlag : payload.keepFlag,
-              rejectFlag: payload.rejectFlag === undefined ? item.rejectFlag : payload.rejectFlag,
               favoriteFlag: payload.favoriteFlag === undefined ? item.favoriteFlag : payload.favoriteFlag,
             }
           : item))
         .filter((item) => {
-          if (status === "all") return item.rejectFlag !== true;
-          if (status === "favorite") return item.favoriteFlag === true && item.rejectFlag !== true;
-          if (status === "hidden") return item.rejectFlag === true;
-          if (status === "unreviewed") {
-            return item.rejectFlag !== true && item.favoriteFlag !== true && item.keepFlag !== true;
-          }
+          if (status === "all") return true;
+          if (status === "favorite") return item.favoriteFlag === true;
+          if (status === "unreviewed") return item.favoriteFlag !== true;
           return true;
         });
 
@@ -255,10 +259,9 @@ export default function App() {
   useEffect(() => {
     if (stubActive) {
       const fallbackSummary = {
-        all: FALLBACK_ITEMS.filter((item) => item.rejectFlag !== true).length,
-        favorite: FALLBACK_ITEMS.filter((item) => item.favoriteFlag === true && item.rejectFlag !== true).length,
-        hidden: FALLBACK_ITEMS.filter((item) => item.rejectFlag === true).length,
-        unreviewed: FALLBACK_ITEMS.filter((item) => !item.keepFlag && !item.favoriteFlag && !item.rejectFlag).length,
+        all: FALLBACK_ITEMS.length,
+        favorite: FALLBACK_ITEMS.filter((item) => item.favoriteFlag === true).length,
+        unreviewed: FALLBACK_ITEMS.filter((item) => !item.favoriteFlag).length,
       };
       setStatusSummary(fallbackSummary);
       return;
@@ -267,7 +270,7 @@ export default function App() {
     void getJson<StatusSummaryResponse>(`${API_BASE}/photos/status-summary?${summaryQueryString}`)
       .then((response) => setStatusSummary(response))
       .catch(() => {
-        const fallbackSummary = { all: 0, favorite: 0, hidden: 0, unreviewed: 0 };
+        const fallbackSummary = { all: 0, favorite: 0, unreviewed: 0 };
         setStatusSummary(fallbackSummary);
       });
   }, [summaryQueryString, stubActive]);
@@ -297,13 +300,12 @@ export default function App() {
     setCameraModel("");
     setDateFrom(dateBounds.min);
     setDateTo(dateBounds.max);
-    setMinScore(0.6);
-    setMaxScore(1);
   }
 
   return (
     <div className="shell">
-      <TopBar viewMode={viewMode} search={search} onSearchChange={setSearch} onViewModeChange={setViewMode} />
+      <a className="skip-link" href="#main-content">Skip to content</a>
+      <TopBar viewMode={viewMode} search={search} onSearchChange={setSearch} />
       {stubActive && <div className="banner">Stub mode active: API unavailable, showing sample data.</div>}
 
       {viewMode === "timeline" && (
@@ -319,8 +321,6 @@ export default function App() {
             dateTo={dateTo}
             dateMin={dateBounds.min}
             dateMax={dateBounds.max}
-            minScore={minScore}
-            maxScore={maxScore}
             facets={facets}
             cameraMakeOptions={cameraMakeOptions}
             cameraModelOptions={cameraModelOptions}
@@ -334,14 +334,6 @@ export default function App() {
             onCameraModelChange={setCameraModel}
             onDateFromChange={(value) => setDateFrom(value)}
             onDateToChange={(value) => setDateTo(value)}
-            onMinScoreChange={(value) => {
-              if (!Number.isFinite(value)) return;
-              setMinScore(Math.min(maxScore, Math.max(0, value)));
-            }}
-            onMaxScoreChange={(value) => {
-              if (!Number.isFinite(value)) return;
-              setMaxScore(Math.max(minScore, Math.min(1, value)));
-            }}
             onIconScaleChange={setIconScale}
             onReset={resetFilters}
             onToggleCollapsed={() => setFiltersCollapsed((previous) => !previous)}
@@ -361,7 +353,7 @@ export default function App() {
             onSelectPhoto={setSelectedId}
             onSortChange={setSort}
             onLoadMore={() => setPage((previous) => previous + 1)}
-            onJumpToBrowse={() => setViewMode("browse")}
+            onJumpToBrowse={() => navigate(APP_ROUTES.browse)}
           />
 
           <DetailPane
@@ -389,8 +381,6 @@ export default function App() {
             dateTo={dateTo}
             dateMin={dateBounds.min}
             dateMax={dateBounds.max}
-            minScore={minScore}
-            maxScore={maxScore}
             facets={facets}
             cameraMakeOptions={cameraMakeOptions}
             cameraModelOptions={cameraModelOptions}
@@ -404,14 +394,6 @@ export default function App() {
             onCameraModelChange={setCameraModel}
             onDateFromChange={(value) => setDateFrom(value)}
             onDateToChange={(value) => setDateTo(value)}
-            onMinScoreChange={(value) => {
-              if (!Number.isFinite(value)) return;
-              setMinScore(Math.min(maxScore, Math.max(0, value)));
-            }}
-            onMaxScoreChange={(value) => {
-              if (!Number.isFinite(value)) return;
-              setMaxScore(Math.max(minScore, Math.min(1, value)));
-            }}
             onIconScaleChange={setIconScale}
             onReset={resetFilters}
             onToggleCollapsed={() => setFiltersCollapsed((previous) => !previous)}

@@ -16,6 +16,25 @@ from photo_curator.db import Database
 from photo_curator.pipeline_run import _compute_distribution
 
 
+def _require_legacy_tables(db: Database) -> None:
+    required_tables = {"photos", "metrics"}
+    rows = db.fetchall(
+        """
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = ANY(%s)
+        """,
+        (list(required_tables),),
+    )
+    existing = {str(row[0]) for row in rows}
+    missing = sorted(required_tables - existing)
+    if missing:
+        raise RuntimeError(
+            "Legacy aesthetic scorer requires legacy tables that are not present: "
+            f"{', '.join(missing)}. Use score_file_aesthetic/pipeline_v1 instead."
+        )
+
+
 # Default to the best available CLIP model for aesthetics.
 # ViT-H-14 (632M params) with LAION-Aesthetic v2 weights provides
 # significantly better discrimination than ViT-B-32 text-prompt scoring.
@@ -153,7 +172,9 @@ def _resolve_clip(model_name: str, device: str) -> ClipAestheticScorer:
     )
 
 
-def load_clip_aesthetic_scorer(model_name: str | None = None, device: str = "auto") -> ClipAestheticScorer:
+def load_clip_aesthetic_scorer(
+    model_name: str | None = None, device: str = "auto"
+) -> ClipAestheticScorer:
     """Load a CLIP aesthetic scorer, defaulting to ViT-H-14 with LAION-Aesthetic v2 weights."""
     if model_name is None:
         model_name = DEFAULT_CLIP_MODEL
@@ -167,6 +188,7 @@ def score_aesthetic(
     device: str,
 ) -> AestheticStats:
     """Legacy photos/metrics scoring entrypoint; kept for backwards compatibility."""
+    _require_legacy_tables(db)
     if weights_path:
         logger.info(
             "Ignoring explicit weights_path for aesthetics; open_clip auto-download is used."

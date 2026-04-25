@@ -18,6 +18,25 @@ from photo_curator.db import Database
 from photo_curator.utils.hashing import sha256_file
 
 
+def _require_legacy_tables(db: Database) -> None:
+    required_tables = {"photos", "embeddings"}
+    rows = db.fetchall(
+        """
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = ANY(%s)
+        """,
+        (list(required_tables),),
+    )
+    existing = {str(row[0]) for row in rows}
+    missing = sorted(required_tables - existing)
+    if missing:
+        raise RuntimeError(
+            "Legacy embedding pipeline requires legacy tables that are not present: "
+            f"{', '.join(missing)}. Use the v1 pipeline instead."
+        )
+
+
 @dataclass
 class EmbeddingStats:
     processed: int = 0
@@ -52,6 +71,7 @@ def embed(
     device: str,
     force: bool = False,
 ) -> EmbeddingStats:
+    _require_legacy_tables(db)
     photos = db.fetchall(
         """
         SELECT id, path FROM photos

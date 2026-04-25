@@ -16,6 +16,20 @@ button, input, select, textarea { font: inherit; }
 
 .shell { min-height: 100vh; }
 .banner { background: rgba(47, 126, 247, 0.2); border-bottom: 1px solid #2f7ef7; padding: 4px 8px; font-size: 12px; }
+.skip-link {
+  position: absolute;
+  left: 10px;
+  top: -40px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #123568;
+  color: #e5f0ff;
+  z-index: 999;
+  text-decoration: none;
+}
+.skip-link:focus-visible {
+  top: 10px;
+}
 
 .layout { display: grid; grid-template-columns: 280px minmax(0, 1fr) 390px; gap: 6px; padding: 6px; }
 .timeline-layout { grid-template-columns: 280px minmax(0, 1fr) 390px; }

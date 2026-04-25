@@ -28,15 +28,10 @@ const mockList: PhotoListItem[] = [
     photoTakenAt: "2020-07-14T17:52:00.000Z",
     cameraMake: "Canon",
     cameraModel: "EOS R6",
-    printScore12x18: 0.92,
-    printScore8x10: 0.94,
-    printScore6x8: 0.96,
     curationScore: 0.93,
     aestheticScore: 0.87,
     wallArtScore: 88,
     descriptionText: "Young girl smiling and hugging a golden retriever outdoors.",
-    keepFlag: true,
-    rejectFlag: false,
     favoriteFlag: true,
   },
   {
@@ -47,15 +42,10 @@ const mockList: PhotoListItem[] = [
     photoTakenAt: "2019-09-21T10:45:00.000Z",
     cameraMake: "Canon",
     cameraModel: "EOS R6",
-    printScore12x18: 0.86,
-    printScore8x10: 0.88,
-    printScore6x8: 0.9,
     curationScore: 0.87,
     aestheticScore: 0.82,
     wallArtScore: 79,
     descriptionText: "Family portrait in warm evening light in a backyard.",
-    keepFlag: null,
-    rejectFlag: null,
     favoriteFlag: null,
   },
 ];
@@ -90,29 +80,16 @@ const mockDetail = (id: number): PhotoDetail => {
       curationScore: selected.curationScore,
       aestheticScore: selected.aestheticScore,
       wallArtScore: selected.wallArtScore,
-      printScore6x8: selected.printScore6x8,
-      printScore8x10: selected.printScore8x10,
-      printScore12x18: selected.printScore12x18,
     },
     labels: {
-      keepFlag: selected.keepFlag,
-      rejectFlag: selected.rejectFlag,
       favoriteFlag: selected.favoriteFlag,
-      printCandidate6x8: true,
-      printCandidate8x10: true,
-      printCandidate12x18: true,
       notes: "Stub mode: add real note support after DB run.",
     },
   };
 };
 
 const labelPatchSchema = z.object({
-  keepFlag: z.boolean().nullable().optional(),
-  rejectFlag: z.boolean().nullable().optional(),
   favoriteFlag: z.boolean().nullable().optional(),
-  printCandidate6x8: z.boolean().nullable().optional(),
-  printCandidate8x10: z.boolean().nullable().optional(),
-  printCandidate12x18: z.boolean().nullable().optional(),
   notes: z.string().nullable().optional(),
 });
 
@@ -124,15 +101,10 @@ type PhotoListRow = {
   photo_taken_at: string | Date | null;
   camera_make: string | null;
   camera_model: string | null;
-  print_score_12x18: number | null;
-  print_score_8x10: number | null;
-  print_score_6x8: number | null;
   curation_score: number | null;
   aesthetic_score: number | null;
   description_text: string | null;
   wall_art_score: number | null;
-  keep_flag: boolean | null;
-  reject_flag: boolean | null;
   favorite_flag: boolean | null;
 };
 
@@ -163,10 +135,10 @@ app.get("/api/v1/health", async (_req, res) => {
         started_at: r.started_at?.toString(),
         completed_at: r.completed_at?.toString(),
         status: r.status,
-        nima_model_version: r.nima_model_version,
+        clip_aesthetic_model_version: r.nima_model_version,
         total_files_ingested: Number(r.total_files_ingested),
         total_metrics_scored: Number(r.total_metrics_scored),
-        total_nima_scored: Number(r.total_nima_scored),
+        total_clip_aesthetic_scored: Number(r.total_nima_scored),
         notes: r.notes,
       };
     }
@@ -178,7 +150,7 @@ app.get("/api/v1/health", async (_req, res) => {
   try {
     const countRows = await pool.query(
       `SELECT COUNT(*)::int AS total_files,
-              (SELECT COUNT(*) FROM file_metrics WHERE nima_score IS NOT NULL)::int AS scored_nima,
+              (SELECT COUNT(*) FROM file_metrics WHERE nima_score IS NOT NULL)::int AS scored_clip_aesthetic,
               (SELECT COUNT(*) FROM file_descriptions)::int AS described,
               (SELECT COUNT(*) FROM file_llm_results)::int AS llm_described
        FROM files`
@@ -187,7 +159,7 @@ app.get("/api/v1/health", async (_req, res) => {
       const s = countRows.rows[0];
       fileStats = {
         total_files: Number(s.total_files),
-        scored_nima: Number(s.scored_nima),
+        scored_clip_aesthetic: Number(s.scored_clip_aesthetic),
         described: Number(s.described),
         llm_described: Number(s.llm_described),
       };
@@ -209,10 +181,9 @@ app.get("/api/v1/health", async (_req, res) => {
 app.get("/api/v1/photos/status-summary", async (req, res) => {
   if (STUB_MODE) {
     res.json({
-      all: mockList.filter((item) => item.rejectFlag !== true).length,
-      favorite: mockList.filter((item) => item.favoriteFlag === true && item.rejectFlag !== true).length,
-      hidden: mockList.filter((item) => item.rejectFlag === true).length,
-      unreviewed: mockList.filter((item) => !item.keepFlag && !item.favoriteFlag && !item.rejectFlag).length,
+      all: mockList.length,
+      favorite: mockList.filter((item) => item.favoriteFlag === true).length,
+      unreviewed: mockList.filter((item) => !item.favoriteFlag).length,
     });
     return;
   }
@@ -226,9 +197,8 @@ app.get("/api/v1/photos/status-summary", async (req, res) => {
   const { whereSql, params } = buildPhotoFilters({ ...parsed.data, status: "all" }, false);
   const summarySql = `
     SELECT
-      COUNT(*) FILTER (WHERE coalesce(fl.reject_flag, false) = false)::int AS all_count,
-      COUNT(*) FILTER (WHERE fl.favorite_flag = true AND coalesce(fl.reject_flag, false) = false)::int AS favorite_count,
-      COUNT(*) FILTER (WHERE fl.reject_flag = true)::int AS hidden_count,
+      COUNT(*)::int AS all_count,
+      COUNT(*) FILTER (WHERE fl.favorite_flag = true)::int AS favorite_count,
       COUNT(*) FILTER (WHERE fl.file_id IS NULL)::int AS unreviewed_count
     FROM files f
     LEFT JOIN file_metrics fm ON fm.file_id = f.id
@@ -243,7 +213,6 @@ app.get("/api/v1/photos/status-summary", async (req, res) => {
   res.json({
     all: Number(row.all_count ?? 0),
     favorite: Number(row.favorite_count ?? 0),
-    hidden: Number(row.hidden_count ?? 0),
     unreviewed: Number(row.unreviewed_count ?? 0),
   });
 });
@@ -291,15 +260,10 @@ app.get("/api/v1/photos", async (req, res) => {
       f.photo_taken_at,
       f.camera_make,
       f.camera_model,
-      fm.print_score_12x18,
-      fm.print_score_8x10,
-      fm.print_score_6x8,
       fm.curation_score,
       coalesce(flm.aesthetic_score, fm.aesthetic_score) AS aesthetic_score,
       coalesce(flm.description_text, fd.description_text) AS description_text,
       flm.wall_art_score,
-      fl.keep_flag,
-      fl.reject_flag,
       fl.favorite_flag
       ${rankSelect}
     FROM files f
@@ -334,15 +298,10 @@ app.get("/api/v1/photos", async (req, res) => {
     photoTakenAt: row.photo_taken_at ? new Date(row.photo_taken_at).toISOString() : null,
     cameraMake: row.camera_make,
     cameraModel: row.camera_model,
-    printScore12x18: row.print_score_12x18,
-    printScore8x10: row.print_score_8x10,
-    printScore6x8: row.print_score_6x8,
     curationScore: row.curation_score,
     aestheticScore: row.aesthetic_score,
     descriptionText: row.description_text,
     wallArtScore: row.wall_art_score,
-    keepFlag: row.keep_flag,
-    rejectFlag: row.reject_flag,
     favoriteFlag: row.favorite_flag,
   }));
 
@@ -378,9 +337,7 @@ app.get("/api/v1/photos/:id", async (req, res) => {
         fm.technical_quality_score, fm.semantic_relevance_score, fm.curation_score,
         coalesce(flm.aesthetic_score, fm.aesthetic_score) AS aesthetic_score,
         flm.wall_art_score,
-        fm.print_score_6x8, fm.print_score_8x10, fm.print_score_12x18,
-        fl.keep_flag, fl.reject_flag, fl.favorite_flag,
-        fl.print_candidate_6x8, fl.print_candidate_8x10, fl.print_candidate_12x18,
+        fl.favorite_flag,
         fl.notes
       FROM files f
       LEFT JOIN file_descriptions fd ON fd.file_id = f.id
@@ -423,17 +380,9 @@ app.get("/api/v1/photos/:id", async (req, res) => {
       curationScore: row.curation_score,
       aestheticScore: row.aesthetic_score,
       wallArtScore: row.wall_art_score,
-      printScore6x8: row.print_score_6x8,
-      printScore8x10: row.print_score_8x10,
-      printScore12x18: row.print_score_12x18,
     },
     labels: {
-      keepFlag: row.keep_flag,
-      rejectFlag: row.reject_flag,
       favoriteFlag: row.favorite_flag,
-      printCandidate6x8: row.print_candidate_6x8,
-      printCandidate8x10: row.print_candidate_8x10,
-      printCandidate12x18: row.print_candidate_12x18,
       notes: row.notes,
     },
   };
@@ -464,28 +413,16 @@ app.patch("/api/v1/photos/:id/labels", async (req, res) => {
   await pool.query(
     `
       INSERT INTO file_labels (
-        file_id, keep_flag, reject_flag, favorite_flag,
-        print_candidate_6x8, print_candidate_8x10, print_candidate_12x18,
-        notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        file_id, favorite_flag, notes
+      ) VALUES ($1, $2, $3)
       ON CONFLICT (file_id) DO UPDATE SET
-        keep_flag = COALESCE(EXCLUDED.keep_flag, file_labels.keep_flag),
-        reject_flag = COALESCE(EXCLUDED.reject_flag, file_labels.reject_flag),
         favorite_flag = COALESCE(EXCLUDED.favorite_flag, file_labels.favorite_flag),
-        print_candidate_6x8 = COALESCE(EXCLUDED.print_candidate_6x8, file_labels.print_candidate_6x8),
-        print_candidate_8x10 = COALESCE(EXCLUDED.print_candidate_8x10, file_labels.print_candidate_8x10),
-        print_candidate_12x18 = COALESCE(EXCLUDED.print_candidate_12x18, file_labels.print_candidate_12x18),
         notes = COALESCE(EXCLUDED.notes, file_labels.notes),
         updated_at = now()
     `,
     [
       id,
-      body.keepFlag ?? null,
-      body.rejectFlag ?? null,
       body.favoriteFlag ?? null,
-      body.printCandidate6x8 ?? null,
-      body.printCandidate8x10 ?? null,
-      body.printCandidate12x18 ?? null,
       body.notes ?? null,
     ],
   );
@@ -545,7 +482,7 @@ app.get("/api/v1/facets", async (_req, res) => {
     res.json({
       camera: [{ camera_make: "Canon", camera_model: "EOS R6", count: 2 }],
       categories: [{ category: "people", count: 2 }],
-      statuses: { keep: 1, favorite: 1, reject: 0, unreviewed: 1 },
+      statuses: { favorite: 1, unreviewed: 1 },
       dateBounds: { min: "2024-06-10", max: "2024-06-11" },
     });
     return;
@@ -558,9 +495,7 @@ app.get("/api/v1/facets", async (_req, res) => {
     pool.query(
       `
       SELECT
-        count(*) FILTER (WHERE fl.keep_flag = true)::int AS keep,
         count(*) FILTER (WHERE fl.favorite_flag = true)::int AS favorite,
-        count(*) FILTER (WHERE fl.reject_flag = true)::int AS reject,
         count(*) FILTER (WHERE fl.file_id IS NULL)::int AS unreviewed
       FROM files f
       LEFT JOIN file_labels fl ON fl.file_id = f.id
@@ -605,6 +540,35 @@ app.get("/api/v1/facets", async (_req, res) => {
 });
 
 const port = Number(process.env.PORT || 3001);
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`API listening on ${port} (stub mode: ${STUB_MODE})`);
+});
+
+let shuttingDown = false;
+async function shutdown(signal: NodeJS.Signals) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`Received ${signal}; shutting down API server...`);
+
+  server.close(async () => {
+    try {
+      await pool.end();
+    } catch (error) {
+      console.error("Failed to close postgres pool during shutdown", error);
+    } finally {
+      process.exit(0);
+    }
+  });
+
+  setTimeout(() => {
+    console.error("Graceful shutdown timed out; forcing exit.");
+    process.exit(1);
+  }, 10_000).unref();
+}
+
+process.on("SIGINT", () => {
+  void shutdown("SIGINT");
+});
+process.on("SIGTERM", () => {
+  void shutdown("SIGTERM");
 });

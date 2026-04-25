@@ -139,7 +139,7 @@ uv run --project . photo-curator advanced-runner
 uv run --project . photo-curator llm-runner
 
 # standalone NIMA backfill
-uv run --project . photo-curator score-nima --batch-size 200
+uv run --project . photo-curator score-clip-aesthetic --batch-size 200
 
 # full rescore of every image, but keep old scores visible until the pass completes
 uv run --project . photo-curator advanced-runner \
@@ -266,7 +266,8 @@ If LM Studio is unavailable, the runner logs a warning and falls back per-image 
 - **Score distribution logging**: After each run, the pipeline logs min/p25/median/p75/p90/stddev for every score field. Look for `stddev < 0.05` warnings — they indicate compressed scores that may not be discriminative enough.
 - **Run tracking in database**: Each pipeline run creates a record in `pipeline_runs` with full distribution stats. Query it via `psql` or the `/api/v1/health` endpoint.
 - **Diagnostic queries**: Run `scripts/diagnose_scores.sql` for score distributions, NULL analysis, clustering checks, and run comparison. See `docs/continuous-improvement.md`.
-- NIMA-style scoring is now treated as advanced, rerunnable enrichment and stored in `file_metrics` (`nima_score`, `aesthetic_score`, `keep_score`, `nima_model_version`).
+- CLIP-based aesthetic scoring is treated as advanced, rerunnable enrichment and stored in `file_metrics` (`nima_score`, `aesthetic_score`, `keep_score`, `nima_model_version`).
+- Note: `nima_score` is a legacy column name; it currently stores CLIP-based aesthetic output, not VGG-16 NIMA model output.
 - WebSocket live progress is not yet implemented; recommended next step is an `/api/v1/jobs` + WS stream for in-flight pipeline status events.
 
 ## Required process rule

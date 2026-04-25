@@ -4,6 +4,7 @@ import base64
 import json
 import mimetypes
 from pathlib import Path
+import time
 from urllib import error, request
 
 from loguru import logger
@@ -17,6 +18,8 @@ PROMPT_VERSION = "llm_photo_v1"
 EMBEDDING_MODEL = "hash-embed-v1"
 
 _VISION_MODEL_PATTERNS_STR = ("llava", "moondream", "bakllava", "qwen2.5-vl", "qwen2-vl", "vision")
+_LMSTUDIO_MAX_RETRIES = 3
+_LMSTUDIO_RETRY_BASE_SECONDS = 0.75
 
 
 def _safe_float(value: object) -> float | None:
@@ -76,38 +79,57 @@ def _call_lmstudio(path: Path, options: DescriptionOptions) -> dict[str, object]
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    try:
-        with request.urlopen(req, timeout=options.lmstudio_timeout_seconds) as response:
-            raw = json.loads(response.read().decode("utf-8"))
-        content = raw["choices"][0]["message"]["content"]
-        if not isinstance(content, str):
+    for attempt in range(1, _LMSTUDIO_MAX_RETRIES + 1):
+        try:
+            with request.urlopen(req, timeout=options.lmstudio_timeout_seconds) as response:
+                raw = json.loads(response.read().decode("utf-8"))
+            content = raw["choices"][0]["message"]["content"]
+            if not isinstance(content, str):
+                return None
+            parsed = json.loads(content)
+            if isinstance(parsed, dict):
+                return parsed
             return None
-        parsed = json.loads(content)
-        if isinstance(parsed, dict):
-            return parsed
-    except (
-        TimeoutError,
-        error.URLError,
-        error.HTTPError,
-        KeyError,
-        IndexError,
-        json.JSONDecodeError,
-    ) as exc:
-        if isinstance(exc, error.HTTPError):
-            body = None
-            try:
-                body = exc.read().decode("utf-8", errors="replace")
-            except Exception:
-                pass
-            logger.warning(
-                "LLM call failed for {path}: HTTP {code} {reason}: {body}",
+        except (
+            TimeoutError,
+            error.URLError,
+            error.HTTPError,
+            KeyError,
+            IndexError,
+            json.JSONDecodeError,
+        ) as exc:
+            status_code = exc.code if isinstance(exc, error.HTTPError) else None
+            should_retry = isinstance(exc, (TimeoutError, error.URLError)) or status_code == 429
+            is_last_attempt = attempt == _LMSTUDIO_MAX_RETRIES
+
+            if isinstance(exc, error.HTTPError):
+                body = None
+                try:
+                    body = exc.read().decode("utf-8", errors="replace")
+                except Exception:
+                    pass
+                logger.warning(
+                    "LLM call failed for {path}: HTTP {code} {reason}: {body}",
+                    path=path,
+                    code=exc.code,
+                    reason=exc.reason,
+                    body=body or "(no body)",
+                )
+            else:
+                logger.warning("LLM call failed for {path}: {error}", path=path, error=exc)
+
+            if not should_retry or is_last_attempt:
+                break
+
+            delay = _LMSTUDIO_RETRY_BASE_SECONDS * (2 ** (attempt - 1))
+            logger.info(
+                "Retrying LLM call for {path} in {delay:.2f}s (attempt {attempt}/{max_attempts})",
                 path=path,
-                code=exc.code,
-                reason=exc.reason,
-                body=body or "(no body)",
+                delay=delay,
+                attempt=(attempt + 1),
+                max_attempts=_LMSTUDIO_MAX_RETRIES,
             )
-        else:
-            logger.warning("LLM call failed for {path}: {error}", path=path, error=exc)
+            time.sleep(delay)
     return None
 
 

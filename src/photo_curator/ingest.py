@@ -13,6 +13,25 @@ from photo_curator.utils.hashing import sha256_file
 from photo_curator.utils.image import SUPPORTED_EXTENSIONS, get_exif, open_image
 
 
+def _require_legacy_tables(db: Database) -> None:
+    required_tables = {"photos"}
+    rows = db.fetchall(
+        """
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = ANY(%s)
+        """,
+        (list(required_tables),),
+    )
+    existing = {str(row[0]) for row in rows}
+    missing = sorted(required_tables - existing)
+    if missing:
+        raise RuntimeError(
+            "Legacy ingest requires legacy tables that are not present: "
+            f"{', '.join(missing)}. Use pipeline_v1 discover command instead."
+        )
+
+
 @dataclass
 class IngestStats:
     scanned: int = 0
@@ -32,6 +51,7 @@ def ingest(
     dry_run: bool = False,
     force: bool = False,
 ) -> IngestStats:
+    _require_legacy_tables(db)
     if not roots:
         raise ValueError("No roots provided. Use --roots or set default_roots in config.")
 

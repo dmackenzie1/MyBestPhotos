@@ -1,10 +1,5 @@
 export type LabelPatch = {
-  keepFlag?: boolean | null;
-  rejectFlag?: boolean | null;
   favoriteFlag?: boolean | null;
-  printCandidate6x8?: boolean | null;
-  printCandidate8x10?: boolean | null;
-  printCandidate12x18?: boolean | null;
   notes?: string | null;
 };
 
@@ -16,15 +11,10 @@ export type PhotoListItem = {
   photoTakenAt: string | null;
   cameraMake: string | null;
   cameraModel: string | null;
-  printScore12x18: number | null;
-  printScore8x10: number | null;
-  printScore6x8: number | null;
   curationScore: number | null;
   aestheticScore: number | null;
   wallArtScore: number | null;
   descriptionText: string | null;
-  keepFlag: boolean | null;
-  rejectFlag: boolean | null;
   favoriteFlag: boolean | null;
 };
 
@@ -53,17 +43,9 @@ export type PhotoDetail = {
     curationScore: number | null;
     aestheticScore: number | null;
     wallArtScore: number | null;
-    printScore6x8: number | null;
-    printScore8x10: number | null;
-    printScore12x18: number | null;
   };
   labels: {
-    keepFlag: boolean | null;
-    rejectFlag: boolean | null;
     favoriteFlag: boolean | null;
-    printCandidate6x8: boolean | null;
-    printCandidate8x10: boolean | null;
-    printCandidate12x18: boolean | null;
     notes: string | null;
   };
 };

@@ -39,9 +39,6 @@ CREATE TABLE IF NOT EXISTS file_metrics (
   keep_score DOUBLE PRECISION,
   nima_model_version TEXT,
   advanced_metadata_updated_at TIMESTAMPTZ,
-  print_score_6x8 DOUBLE PRECISION,
-  print_score_8x10 DOUBLE PRECISION,
-  print_score_12x18 DOUBLE PRECISION,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -85,12 +82,7 @@ CREATE TABLE IF NOT EXISTS file_llm_results (
 
 CREATE TABLE IF NOT EXISTS file_labels (
   file_id BIGINT PRIMARY KEY REFERENCES files(id) ON DELETE CASCADE,
-  keep_flag BOOLEAN,
-  reject_flag BOOLEAN,
   favorite_flag BOOLEAN,
-  print_candidate_6x8 BOOLEAN,
-  print_candidate_8x10 BOOLEAN,
-  print_candidate_12x18 BOOLEAN,
   notes TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -99,10 +91,10 @@ CREATE TABLE IF NOT EXISTS file_labels (
 CREATE INDEX IF NOT EXISTS idx_files_taken_at ON files(photo_taken_at);
 CREATE INDEX IF NOT EXISTS idx_files_camera_make ON files(camera_make);
 CREATE INDEX IF NOT EXISTS idx_files_camera_model ON files(camera_model);
-CREATE INDEX IF NOT EXISTS idx_file_metrics_print_12x18 ON file_metrics(print_score_12x18);
-CREATE INDEX IF NOT EXISTS idx_file_metrics_print_8x10 ON file_metrics(print_score_8x10);
-CREATE INDEX IF NOT EXISTS idx_file_metrics_print_6x8 ON file_metrics(print_score_6x8);
 CREATE INDEX IF NOT EXISTS idx_file_metrics_curation_score ON file_metrics(curation_score);
+CREATE INDEX IF NOT EXISTS idx_file_metrics_nima_score ON file_metrics(nima_score);
+CREATE INDEX IF NOT EXISTS idx_file_metrics_aesthetic_score ON file_metrics(aesthetic_score);
+CREATE INDEX IF NOT EXISTS idx_file_metrics_keep_score ON file_metrics(keep_score);
 
 CREATE INDEX IF NOT EXISTS idx_file_descriptions_tsv
 ON file_descriptions
@@ -122,8 +114,6 @@ WITH (lists = 100);
 CREATE INDEX IF NOT EXISTS idx_llm_runs_created_at ON llm_runs(created_at DESC);
 
 
-CREATE INDEX IF NOT EXISTS idx_file_labels_keep_flag ON file_labels (keep_flag);
-CREATE INDEX IF NOT EXISTS idx_file_labels_reject_flag ON file_labels (reject_flag);
 CREATE INDEX IF NOT EXISTS idx_file_labels_favorite_flag ON file_labels (favorite_flag);
 
 -- Pipeline run tracking tables (added for continuous improvement observability)
@@ -226,3 +216,4 @@ CREATE TABLE IF NOT EXISTS pipeline_runs (
 
 CREATE INDEX IF NOT EXISTS idx_pipeline_runs_started_at ON pipeline_runs(started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_pipeline_runs_status ON pipeline_runs(status);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_pipeline_runs_run_id ON pipeline_runs(run_id);

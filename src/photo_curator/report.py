@@ -42,7 +42,9 @@ def export_reports(
     html_path = report_path / "gallery.html"
     with html_path.open("w", encoding="utf-8") as handle:
         handle.write("<html><head><meta charset='utf-8'><title>Photo Curator</title>")
-        handle.write("<style>body{font-family:sans-serif;} .grid{display:flex;flex-wrap:wrap;gap:12px;} .card{width:200px;}</style>")
+        handle.write(
+            "<style>body{font-family:sans-serif;} .grid{display:flex;flex-wrap:wrap;gap:12px;} .card{width:200px;}</style>"
+        )
         handle.write("</head><body><h1>Photo Curator Results</h1><div class='grid'>")
         for rank, _photo_id, path, sha256, score in rows:
             thumb_path = Path(thumbs_dir) / f"{sha256}.jpg"

@@ -9,7 +9,6 @@ from photo_curator.pipeline_v1.selection import (
     _should_skip_due_to_duplicate_cap,
 )
 from photo_curator.pipeline_v1.models import DescriptionOptions
-from photo_curator.pipeline_v1.scoring_math import _compute_nima_style_score
 
 if TYPE_CHECKING:
     from photo_curator.config import Settings
@@ -36,16 +35,20 @@ def describe_images(
     return _describe_images(db, model_name=model_name, options=options)
 
 
-def score_nima(
+def score_clip_aesthetic(
     db: "Database",
     *,
     max_size: int = 1024,
     clip_model: str | None = None,
     clip_device: str = "auto",
 ):
-    from photo_curator.pipeline_v1.advanced_stage import score_nima as _score_nima
+    from photo_curator.pipeline_v1.advanced_stage import (
+        score_clip_aesthetic as _score_clip_aesthetic,
+    )
 
-    return _score_nima(db, max_size=max_size, clip_model=clip_model, clip_device=clip_device)
+    return _score_clip_aesthetic(
+        db, max_size=max_size, clip_model=clip_model, clip_device=clip_device
+    )
 
 
 def run_advanced_runners(
@@ -94,8 +97,7 @@ __all__ = [
     "run_advanced_runners",
     "run_llm_descriptions",
     "score_metrics",
-    "score_nima",
-    "_compute_nima_style_score",
+    "score_clip_aesthetic",
     "_iter_files",
     "_select_discovery_candidates",
     "_should_skip_due_to_duplicate_cap",
