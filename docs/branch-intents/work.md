@@ -154,3 +154,93 @@
   - `docker compose config | sed -n '/python-runner:/,/python-advanced-runner:/p'`
 - Observed results:
   - Compose renders `python-runner.command` as `uv sync --project . && uv run --project . photo-curator base-ingest`.
+
+---
+
+## Update: 2026-04-25 LM Studio LLM runner 400 response_format errors
+
+## Quick Summary
+- Branch: `work`
+- Purpose: Fix LLM runner LM Studio request shape and add startup diagnostics for endpoint/model configuration.
+- Scan first: Use this update when logs show `HTTP 400 ... 'response_format.type' must be 'json_schema' or 'text'`.
+
+## Intent
+- Make the LLM stage compatible with current LM Studio OpenAI-compatible API response-format validation and improve observability at startup.
+
+## Scope
+- In scope:
+  - `src/photo_curator/pipeline_v1/llm_stage.py` request payload + endpoint normalization + startup logging.
+  - Targeted tests for endpoint normalization/content extraction.
+- Out of scope:
+  - Prompt redesign.
+  - Database schema changes.
+
+## Prior intent review (mandatory)
+- Related branch-intent docs reviewed:
+  - `docs/branch-intents/2026-04-24-llm-photo-descriptions-and-semantic-search.md`
+  - `docs/branch-intents/2026-04-22-update-lmstudio-default-base-url-to-lan-host.md`
+- Relevant lessons pulled forward:
+  - Keep runner fixes additive and low-drama.
+  - Add logging/diagnostics where endpoint/model mismatches are common.
+- Rabbit holes to avoid this time:
+  - Broad pipeline refactors unrelated to LM Studio request compatibility.
+
+## Architecture decisions
+- Decision:
+  - Switch LM Studio `response_format.type` to `text` and continue strict JSON parsing client-side.
+  - Normalize base URLs so both `http://127.0.0.1:1234` and `http://127.0.0.1:1234/v1` resolve to `/v1/chat/completions`.
+  - Log endpoint/model/timeout/response-format once at stage start.
+- Why:
+  - User logs show 400 validation on `json_object`; LM Studio requires `json_schema` or `text`.
+- Tradeoff:
+  - Less server-side JSON-schema enforcement; parsing guardrails remain local.
+
+## Error log (mandatory)
+- Exact error message(s):
+  - `HTTP 400 Bad Request: {"error":"'response_format.type' must be 'json_schema' or 'text'"}`
+- Where seen (command/log/file):
+  - User-provided python-runner logs for `photo_curator.pipeline_v1.llm_stage:_call_lmstudio`.
+- Frequency or reproducibility notes:
+  - Repeats for each photo with retries (attempts 1-3).
+
+## Attempts made (mandatory)
+- Attempt 1:
+  - Change made:
+    - Updated LLM request payload to `response_format: {"type": "text"}` and kept strict `json.loads` validation.
+  - Why this was tried:
+    - Align with LM Studio validation error text while preserving downstream JSON contract.
+  - Result:
+    - Request format now matches LM Studio accepted values.
+- Attempt 2:
+  - Change made:
+    - Added endpoint normalization helper and startup info log with endpoint/model/timeout/response format.
+  - Why this was tried:
+    - User requested early debug visibility and is using base URL without `/v1`.
+  - Result:
+    - Startup logs now show where requests are posted and with which model.
+- Attempt 3:
+  - Change made:
+    - Added tests for endpoint normalization and structured list-content extraction.
+  - Why this was tried:
+    - Lock in compatibility behavior and avoid regressions.
+  - Result:
+    - New tests validate key helper behavior.
+
+## What went right (mandatory)
+- Fix is minimal, local to LLM stage, and directly addresses the exact 400 payload validation error.
+
+## What went wrong (mandatory)
+- Could not perform full end-to-end LM Studio run in this environment against user-hosted model endpoint.
+
+## Validation (mandatory)
+- Commands run:
+  - `uv run --project . pytest tests/test_llm_stage.py`
+  - `uv run --project . ruff check src/photo_curator/pipeline_v1/llm_stage.py tests/test_llm_stage.py`
+- Observed results:
+  - Targeted tests and lint checks pass.
+
+## Follow-up
+- Next branch goals:
+  - If needed, add optional `json_schema` mode behind a config flag for stricter server-side structure.
+- What to try next if unresolved:
+  - Capture one raw LM Studio response body in debug logs when parse fails to detect model-side non-JSON output patterns.
