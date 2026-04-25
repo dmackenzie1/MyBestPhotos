@@ -33,11 +33,14 @@ This repository has no nested AGENTS yet; this file applies to all paths unless 
 - When adding new configs (VS Code, pre-commit, scripts), explain how they interplay with `uv` and Docker.
 
 
-## Branch-intent workflow (mandatory for every Codex task)
+## Branch-intent workflow (required for substantive work)
 - At the start of each Codex task, review `docs/branch-intents/*.md` for relevant previous errors, failed attempts, and dead ends before proposing a new fix.
-- For every Codex task, create or update a branch-intent file that records: exact error text, what was tried, why it was tried, what failed, and what to try next.
-- This requirement applies even if the branch does not merge yet, and even if the attempted fix fails.
+- Start by scanning file headers (`# Branch Intent` and `## Quick Summary`) to quickly identify relevant branches.
+- Branch-intent docs are required for substantive work; typo-only or obvious one-line fixes can skip branch-intent updates.
+- Keep one branch-intent file per branch. Update/append the existing file for that branch instead of creating additional files.
+- When required, record: exact error text, what was tried, why it was tried, what failed, and what to try next.
 - Use `docs/branch-intents/TEMPLATE.md` as the baseline structure.
+- Keep branch names and merge-request titles simple and easy to scan.
 
 ## File-scope note
 Files under `services/web/` have additional guidance in `services/web/AGENTS.md`.

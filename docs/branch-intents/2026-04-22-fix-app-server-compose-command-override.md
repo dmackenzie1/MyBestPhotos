@@ -1,5 +1,12 @@
 # Branch Intent: fix app-server compose command override
 
+## Quick Summary
+- Branch: `fix app-server compose command override`
+- Purpose: Prevent `app-server` from crashing on startup when an older locally cached image still has an outdated default CMD that points at `/app/dist/index.js`.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Prevent `app-server` from crashing on startup when an older locally cached image still has an outdated default CMD that points at `/app/dist/index.js`.
 

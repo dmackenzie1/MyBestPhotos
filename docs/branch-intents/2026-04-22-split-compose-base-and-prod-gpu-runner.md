@@ -1,5 +1,12 @@
 # Branch Intent: split compose base and prod gpu runner
 
+## Quick Summary
+- Branch: `split compose base and prod gpu runner`
+- Purpose: Address feedback on the previous runner wiring by splitting GPU-specific runner settings into a production-style compose override instead of forcing GPU config in the base compose file.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Address feedback on the previous runner wiring by splitting GPU-specific runner settings into a production-style compose override instead of forcing GPU config in the base compose file.
 

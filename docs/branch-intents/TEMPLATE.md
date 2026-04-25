@@ -1,5 +1,10 @@
 # Branch Intent: <branch-name>
 
+## Quick Summary
+- Branch: `<branch-name>`
+- Purpose: <one sentence on what this branch fixes>
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
 ## Intent
 - What user problem this branch is solving.
 

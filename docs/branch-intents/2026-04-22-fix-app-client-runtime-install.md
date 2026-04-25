@@ -1,5 +1,12 @@
 # Branch Intent: fix app-client runtime install
 
+## Quick Summary
+- Branch: `fix app-client runtime install`
+- Purpose: Fix Docker build failure for `app-client` where the runtime stage tries to install a private workspace dependency from npm registry.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Fix Docker build failure for `app-client` where the runtime stage tries to install a private workspace dependency from npm registry.
 

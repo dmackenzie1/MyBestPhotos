@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-24-ui-browse-pane-iteration
 
+## Quick Summary
+- Branch: `2026-04-24-ui-browse-pane-iteration`
+- Purpose: Apply a focused browse-UI iteration: relocate sort/filter control into the photo pane header, make the filter pane collapsible, keep the detail preview pane visible while scrolling, tighten card density/buttons, add quick per-photo actions, and remove map/settings UI surface.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Apply a focused browse-UI iteration: relocate sort/filter control into the photo pane header, make the filter pane collapsible, keep the detail preview pane visible while scrolling, tighten card density/buttons, add quick per-photo actions, and remove map/settings UI surface.
 

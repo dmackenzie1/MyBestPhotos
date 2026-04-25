@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-25-standard-code-review
 
+## Quick Summary
+- Branch: `2026-04-25-standard-code-review`
+- Purpose: Perform a standard repo-wide code review pass focused on DB schema, backend/frontend code quality, and obvious dead/unused code.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Perform a standard repo-wide code review pass focused on DB schema, backend/frontend code quality, and obvious dead/unused code.
 

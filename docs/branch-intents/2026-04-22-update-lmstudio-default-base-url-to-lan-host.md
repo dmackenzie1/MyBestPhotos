@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-22-update-lmstudio-default-base-url-to-lan-host
 
+## Quick Summary
+- Branch: `2026-04-22-update-lmstudio-default-base-url-to-lan-host`
+- Purpose: Address follow-up feedback by aligning LM Studio base URL defaults to the provided LAN endpoint (`http://192.168.10.64:1234/v1`) across config and documentation.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Address follow-up feedback by aligning LM Studio base URL defaults to the provided LAN endpoint (`http://192.168.10.64:1234/v1`) across config and documentation.
 

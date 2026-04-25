@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-22-fix-default-roots-env-jsondecode
 
+## Quick Summary
+- Branch: `2026-04-22-fix-default-roots-env-jsondecode`
+- Purpose: Fix Python runner startup crash where `PHOTO_CURATOR_DEFAULT_ROOTS=/photos/library` is treated as JSON by `pydantic-settings` and fails before field coercion.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Fix Python runner startup crash where `PHOTO_CURATOR_DEFAULT_ROOTS=/photos/library` is treated as JSON by `pydantic-settings` and fails before field coercion.
 

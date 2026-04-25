@@ -1,5 +1,12 @@
 # Branch Intent: python runner startup gpu cache
 
+## Quick Summary
+- Branch: `python runner startup gpu cache`
+- Purpose: Align stack startup with current operating preference: keep Python runner in Docker Compose (not npm), start it with the full stack, and gate it on healthy upstream services.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Align stack startup with current operating preference: keep Python runner in Docker Compose (not npm), start it with the full stack, and gate it on healthy upstream services.
 - Improve runner cold-start behavior and document expected host/GPU/runtime requirements.

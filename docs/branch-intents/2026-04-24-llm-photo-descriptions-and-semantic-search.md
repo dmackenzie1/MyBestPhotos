@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-24-llm-photo-descriptions-and-semantic-search
 
+## Quick Summary
+- Branch: `2026-04-24-llm-photo-descriptions-and-semantic-search`
+- Purpose: Add an LM Studio-backed LLM processing pass that generates per-photo descriptions/tags/scores and semantic-search vectors, then expose these results in API/UI search flows.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Add an LM Studio-backed LLM processing pass that generates per-photo descriptions/tags/scores and semantic-search vectors, then expose these results in API/UI search flows.
 

@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-24-ui-condensed-browse-cleanup
 
+## Quick Summary
+- Branch: `2026-04-24-ui-condensed-browse-cleanup`
+- Purpose: Condense the browse/timeline UI by removing redundant headings/metadata, showing only the active-sort metric badge on cards, shrinking filter typography, and making preview-size controls drive card width/layout density.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Condense the browse/timeline UI by removing redundant headings/metadata, showing only the active-sort metric badge on cards, shrinking filter typography, and making preview-size controls drive card width/layout density.
 

@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-22-fix-postgres-migrations-password-auth
 
+## Quick Summary
+- Branch: `2026-04-22-fix-postgres-migrations-password-auth`
+- Purpose: Fix the `postgres-migrations` startup failure so schema migrations run successfully before dependent services start.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Fix the `postgres-migrations` startup failure so schema migrations run successfully before dependent services start.
 

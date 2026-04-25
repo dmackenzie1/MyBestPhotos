@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-25-audit-stream-consolidated
 
+## Quick Summary
+- Branch: `2026-04-25-audit-stream-consolidated`
+- Purpose: Consolidate fragmented April 25 audit branch-intent notes into one canonical document and record current still-open issues.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Consolidate fragmented April 25 audit branch-intent notes into one canonical document and record current still-open issues.
 

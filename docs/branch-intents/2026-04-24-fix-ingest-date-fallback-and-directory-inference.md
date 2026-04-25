@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-24-fix-ingest-date-fallback-and-directory-inference
 
+## Quick Summary
+- Branch: `2026-04-24-fix-ingest-date-fallback-and-directory-inference`
+- Purpose: Stop assigning today's date when image taken date cannot be derived.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Stop assigning today's date when image taken date cannot be derived.
 - Infer taken dates from source directory patterns (including year-month paths like `2009/2009-12/...`) when EXIF is missing.

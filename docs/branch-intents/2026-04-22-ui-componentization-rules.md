@@ -1,5 +1,12 @@
 # Branch Intent: 2026-04-22-ui-componentization-rules
 
+## Quick Summary
+- Branch: `2026-04-22-ui-componentization-rules`
+- Purpose: Refactor the client UI so `App.tsx` is smaller and each major UI block has its own component file and stylesheet.
+- Scan first: Use this branch when you are working on the same feature area or error pattern.
+
+
+
 ## Intent
 - Refactor the client UI so `App.tsx` is smaller and each major UI block has its own component file and stylesheet.
 - Establish explicit local rules for component/style organization.
