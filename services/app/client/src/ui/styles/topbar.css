@@ -1,7 +1,7 @@
 .topbar {
   height: 60px;
   display: grid;
-  grid-template-columns: 220px 1fr auto;
+  grid-template-columns: 220px auto 1fr auto;
   align-items: center;
   gap: 10px;
   padding: 0 10px;
@@ -11,12 +11,38 @@
 
 .brand { font-size: 24px; font-weight: 700; color: #60a5fa; letter-spacing: 0.2px; }
 
+.search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 320px;
+}
+
 .search {
   background: #0a162b;
   border: 1px solid #1e335b;
   border-radius: 8px;
   padding: 8px 10px;
   color: var(--text);
+  flex: 1;
+  min-width: 0;
+}
+
+.search-icon-btn {
+  background: transparent;
+  border: none;
+  color: #60a5fa;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+.search-icon-btn:hover {
+  opacity: 1;
 }
 
 .nav-btn {

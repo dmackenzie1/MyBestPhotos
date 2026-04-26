@@ -51,7 +51,7 @@ OpenAI-compatible `chat/completions` endpoint and stores returned captions in
 ## CLIP aesthetic scoring note
 
 - `clip_aesthetic_score` is treated as advanced derived metadata, not raw file truth.
-- `clip_aesthetic_score` stores CLIP-based aesthetic output (formerly called `nima_score`).
+- `clip_aesthetic_score` stores CLIP-based aesthetic output ((ViT-H/14, prompt differential)).
 
 - The runner processes rows missing `clip_aesthetic_score` first (or all rows with `--refresh-all`)
   and records `clip_model_version` + `advanced_metadata_updated_at` for future backfills.

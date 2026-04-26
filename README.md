@@ -266,7 +266,8 @@ If LM Studio is unavailable, the runner logs a warning and falls back per-image 
 - **Score distribution logging**: After each run, the pipeline logs min/p25/median/p75/p90/stddev for every score field. Look for `stddev < 0.05` warnings — they indicate compressed scores that may not be discriminative enough.
 - **Run tracking in database**: Each pipeline run creates a record in `pipeline_runs` with full distribution stats. Query it via `psql` or the `/api/v1/health` endpoint.
 - **Diagnostic queries**: Run `scripts/diagnose_scores.sql` for score distributions, NULL analysis, clustering checks, and run comparison. See `docs/continuous-improvement.md`.
-- CLIP-based aesthetic scoring is treated as advanced, rerunnable enrichment and stored in `file_metrics` (`clip_aesthetic_score`, `aesthetic_score`, `keep_score`, `clip_model_version`).
+- CLIP-based aesthetic scoring is treated as advanced, rerunnable enrichment and stored in `file_metrics` (`clip_aesthetic_score`, `aesthetic_score`, `keep_score`, `llm_aesthetic_score`, `llm_wall_art_score`).
+- All API scores are normalized: technical/aesthetic/keep/curation scores use 0–1 scale; wallArtScore uses 0–100 (converted from LLM score).
 - WebSocket live progress is not yet implemented; recommended next step is an `/api/v1/jobs` + WS stream for in-flight pipeline status events.
 
 ## Required process rule
@@ -287,4 +288,5 @@ Include intent, scope, architecture decisions, what went right, what went wrong,
 2. Add category extraction into `description_json` for stronger filters.
 3. Add e2e smoke checks for `docker compose up` + API health + one pipeline run.
 4. Add UI screenshot artifacts in CI for visual regressions.
-5. Add optional semantic search only after FTS limits are observed.
+5. Consider whether LLM wall_art_score should influence the curation_score formula.
+6. Add score normalization tests for edge cases (NULL, negative values).

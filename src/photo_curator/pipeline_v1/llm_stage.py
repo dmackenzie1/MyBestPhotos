@@ -276,6 +276,19 @@ def run_llm_descriptions(
                 vector_literal(embedding),
             ),
         )
+
+        # Also write normalized LLM scores to file_metrics for unified score access
+        db.execute(
+            """
+            INSERT INTO file_metrics (file_id, llm_aesthetic_score, llm_wall_art_score)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (file_id) DO UPDATE SET
+              llm_aesthetic_score = EXCLUDED.llm_aesthetic_score,
+              llm_wall_art_score = EXCLUDED.llm_wall_art_score,
+              updated_at = now()
+            """,
+            (file_id, aesthetic_score / 100.0 if aesthetic_score is not None else None, wall_art_score / 100.0 if wall_art_score is not None else None),
+        )
         stats.processed += 1
 
     logger.info(

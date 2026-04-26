@@ -104,7 +104,7 @@ type PhotoListRow = {
   curation_score: number | null;
   aesthetic_score: number | null;
   description_text: string | null;
-  wall_art_score: number | null;
+  llm_wall_art_score: number | null;
   favorite_flag: boolean | null;
 };
 
@@ -264,9 +264,9 @@ app.get("/api/v1/photos", async (req, res) => {
       f.camera_make,
       f.camera_model,
       fm.curation_score,
-      coalesce(flm.aesthetic_score, fm.aesthetic_score) AS aesthetic_score,
+      fm.aesthetic_score,
       coalesce(flm.description_text, fd.description_text) AS description_text,
-      flm.wall_art_score,
+      fm.llm_wall_art_score,
       fl.favorite_flag
       ${rankSelect}
     FROM files f
@@ -304,7 +304,7 @@ app.get("/api/v1/photos", async (req, res) => {
     curationScore: row.curation_score,
     aestheticScore: row.aesthetic_score,
     descriptionText: row.description_text,
-    wallArtScore: row.wall_art_score,
+    wallArtScore: row.llm_wall_art_score ? row.llm_wall_art_score * 100 : null,
     favoriteFlag: row.favorite_flag,
   }));
 
@@ -338,8 +338,8 @@ app.get("/api/v1/photos/:id", async (req, res) => {
         coalesce(flm.llm_payload_json, fd.description_json) AS description_json,
         fm.blur_score, fm.brightness_score, fm.contrast_score, fm.entropy_score, fm.noise_score,
         fm.technical_quality_score, fm.semantic_relevance_score, fm.curation_score,
-        coalesce(flm.aesthetic_score, fm.aesthetic_score) AS aesthetic_score,
-        flm.wall_art_score,
+        fm.aesthetic_score,
+        fm.llm_wall_art_score,
         fl.favorite_flag,
         fl.notes
       FROM files f
@@ -382,7 +382,7 @@ app.get("/api/v1/photos/:id", async (req, res) => {
       semanticRelevanceScore: row.semantic_relevance_score,
       curationScore: row.curation_score,
       aestheticScore: row.aesthetic_score,
-      wallArtScore: row.wall_art_score,
+      wallArtScore: row.llm_wall_art_score ? row.llm_wall_art_score * 100 : null,
     },
     labels: {
       favoriteFlag: row.favorite_flag,

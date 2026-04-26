@@ -67,7 +67,7 @@ curl http://localhost:8080/api/v1/health | jq .
 ```sql
 -- Compare key score distributions across runs
 SELECT run_id, started_at,
-       nima_min, nima_median, nima_max, nima_stddev,
+       clip_aesthetic_min, clip_aesthetic_median, clip_aesthetic_max, clip_aesthetic_stddev,
        curation_min, curation_median, curation_max, curation_stddev
 FROM pipeline_runs
 WHERE status = 'completed' AND completed_at IS NOT NULL
@@ -97,7 +97,7 @@ Files in `reports/run_*_*.json` contain full score distributions for each run. C
 | `entropy_score` | 0-1 (higher = more complex histogram) | Information content / histogram complexity |
 | `noise_score` | 0-1 (higher = less noise) | Noise proxy from Gaussian blur difference |
 | `technical_quality_score` | 0-1 | Weighted combination of above technical metrics |
-| `clip_aesthetic_score` | 0-1 | CLIP-based aesthetic signal (formerly `nima_score`) |
+| `clip_aesthetic_score` | 0-1 | CLIP-based aesthetic signal ((ViT-H/14, prompt differential)) |
 | `aesthetic_score` | 0-1 | Derived from CLIP-based `clip_aesthetic_score` + blur resistance |
 | `keep_score` | 0-1 | Combined technical quality + aesthetics for ranking |
 | `curation_score` | 0-1 | Final rank helper: 70% technical + 30% semantic relevance |
@@ -109,7 +109,7 @@ Files in `reports/run_*_*.json` contain full score distributions for each run. C
 
 This typically means the normalization bounds in `_safe_norm()` are too wide for your dataset. Run diagnostics to find the actual min/max of each metric, then tighten the bounds.
 
-### Many NULL nima/aesthetic/keep scores:
+### Many NULL aesthetic/keep/curation scores:
 
 The advanced runner only processes files missing these scores. If you see many NULLs after a run:
 1. Check `docker compose logs python-advanced-runner` for errors

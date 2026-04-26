@@ -70,7 +70,14 @@ Dominant aspect ratios in the dataset:
 | curation_score | 0.2093 | 0.3653 | 0.4128 | 0.4841 | 0.6731 | **0.0754** | **Critically compressed** â€” primary sort field; top 10% all below 0.53, gap between #1 and #10 is only ~0.06 |
 | semantic_relevance_score | 0.3833 | 0.5617 | 0.5895 | 0.6322 | 1.0000 | **0.0719** | Compressed; heavily biased by camera brand (DSLR +0.25, phone +0.0) |
 
-### Print Scores
+
+### LLM-Derived Scores (added 2026-04-26)
+
+| Field | Min | P25 | Median | P75 | Max | Stddev | Notes |
+|-------|-----|-----|--------|-----|-----|--------|-------|
+| llm_aesthetic_score (normalized) | 0.10 | 0.55 | 0.64 | 0.78 | 0.85 | ~0.20 | LLM aesthetic score normalized from original 0-100 scale |
+| llm_wall_art_score (normalized) | 0.10 | 0.50 | 0.58 | 0.68 | 0.90 | ~0.22 | LLM wall art suitability normalized from original 0-100 scale |
+### Print Scores (removed 2026-04-26 — orphaned columns dropped from schema)
 
 | Field | Min | P25 | Median | P75 | Max | Stddev | Notes |
 |-------|-----|-----|--------|-----|------|--------|-------|

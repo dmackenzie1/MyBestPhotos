@@ -1,4 +1,4 @@
-CREATE EXTENSION IF NOT EXISTS vector;
+﻿CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE IF NOT EXISTS files (
   id BIGSERIAL PRIMARY KEY,
@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS file_metrics (
    clip_aesthetic_score DOUBLE PRECISION,
    aesthetic_score DOUBLE PRECISION,
    keep_score DOUBLE PRECISION,
+   llm_aesthetic_score DOUBLE PRECISION,
+   llm_wall_art_score DOUBLE PRECISION,
    clip_model_version TEXT,
   advanced_metadata_updated_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -95,6 +97,8 @@ CREATE INDEX IF NOT EXISTS idx_file_metrics_curation_score ON file_metrics(curat
 CREATE INDEX IF NOT EXISTS idx_file_metrics_clip_aesthetic_score ON file_metrics(clip_aesthetic_score);
 CREATE INDEX IF NOT EXISTS idx_file_metrics_aesthetic_score ON file_metrics(aesthetic_score);
 CREATE INDEX IF NOT EXISTS idx_file_metrics_keep_score ON file_metrics(keep_score);
+CREATE INDEX IF NOT EXISTS idx_file_metrics_llm_aesthetic_score ON file_metrics(llm_aesthetic_score);
+CREATE INDEX IF NOT EXISTS idx_file_metrics_llm_wall_art_score ON file_metrics(llm_wall_art_score);
 
 CREATE INDEX IF NOT EXISTS idx_file_descriptions_tsv
 ON file_descriptions
