@@ -310,3 +310,23 @@
 - Observed results:
   - Client build failed in this environment due to missing `react-router-dom` type/module resolution in `services/app/client`.
   - Server build completed successfully.
+
+## 2026-04-26 update: app-client direct-port API fallback
+
+### Intent
+- Resolve confusion where opening `http://localhost:4173` shows `Stub mode active` even while API is healthy on `http://localhost:3001`.
+
+### Exact error text observed
+- UI banner: `Stub mode active: API unavailable, showing sample data.`
+
+### What was tried
+1. Inspected compose/network wiring (`docker-compose.yml`, `services/nginx/web.conf`) to confirm `/api/*` proxy exists only behind NGINX on `:8080`.
+2. Traced client API base selection in `services/app/client/src/App.tsx`.
+3. Added a low-risk default fallback: when UI is opened directly on port `4173`, use `http://localhost:3001/api/v1`; otherwise keep `/api/v1` for NGINX (`:8080`) flow.
+4. Updated README troubleshooting port note to document the direct-preview behavior.
+
+### Result
+- Direct preview path (`:4173`) now targets API on `:3001` by default, while proxied NGINX path (`:8080`) remains unchanged.
+
+### Next steps if issues persist
+- If running browser from another host/device, set `VITE_API_BASE` explicitly to the reachable API URL (e.g., `http://<host-ip>:3001/api/v1`) and rebuild the client image.

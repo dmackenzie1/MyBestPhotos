@@ -12,7 +12,9 @@ import { getSelectedTags, reconcileSelection } from "./ui/lib/utils";
 import type { FacetsResponse, PhotoListResponse, StatusSummaryResponse, ViewMode } from "./ui/types";
 import { useLocation, useNavigate } from "react-router-dom";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "/api/v1";
+const API_BASE = import.meta.env.VITE_API_BASE || ((typeof window !== "undefined" && window.location.port === "4173")
+  ? "http://localhost:3001/api/v1"
+  : "/api/v1");
 
 export default function App() {
   const location = useLocation();
