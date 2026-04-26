@@ -80,7 +80,7 @@ Open UI at:
 
 Direct service ports (for troubleshooting):
 - API: http://localhost:3001/api/v1/health
-- Client preview: http://localhost:4173
+- Client preview: http://localhost:4173 (direct preview; defaults to API at `http://localhost:3001/api/v1`)
 - Postgres: `${POSTGRES_BIND_ADDRESS:-127.0.0.1}:5432` (default: `127.0.0.1:5432`)
 
 Postgres is intentionally published for local debugging/agent inspection in this phase. Treat this as an **outstanding production hardening item** and keep loopback-only or remove host exposure before production rollout.
