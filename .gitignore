@@ -36,3 +36,6 @@ services/nginx/certs/
 #tempdatabase
 postgres_data/
 /data/kaus/2025-11-02/*.mp3
+
+# TypeScript incremental build artifacts
+*.tsbuildinfo

@@ -330,3 +330,82 @@
 
 ### Next steps if issues persist
 - If running browser from another host/device, set `VITE_API_BASE` explicitly to the reachable API URL (e.g., `http://<host-ip>:3001/api/v1`) and rebuild the client image.
+
+---
+
+## Update: 2026-04-27 remove accidental compiled frontend artifacts
+
+## Quick Summary
+- Branch: `work`
+- Purpose: Remove accidentally committed generated `.js`/`.tsbuildinfo` artifacts so TypeScript/TSX source remains the single source of truth.
+- Scan first: Use this update when duplicate `*.tsx` + `*.js` files appear under `services/app/client/src/`.
+
+## Intent
+- Clean up merge/check-in artifacts from the most recent commit by deleting generated outputs committed into source paths.
+
+## Scope
+- In scope:
+  - Remove generated JS files that duplicate TS/TSX in `services/app/client/src/`.
+  - Remove generated `packages/shared/src/index.js`.
+  - Remove `services/app/client/tsconfig.tsbuildinfo`.
+  - Add `.gitignore` rule for `*.tsbuildinfo`.
+- Out of scope:
+  - Functional UI behavior changes.
+  - Build toolchain redesign.
+
+## Prior intent review (mandatory)
+- Related branch-intent docs reviewed:
+  - `docs/branch-intents/work.md` (existing branch history)
+  - `docs/branch-intents/2026-04-25-standard-code-review.md`
+- Relevant lessons pulled forward:
+  - Prefer minimal, low-drama hygiene fixes for merge artifacts.
+- Rabbit holes to avoid this time:
+  - No broad refactors; only artifact cleanup.
+
+## Error log (mandatory)
+- Exact error message(s):
+  - No runtime exception; issue observed as duplicate generated source artifacts in git history.
+- Where seen (command/log/file):
+  - `git show --name-status --stat --format=fuller HEAD`
+  - File tree under `services/app/client/src/` and `packages/shared/src/`.
+- Frequency or reproducibility notes:
+  - Reproducible whenever generated outputs are checked into source directories.
+
+## Attempts made (mandatory)
+- Attempt 1:
+  - Change made:
+    - Removed generated JS twins and `tsconfig.tsbuildinfo`.
+  - Why this was tried:
+    - Keep TS/TSX source authoritative and avoid source/runtime drift.
+  - Result:
+    - Duplicate artifacts removed.
+- Attempt 2:
+  - Change made:
+    - Added `*.tsbuildinfo` to `.gitignore`.
+  - Why this was tried:
+    - Prevent recurrence of incremental build cache files being committed.
+  - Result:
+    - Future commits should exclude TS build info artifacts by default.
+
+## What went right (mandatory)
+- Cleanup was file-only and did not require behavior changes.
+
+## What went wrong (mandatory)
+- `uv run pre-commit run --all-files` could not run because `pre-commit` is unavailable in the environment.
+
+## Validation (mandatory)
+- Commands run:
+  - `npm run -w services/app/client build`
+  - `npm run lint`
+  - `uv run pre-commit run --all-files`
+- Observed results:
+  - Client build and workspace lint pass.
+  - Pre-commit command failed due to missing executable, not code errors.
+
+## Follow-up
+- Next branch goals:
+  - Optionally add ignore patterns for generated JS in TS source trees if a transpile-to-source-dir workflow is used locally.
+- What to try next if unresolved:
+  - Add a pre-commit check to block generated TS build artifacts in source paths.
+- Additional prevention change:
+  - Updated `services/app/client/package.json` build script from `tsc -b` to `tsc --noEmit` so TypeScript checks do not emit JS into `src/` during normal client builds.
